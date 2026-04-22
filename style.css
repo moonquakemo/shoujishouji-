@@ -1,0 +1,796 @@
+/* ============================================
+   SillyTavern 内嵌手机 UI — phone.css
+   QQ 圆角气泡 + 微信功能布局 缝合版
+   ============================================ */
+
+/* --- Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+/* --- CSS Variables --- */
+:root {
+  --phone-width: 360px;
+  --phone-radius: 32px;
+  --phone-bg: #0a0a0f;
+  --phone-chat-bg: #f5f5f7;
+
+  /* Bubble colors */
+  --bubble-other-bg: #ffffff;
+  --bubble-other-text: #1a1a1a;
+  --bubble-me-bg: linear-gradient(135deg, #95ec69, #69d946);
+  --bubble-me-text: #1a1a1a;
+  --bubble-radius: 20px;
+
+  /* Accent colors */
+  --accent-blue: #576b95;
+  --accent-green: #07c160;
+  --accent-orange: #ee7b30;
+  --accent-red: #fa5151;
+  --accent-purple: #8b5cf6;
+
+  /* Typography */
+  --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+
+  /* Spacing */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+
+  /* Shadows */
+  --shadow-phone: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-bubble: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Phone Shell --- */
+.st-phone {
+  width: var(--phone-width);
+  max-width: 100%;
+  margin: 16px auto;
+  border-radius: var(--phone-radius);
+  background: var(--phone-bg);
+  box-shadow: var(--shadow-phone);
+  overflow: hidden;
+  font-family: var(--font-family);
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+}
+
+/* --- Status Bar (Top) --- */
+.st-phone-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  user-select: none;
+}
+
+.st-phone-statusbar .status-left {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.st-phone-statusbar .status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-phone-statusbar .status-right svg {
+  width: 14px;
+  height: 14px;
+  fill: #fff;
+}
+
+/* --- Navigation Bar --- */
+.st-phone-navbar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #1a1a2e;
+  color: #fff;
+  position: relative;
+}
+
+.st-phone-navbar .nav-back {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.st-phone-navbar .nav-back:hover {
+  opacity: 1;
+}
+
+.st-phone-navbar .nav-back svg {
+  width: 20px;
+  height: 20px;
+  fill: #fff;
+}
+
+.st-phone-navbar .nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.st-phone-navbar .nav-search-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.st-phone-navbar .nav-search-btn:hover {
+  opacity: 1;
+}
+
+.st-phone-navbar .nav-search-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: #fff;
+}
+
+/* --- Search Bar (hidden by default) --- */
+.st-phone-search {
+  display: none;
+  padding: 8px 16px;
+  background: #1a1a2e;
+}
+
+.st-phone-search.active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.st-phone-search input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.st-phone-search input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.st-phone-search input:focus {
+  border-color: var(--accent-green);
+}
+
+.st-phone-search .search-close {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--font-size-sm);
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.st-phone-search .search-close:hover {
+  color: #fff;
+}
+
+/* --- Chat Body --- */
+.st-phone-chat {
+  height: 450px;
+  overflow-y: auto;
+  padding: var(--gap-lg);
+  background: var(--phone-chat-bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+/* Spacer pushes messages to bottom when content is short */
+.st-phone-chat-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Custom scrollbar */
+.st-phone-chat::-webkit-scrollbar {
+  width: 4px;
+}
+
+.st-phone-chat::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.st-phone-chat::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+/* --- Time Separator --- */
+.st-phone-time-sep {
+  text-align: center;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.st-phone-time-sep span {
+  background: rgba(0, 0, 0, 0.06);
+  color: #999;
+  font-size: var(--font-size-xs);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+/* --- Message Row --- */
+.st-phone-msg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap-sm);
+  max-width: 85%;
+  animation: msgFadeIn 0.3s ease;
+}
+
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.st-phone-msg-row.msg-other {
+  align-self: flex-start;
+}
+
+.st-phone-msg-row.msg-me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* Avatar */
+.st-phone-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.st-phone-msg-row.msg-me .st-phone-avatar {
+  background: linear-gradient(135deg, var(--accent-green), #34d058);
+}
+
+/* Bubble */
+.st-phone-bubble {
+  position: relative;
+  padding: 10px 14px;
+  border-radius: var(--bubble-radius);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  word-break: break-word;
+  box-shadow: var(--shadow-bubble);
+}
+
+.msg-other .st-phone-bubble {
+  background: var(--bubble-other-bg);
+  color: var(--bubble-other-text);
+  border-top-left-radius: 6px;
+}
+
+.msg-me .st-phone-bubble {
+  background: var(--bubble-me-bg);
+  color: var(--bubble-me-text);
+  border-top-right-radius: 6px;
+}
+
+/* Message timestamp */
+.st-phone-msg-time {
+  font-size: var(--font-size-xs);
+  color: #bbb;
+  margin-top: 2px;
+  padding: 0 4px;
+}
+
+.msg-me .st-phone-msg-time {
+  text-align: right;
+}
+
+/* --- Quote / Reply (compact pill label between messages) --- */
+.st-phone-quote {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  color: #888;
+  line-height: 1.4;
+  max-width: 75%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: -4px;
+  flex-shrink: 0;
+}
+
+.st-phone-quote .quote-from {
+  font-weight: 600;
+  color: #777;
+  margin-right: 2px;
+}
+
+/* Position: right-aligned for "me" replies, left for "other" replies */
+.st-phone-quote.quote-right {
+  align-self: flex-end;
+}
+
+.st-phone-quote.quote-left {
+  align-self: flex-start;
+  margin-left: 44px;
+}
+
+/* --- Voice Message --- */
+.st-phone-voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.st-phone-voice .voice-icon {
+  display: flex;
+  align-items: center;
+}
+
+.st-phone-voice .voice-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.msg-other .st-phone-voice .voice-icon svg {
+  fill: #1a1a1a;
+}
+
+.msg-me .st-phone-voice .voice-icon svg {
+  fill: #1a1a1a;
+}
+
+.st-phone-voice .voice-waves {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.st-phone-voice .voice-waves span {
+  display: inline-block;
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  animation: voiceWave 0.8s ease-in-out infinite alternate;
+}
+
+.st-phone-voice .voice-waves span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.st-phone-voice .voice-waves span:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+.st-phone-voice .voice-waves span:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+.st-phone-voice .voice-waves span:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+.st-phone-voice .voice-waves span:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+.st-phone-voice .voice-waves span:nth-child(6) { height: 10px; animation-delay: 0.5s; }
+
+@keyframes voiceWave {
+  from { transform: scaleY(0.6); }
+  to { transform: scaleY(1.4); }
+}
+
+.st-phone-voice .voice-duration {
+  font-size: var(--font-size-sm);
+  color: rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+/* Voice transcript (collapsed by default) */
+.st-phone-voice-text {
+  display: none;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  font-size: var(--font-size-sm);
+  color: #555;
+}
+
+.st-phone-voice-text.expanded {
+  display: block;
+  animation: slideDown 0.2s ease;
+}
+
+.st-phone-voice-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--accent-blue);
+  cursor: pointer;
+  user-select: none;
+}
+
+.st-phone-voice-toggle:hover {
+  text-decoration: underline;
+}
+
+/* --- Translation --- */
+.st-phone-translation {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.st-phone-trans-toggle {
+  font-size: var(--font-size-xs);
+  color: var(--accent-blue);
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-phone-trans-toggle:hover {
+  text-decoration: underline;
+}
+
+.st-phone-trans-content {
+  display: none;
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+  color: #666;
+  padding-left: 2px;
+}
+
+.st-phone-trans-content.expanded {
+  display: block;
+  animation: slideDown 0.2s ease;
+}
+
+/* --- Transfer Card --- */
+.st-phone-transfer {
+  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 200px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(238, 123, 48, 0.15);
+}
+
+.st-phone-transfer .transfer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.st-phone-transfer .transfer-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.st-phone-transfer .transfer-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #fff;
+}
+
+.st-phone-transfer .transfer-label {
+  font-size: var(--font-size-sm);
+  color: #8a6a3a;
+  font-weight: 500;
+}
+
+.st-phone-transfer .transfer-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  margin-bottom: 4px;
+}
+
+.st-phone-transfer .transfer-amount::before {
+  content: '¥ ';
+  font-size: 16px;
+}
+
+.st-phone-transfer .transfer-note {
+  font-size: var(--font-size-sm);
+  color: #999;
+}
+
+.st-phone-transfer .transfer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.st-phone-transfer .transfer-btn {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 18px;
+  border: none;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.st-phone-transfer .transfer-btn.accept {
+  background: var(--accent-orange);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(238, 123, 48, 0.3);
+}
+
+.st-phone-transfer .transfer-btn.accept:hover {
+  background: #e06a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(238, 123, 48, 0.4);
+}
+
+.st-phone-transfer .transfer-btn.decline {
+  background: rgba(0, 0, 0, 0.06);
+  color: #999;
+}
+
+.st-phone-transfer .transfer-btn.decline:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+}
+
+/* Transfer states */
+.st-phone-transfer.accepted .transfer-actions,
+.st-phone-transfer.declined .transfer-actions {
+  display: none;
+}
+
+.st-phone-transfer .transfer-status {
+  display: none;
+  margin-top: 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-align: center;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.st-phone-transfer.accepted .transfer-status {
+  display: block;
+  color: var(--accent-green);
+  background: rgba(7, 193, 96, 0.08);
+}
+
+.st-phone-transfer.declined .transfer-status {
+  display: block;
+  color: #999;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* --- Location Card --- */
+.st-phone-location {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 200px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.st-phone-location .location-map {
+  height: 80px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.st-phone-location .location-map::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 30% 60%, rgba(76, 175, 80, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(129, 199, 132, 0.3) 0%, transparent 40%);
+}
+
+.st-phone-location .location-map svg {
+  width: 28px;
+  height: 28px;
+  fill: var(--accent-red);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  z-index: 1;
+}
+
+.st-phone-location .location-info {
+  padding: 10px 12px;
+}
+
+.st-phone-location .location-name {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.st-phone-location .location-addr {
+  font-size: var(--font-size-xs);
+  color: #999;
+}
+
+/* --- Recall Message --- */
+.st-phone-recall-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-xs);
+}
+
+.st-phone-recall {
+  text-align: center;
+  padding: 4px 0;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.st-phone-recall .recall-text {
+  font-size: var(--font-size-xs);
+  color: #bbb;
+}
+
+.st-phone-recall .recall-view {
+  font-size: var(--font-size-xs);
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: opacity 0.2s;
+  opacity: 0.6;
+}
+
+.st-phone-recall .recall-view:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Recall revealed bubble (appears below the recall notice) */
+.st-phone-recall-revealed {
+  display: none;
+  max-width: 75%;
+  animation: msgFadeIn 0.3s ease;
+}
+
+.st-phone-recall-revealed.visible {
+  display: block;
+}
+
+.st-phone-recall-revealed .recall-bubble {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: var(--bubble-radius);
+  padding: 8px 14px;
+  font-size: var(--font-size-sm);
+  color: #888;
+  position: relative;
+}
+
+.st-phone-recall-revealed .recall-label {
+  font-size: var(--font-size-xs);
+  color: #bbb;
+  margin-bottom: 2px;
+}
+
+.st-phone-recall-revealed .recall-original {
+  color: #666;
+}
+
+/* --- Sticker (placeholder) --- */
+.st-phone-sticker img {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 4px;
+}
+
+/* --- Input Bar (decorative) --- */
+.st-phone-inputbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f7f7f8;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.st-phone-inputbar .input-voice-btn {
+  display: flex;
+  align-items: center;
+  opacity: 0.4;
+}
+
+.st-phone-inputbar .input-voice-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: #333;
+}
+
+.st-phone-inputbar .input-field {
+  flex: 1;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: var(--font-size-base);
+  color: #ccc;
+  font-family: var(--font-family);
+}
+
+.st-phone-inputbar .input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.4;
+}
+
+.st-phone-inputbar .input-actions svg {
+  width: 22px;
+  height: 22px;
+  fill: #333;
+}
+
+/* --- Bottom safe area --- */
+.st-phone-bottom-safe {
+  height: 16px;
+  background: #f7f7f8;
+  border-radius: 0 0 var(--phone-radius) var(--phone-radius);
+}
+
+/* --- Search highlight --- */
+.search-highlight {
+  background: rgba(255, 233, 36, 0.5);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* --- Utility --- */
+.st-phone-hidden {
+  display: none !important;
+}
