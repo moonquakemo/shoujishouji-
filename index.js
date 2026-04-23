@@ -6,7 +6,7 @@
 (function () {
     const MODULE_NAME = 'phone_ui';
     
-    // ⚠️ 宝贝，把这里换成你 GitHub 仓库的真实名字！(比如 'my-st-phone-test')
+    // ⚠️ 宝贝，记得这里填你真实的 GitHub 仓库名！
     const FOLDER_NAME = 'shoujishouji-'; 
 
     // ========== 初始化 ==========
@@ -15,33 +15,43 @@
             const ctx = SillyTavern.getContext();
             const { eventSource, eventTypes } = ctx;
 
-            // 1. 初始化或读取持久化设置
             if (!ctx.extensionSettings[MODULE_NAME]) {
                 ctx.extensionSettings[MODULE_NAME] = { enabled: true, aggregate: true, inject: true, stickers: "{}" };
             }
             const settings = ctx.extensionSettings[MODULE_NAME];
 
-            // 2. 加载设置面板 HTML (暴力拉取大法)
             const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
+
+            // 🚀 【关键修复 1】主动把躺在文件夹里睡大觉的四个核心组件加载进来！
+            try {
+                await $.getScript(`${extensionFolderPath}/phone-parser.js`);
+                await $.getScript(`${extensionFolderPath}/phone-renderer.js`);
+                await $.getScript(`${extensionFolderPath}/phone-aggregator.js`);
+                await $.getScript(`${extensionFolderPath}/phone-interactions.js`);
+                console.log('[Phone UI] 核心组件加载成功！');
+            } catch (scriptErr) {
+                console.error('[Phone UI] 核心组件加载失败，请检查文件是否都在仓库里:', scriptErr);
+                return; // 如果加载失败，强行退出防报错
+            }
+
+            // 加载设置面板
             try {
                 const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
                 $('#extensions_settings').append(settingsHtml);
                 bindSettingsUI(settings, ctx);
-                console.log('[Phone UI] 设置面板挂载成功！');
             } catch (htmlErr) {
-                console.error(`[Phone UI] 设置面板加载失败！路径: ${extensionFolderPath}/settings.html`, htmlErr);
+                console.error(`[Phone UI] 设置面板加载失败`, htmlErr);
             }
 
-            // 3. 监听事件
+            // 监听事件
             eventSource.on(eventTypes.CHARACTER_MESSAGE_RENDERED, onMessageRendered);
             eventSource.on(eventTypes.USER_MESSAGE_RENDERED, onMessageRendered);
             eventSource.on(eventTypes.CHAT_CHANGED, onChatChanged);
 
-            // 初次加载：渲染已有消息
             renderAllExistingMessages();
             console.log('[Phone UI] Extension initialized');
         } catch (e) {
-            console.warn('[Phone UI] Not in SillyTavern environment, standalone mode', e);
+            console.warn('[Phone UI] Init error:', e);
         }
     }
 
@@ -84,31 +94,53 @@
         const ctx = SillyTavern.getContext();
         const settings = ctx.extensionSettings[MODULE_NAME];
         
-        // 检查开关
         if (settings && !settings.enabled) return;
 
         const chatMsg = ctx.chat[msgIndex];
         if (!chatMsg || !chatMsg.mes) return;
 
+        // 预防报错：确认大脑已上线
+        if (typeof PhoneParser === 'undefined') return;
+
+        // 检查有没有 [phone] 块
         const blocks = PhoneParser.extractPhoneBlocks(chatMsg.mes);
         if (!blocks.length) return;
+        
+        console.log(`[Phone UI] 成功在第 ${msgIndex} 条消息抓取到手机记录！`, blocks);
 
         const mesEl = document.querySelector(`.mes[mesid="${msgIndex}"]`);
         if (!mesEl) return;
         const mesTextEl = mesEl.querySelector('.mes_text');
         if (!mesTextEl) return;
 
+        let currentHtml = mesTextEl.innerHTML;
+
+        // 🚀 【关键修复 2】兼容酒馆把 [ ] 转义成了 &#91; 或包裹了 <br> 的情况，把它切掉隐身
+        const phoneRegexHtml = /(?:\[|&#91;)phone(?::[^\]]*)?(?:\]|&#93;)[\s\S]*?(?:\[|&#91;)\/phone(?:\]|&#93;)/gi;
+        currentHtml = currentHtml.replace(phoneRegexHtml, '<div class="st-phone-hidden" style="display:none;">[手机记录已渲染]</div>');
+
+        let injectedPhonesHtml = '';
+
         for (const block of blocks) {
-            const aggregated = PhoneAggregator.aggregate(ctx.chat, msgIndex, block.contact);
+            let phoneData;
+            // 判断是否跨层聚合
+            if (settings && settings.aggregate) {
+                phoneData = PhoneAggregator.aggregate(ctx.chat, msgIndex, block.contact);
+            } else {
+                phoneData = { contact: block.contact, messages: block.messages, actions: {} };
+            }
+
             const phoneId = `p_${msgIndex}_${block.contact.replace(/\s/g, '_')}`;
-            const html = PhoneRenderer.render(aggregated, phoneId);
-
-            const rawEscaped = escapeRegExp(block.raw);
-            const currentHtml = mesTextEl.innerHTML;
-            mesTextEl.innerHTML = currentHtml + html;
-
-            setTimeout(() => PhoneInteractions.scrollToBottom(phoneId), 50);
+            injectedPhonesHtml += PhoneRenderer.render(phoneData, phoneId);
         }
+
+        // 把清理干净的正文和生成的小手机拼在一起
+        mesTextEl.innerHTML = currentHtml + injectedPhonesHtml;
+
+        // 让手机聊天框自动滚底
+        setTimeout(() => {
+            if (typeof PhoneInteractions !== 'undefined') PhoneInteractions.scrollAllToBottom();
+        }, 100);
     }
 
     // ========== 渲染已有消息 ==========
@@ -121,13 +153,13 @@
         } catch (e) {}
     }
 
-    // ========== 聊天切换 ==========
     function onChatChanged() {
         setTimeout(renderAllExistingMessages, 200);
     }
 
     // ========== generate_interceptor ==========
     globalThis.phoneUIInterceptor = async function (chat, contextSize, abort, type) {
+        if (typeof PhoneInteractions === 'undefined') return;
         const pending = PhoneInteractions.consumePendingActions();
         if (!pending.length) return;
 
@@ -162,12 +194,6 @@
         } catch (e) {}
     };
 
-    // ========== 工具函数 ==========
-    function escapeRegExp(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    // ========== 启动 ==========
     if (typeof jQuery !== 'undefined') {
         jQuery(async () => { init(); });
     } else if (typeof document !== 'undefined') {
