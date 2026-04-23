@@ -46,6 +46,11 @@
             // 监听事件
             eventSource.on(eventTypes.CHARACTER_MESSAGE_RENDERED, onMessageRendered);
             eventSource.on(eventTypes.USER_MESSAGE_RENDERED, onMessageRendered);
+            
+            // 🚀 【新增】：监听“编辑消息”和“重新生成/打分更新”事件！
+            if (eventTypes.MESSAGE_EDITED) eventSource.on(eventTypes.MESSAGE_EDITED, onMessageRendered);
+            if (eventTypes.MESSAGE_UPDATED) eventSource.on(eventTypes.MESSAGE_UPDATED, onMessageRendered);
+            
             eventSource.on(eventTypes.CHAT_CHANGED, onChatChanged);
 
             renderAllExistingMessages();
