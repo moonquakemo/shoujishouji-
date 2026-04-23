@@ -4,7 +4,7 @@
     // ✨ 【关键点】这里必须是你放到酒馆里时的文件夹名称！
     // 比如你放在 public/scripts/extensions/third-party/st-phone-ui
     // 这里就填 'st-phone-ui'
-    const FOLDER_NAME = 'st-phone-ui'; 
+    const FOLDER_NAME = 'shoujishouji-'; 
 
     // ========== 初始化 ==========
     async function init() {
