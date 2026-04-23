@@ -1,9 +1,12 @@
+/**
+ * SillyTavern Phone UI Extension — 主入口
+ * 绑定事件、渲染管线、generate_interceptor
+ */
+
 (function () {
     const MODULE_NAME = 'phone_ui';
     
-    // ✨ 【关键点】这里必须是你放到酒馆里时的文件夹名称！
-    // 比如你放在 public/scripts/extensions/third-party/st-phone-ui
-    // 这里就填 'st-phone-ui'
+    // ⚠️ 宝贝，把这里换成你 GitHub 仓库的真实名字！(比如 'my-st-phone-test')
     const FOLDER_NAME = 'shoujishouji-'; 
 
     // ========== 初始化 ==========
@@ -14,40 +17,29 @@
 
             // 1. 初始化或读取持久化设置
             if (!ctx.extensionSettings[MODULE_NAME]) {
-                ctx.extensionSettings[MODULE_NAME] = {
-                    enabled: true,       // 启用手机 UI
-                    aggregate: true,     // 跨层聚合
-                    inject: true,        // 交互操作注入
-                    stickers: "{}"       // 默认空 JSON 字符串
-                };
+                ctx.extensionSettings[MODULE_NAME] = { enabled: true, aggregate: true, inject: true, stickers: "{}" };
             }
             const settings = ctx.extensionSettings[MODULE_NAME];
 
-            // 2. 将 settings.html 注入到 ST 的扩展面板中
+            // 2. 加载设置面板 HTML (暴力拉取大法)
+            const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
             try {
-                // 使用 ST 官方的渲染模板 API [1]
-                const tplPath = `third-party/${FOLDER_NAME}`;
-                const settingsHtml = await ctx.renderExtensionTemplateAsync(tplPath, 'settings');
-                // 挂载到酒馆的设置侧边栏
+                const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
                 $('#extensions_settings').append(settingsHtml);
-                
-                // 3. 绑定设置界面和数据的逻辑
                 bindSettingsUI(settings, ctx);
+                console.log('[Phone UI] 设置面板挂载成功！');
             } catch (htmlErr) {
-                console.error('[Phone UI] 无法加载设置面板，请检查 FOLDER_NAME 是否和你的扩展文件夹名一致:', htmlErr);
+                console.error(`[Phone UI] 设置面板加载失败！路径: ${extensionFolderPath}/settings.html`, htmlErr);
             }
 
-            // 4. 监听消息渲染事件
+            // 3. 监听事件
             eventSource.on(eventTypes.CHARACTER_MESSAGE_RENDERED, onMessageRendered);
             eventSource.on(eventTypes.USER_MESSAGE_RENDERED, onMessageRendered);
-
-            // 聊天切换时重置
             eventSource.on(eventTypes.CHAT_CHANGED, onChatChanged);
 
             // 初次加载：渲染已有消息
             renderAllExistingMessages();
-
-            console.log('[Phone UI] Extension initialized successfully');
+            console.log('[Phone UI] Extension initialized');
         } catch (e) {
             console.warn('[Phone UI] Not in SillyTavern environment, standalone mode', e);
         }
@@ -55,16 +47,14 @@
 
     // ========== 设置面板 UI 绑定 ==========
     function bindSettingsUI(settings, ctx) {
-        // 绑定"启用"开关
         const $enabled = $('#phone_ui_enabled');
         $enabled.prop('checked', settings.enabled);
         $enabled.on('change', function () {
             settings.enabled = !!$(this).prop('checked');
             ctx.saveSettingsDebounced();
-            renderAllExistingMessages(); // 状态改变后尝试刷新画面
+            renderAllExistingMessages();
         });
 
-        // 绑定"聚合"开关
         const $aggregate = $('#phone_ui_aggregate');
         $aggregate.prop('checked', settings.aggregate);
         $aggregate.on('change', function () {
@@ -73,7 +63,6 @@
             renderAllExistingMessages();
         });
 
-        // 绑定"注入"开关
         const $inject = $('#phone_ui_inject');
         $inject.prop('checked', settings.inject);
         $inject.on('change', function () {
@@ -81,26 +70,107 @@
             ctx.saveSettingsDebounced();
         });
 
-        // 绑定"表情包"输入框和保存按钮
         const $stickers = $('#phone_ui_stickers');
         $stickers.val(settings.stickers || "");
         $('#phone_ui_save_stickers').on('click', function () {
             settings.stickers = $stickers.val();
             ctx.saveSettingsDebounced();
-            // 调用酒馆原生的弹窗提示
             if (typeof toastr !== 'undefined') toastr.success("表情包配置已保存", "Phone UI");
         });
     }
 
-    // ========== 消息渲染钩子 (这里帮你加了开关判定) ==========
+    // ========== 消息渲染钩子 ==========
     function onMessageRendered(msgIndex) {
         const ctx = SillyTavern.getContext();
         const settings = ctx.extensionSettings[MODULE_NAME];
         
-        // 如果开关没开，直接跳过不渲染手机
+        // 检查开关
         if (settings && !settings.enabled) return;
 
         const chatMsg = ctx.chat[msgIndex];
         if (!chatMsg || !chatMsg.mes) return;
 
-        // ... 后面的代码保持原样 (从 "const blocks = PhoneParser..." 开始)
+        const blocks = PhoneParser.extractPhoneBlocks(chatMsg.mes);
+        if (!blocks.length) return;
+
+        const mesEl = document.querySelector(`.mes[mesid="${msgIndex}"]`);
+        if (!mesEl) return;
+        const mesTextEl = mesEl.querySelector('.mes_text');
+        if (!mesTextEl) return;
+
+        for (const block of blocks) {
+            const aggregated = PhoneAggregator.aggregate(ctx.chat, msgIndex, block.contact);
+            const phoneId = `p_${msgIndex}_${block.contact.replace(/\s/g, '_')}`;
+            const html = PhoneRenderer.render(aggregated, phoneId);
+
+            const rawEscaped = escapeRegExp(block.raw);
+            const currentHtml = mesTextEl.innerHTML;
+            mesTextEl.innerHTML = currentHtml + html;
+
+            setTimeout(() => PhoneInteractions.scrollToBottom(phoneId), 50);
+        }
+    }
+
+    // ========== 渲染已有消息 ==========
+    function renderAllExistingMessages() {
+        try {
+            const ctx = SillyTavern.getContext();
+            for (let i = 0; i < ctx.chat.length; i++) {
+                onMessageRendered(i);
+            }
+        } catch (e) {}
+    }
+
+    // ========== 聊天切换 ==========
+    function onChatChanged() {
+        setTimeout(renderAllExistingMessages, 200);
+    }
+
+    // ========== generate_interceptor ==========
+    globalThis.phoneUIInterceptor = async function (chat, contextSize, abort, type) {
+        const pending = PhoneInteractions.consumePendingActions();
+        if (!pending.length) return;
+
+        const injectionText = pending.map(a => `[用户手机操作: ${a.desc}]`).join('\n');
+        const systemNote = {
+            is_user: false,
+            name: 'System',
+            mes: injectionText,
+            is_system: true,
+            extra: { type: 'phone_ui_injection' },
+        };
+
+        let insertIdx = chat.length - 1;
+        for (let i = chat.length - 1; i >= 0; i--) {
+            if (chat[i].is_user) {
+                insertIdx = i;
+                break;
+            }
+        }
+
+        chat.splice(insertIdx, 0, systemNote);
+        systemNote._phoneUIInjection = true;
+
+        try {
+            const ctx = SillyTavern.getContext();
+            const cleanup = () => {
+                const idx = chat.findIndex(m => m._phoneUIInjection);
+                if (idx !== -1) chat.splice(idx, 1);
+                ctx.eventSource.removeListener(ctx.eventTypes.GENERATION_ENDED, cleanup);
+            };
+            ctx.eventSource.on(ctx.eventTypes.GENERATION_ENDED, cleanup);
+        } catch (e) {}
+    };
+
+    // ========== 工具函数 ==========
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // ========== 启动 ==========
+    if (typeof jQuery !== 'undefined') {
+        jQuery(async () => { init(); });
+    } else if (typeof document !== 'undefined') {
+        document.addEventListener('DOMContentLoaded', init);
+    }
+})();
