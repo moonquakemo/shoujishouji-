@@ -1,0 +1,57 @@
+<div id="phone_ui_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>📱 Phone UI (小手机)</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+
+            <!-- 开关 -->
+            <div style="margin-bottom: 10px;">
+                <label class="checkbox_label" for="phone_ui_enabled">
+                    <input type="checkbox" id="phone_ui_enabled" checked />
+                    <span>启用手机 UI 渲染</span>
+                </label>
+            </div>
+
+            <!-- 跨层聚合开关 -->
+            <div style="margin-bottom: 10px;">
+                <label class="checkbox_label" for="phone_ui_aggregate">
+                    <input type="checkbox" id="phone_ui_aggregate" checked />
+                    <span>跨层聚合消息</span>
+                </label>
+                <small style="display:block; color:#888; margin-top:2px;">开启后，手机内显示历史所有消息；关闭则每层独立渲染</small>
+            </div>
+
+            <!-- 交互注入开关 -->
+            <div style="margin-bottom: 10px;">
+                <label class="checkbox_label" for="phone_ui_inject">
+                    <input type="checkbox" id="phone_ui_inject" checked />
+                    <span>交互操作注入 AI 上下文</span>
+                </label>
+                <small style="display:block; color:#888; margin-top:2px;">转账领取/退回等操作自动告知 AI</small>
+            </div>
+
+            <hr />
+
+            <!-- 表情包管理 -->
+            <div style="margin-bottom: 10px;">
+                <b>表情包库</b>
+                <small style="display:block; color:#888; margin-top:2px;">管理外置表情包 key → URL 映射（开发中）</small>
+                <textarea id="phone_ui_stickers" rows="4" class="text_pole"
+                    placeholder='{"happy":"https://...","sad":"https://..."}'
+                    style="margin-top: 6px; font-size: 12px; font-family: monospace;"></textarea>
+                <div class="menu_button" id="phone_ui_save_stickers" style="margin-top: 4px;">保存表情包</div>
+            </div>
+
+            <hr />
+
+            <!-- 状态信息 -->
+            <div style="color: #888; font-size: 12px;">
+                <span>版本 1.0.0 | </span>
+                <span>待注入操作: <b id="phone_ui_pending_count">0</b></span>
+            </div>
+
+        </div>
+    </div>
+</div>
