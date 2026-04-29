@@ -8,6 +8,30 @@ const PhoneInteractions = (() => {
     // 待注入 AI 上下文的操作队列
     let pendingActions = [];
 
+    // ========== 表情包映射 ==========
+    let currentCharStickers = {};
+    let globalStickers = {};
+
+    /**
+     * 设置表情包映射（由 index.js 在角色切换时调用）
+     */
+    function setStickers(charStickerMap, globalStickerMap) {
+        currentCharStickers = charStickerMap || {};
+        globalStickers = globalStickerMap || {};
+    }
+
+    /**
+     * 解析表情包 key → URL
+     * 优先级：直接URL > 角色专属 > 全局 > null
+     */
+    function resolveSticker(key) {
+        if (!key) return null;
+        if (key.startsWith('http://') || key.startsWith('https://')) return key;
+        if (currentCharStickers[key]) return currentCharStickers[key];
+        if (globalStickers[key]) return globalStickers[key];
+        return null;
+    }
+
     /**
      * 搜索
      */
@@ -216,6 +240,7 @@ const PhoneInteractions = (() => {
         handleTransfer,
         consumePendingActions, getPendingActions,
         scrollToBottom, scrollAllToBottom,
+        setStickers, resolveSticker,
     };
 })();
 

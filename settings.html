@@ -34,14 +34,40 @@
 
             <hr />
 
-            <!-- 表情包管理 -->
+            <!-- ====== 表情包管理 ====== -->
             <div style="margin-bottom: 10px;">
-                <b>表情包库</b>
-                <small style="display:block; color:#888; margin-top:2px;">管理外置表情包 key → URL 映射（开发中）</small>
-                <textarea id="phone_ui_stickers" rows="4" class="text_pole"
-                    placeholder='{"happy":"https://...","sad":"https://..."}'
-                    style="margin-top: 6px; font-size: 12px; font-family: monospace;"></textarea>
-                <div class="menu_button" id="phone_ui_save_stickers" style="margin-top: 4px;">保存表情包</div>
+                <b>🎨 表情包库</b>
+                <small style="display:block; color:#888; margin-top:4px;">
+                    AI 输出 <code>src=key</code> → 自动映射为图片 URL<br>
+                    查找顺序：角色专属 → 全局 → 回退为描述文字
+                </small>
+            </div>
+
+            <!-- 当前角色表情包 -->
+            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                    <span>🎭 角色专属：</span>
+                    <b id="phone_ui_char_name" style="color:#ee7b30;">-</b>
+                </div>
+                <textarea id="phone_ui_char_stickers" rows="5" class="text_pole"
+                    placeholder='&#10;{&#10;  "happy": "https://i.imgur.com/xxx.png",&#10;  "sad": "https://i.imgur.com/yyy.png",&#10;  "blush": "https://i.imgur.com/zzz.png"&#10;}'
+                    style="font-size: 12px; font-family: monospace;"></textarea>
+                <div style="display:flex; gap:6px; margin-top: 4px;">
+                    <div class="menu_button" id="phone_ui_save_char_stickers">💾 保存角色表情包</div>
+                    <div class="menu_button" id="phone_ui_export_char_stickers" title="写入角色卡（导出时自带）">📤 写入角色卡</div>
+                </div>
+            </div>
+
+            <!-- 全局表情包 -->
+            <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="margin-bottom:6px;">
+                    <span>🌐 全局表情包</span>
+                    <small style="color:#888;">（所有角色通用的兜底映射）</small>
+                </div>
+                <textarea id="phone_ui_global_stickers" rows="4" class="text_pole"
+                    placeholder='{"laugh":"https://...","cry":"https://..."}'
+                    style="font-size: 12px; font-family: monospace;"></textarea>
+                <div class="menu_button" id="phone_ui_save_global_stickers" style="margin-top: 4px;">💾 保存全局表情包</div>
             </div>
 
             <hr />

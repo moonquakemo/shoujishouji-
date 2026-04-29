@@ -167,14 +167,25 @@ const PhoneRenderer = (() => {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const avatarName = msg.isMe ? 'Me' : contact;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
-        // src 可以是外置表情包 key 或 URL
-        const imgSrc = msg.src.startsWith('http') ? msg.src : `stickers/${msg.src}.png`;
+
+        // 表情包解析：key → URL（角色专属 → 全局 → 回退）
+        let imgSrc = null;
+        if (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.resolveSticker) {
+            imgSrc = PhoneInteractions.resolveSticker(msg.src);
+        } else if (msg.src && msg.src.startsWith('http')) {
+            imgSrc = msg.src;
+        }
+
+        const fallbackText = msg.content || '😊';
+        const stickerInner = imgSrc
+            ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(msg.content)}" onerror="this.outerHTML='<span class=st-phone-sticker-fallback>${escapeHtml(fallbackText)}</span>'">`
+            : `<span class="st-phone-sticker-fallback">${escapeHtml(fallbackText)}</span>`;
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
   <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
   <div>
-    <div class="st-phone-sticker"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(msg.content)}" onerror="this.outerHTML='<span>😊</span>'"></div>
+    <div class="st-phone-sticker">${stickerInner}</div>
     ${timeHtml}
   </div>
 </div>`;

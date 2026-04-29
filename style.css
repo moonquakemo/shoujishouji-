@@ -723,11 +723,24 @@
   color: #666;
 }
 
-/* --- Sticker (placeholder) --- */
+/* --- Sticker --- */
 .st-phone-sticker img {
   max-width: 120px;
   max-height: 120px;
   border-radius: 4px;
+}
+
+.st-phone-sticker-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  border-radius: 12px;
+  font-size: 48px;
+  border: 1px solid rgba(238, 123, 48, 0.15);
+  box-shadow: var(--shadow-card);
 }
 
 /* --- Input Bar (decorative) --- */
