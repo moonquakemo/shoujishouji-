@@ -29,6 +29,7 @@
             // 兼容旧版：如果还没有新字段就补上
             if (!settings.char_stickers) settings.char_stickers = {};
             if (!settings.global_stickers) settings.global_stickers = {};
+            if (settings.inject === undefined) settings.inject = true;
 
             const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
 
@@ -291,7 +292,7 @@
         try {
             const ctx = SillyTavern.getContext();
             const settings = ctx.extensionSettings[MODULE_NAME];
-            if (settings && !settings.inject) return;
+            if (settings && settings.inject === false) return;
         } catch (e) { }
 
         const pending = PhoneInteractions.consumePendingActions();
