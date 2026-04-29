@@ -212,8 +212,8 @@ const PhoneRenderer = (() => {
         } else {
             actionsHtml = `
 <div class="transfer-actions">
-  <button class="transfer-btn accept" onclick="PhoneInteractions.handleTransfer('${phoneId}','${transferId}','accept','${escapeHtml(msg.from || contact)}')">领取</button>
-  <button class="transfer-btn decline" onclick="PhoneInteractions.handleTransfer('${phoneId}','${transferId}','decline','${escapeHtml(msg.from || contact)}')">退回</button>
+  <div class="transfer-btn accept" onclick="PhoneInteractions.handleTransfer('${phoneId}','${transferId}','accept','${escapeHtml(msg.from || contact)}')">领取</div>
+  <div class="transfer-btn decline" onclick="PhoneInteractions.handleTransfer('${phoneId}','${transferId}','decline','${escapeHtml(msg.from || contact)}')">退回</div>
 </div>`;
             statusHtml = '<div class="transfer-status"></div>';
         }
