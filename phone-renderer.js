@@ -209,7 +209,8 @@ const PhoneRenderer = (() => {
         } else if (status === 'declined') {
             statusClass = 'declined';
             statusHtml = '<div class="transfer-status">已退回</div>';
-        } else {
+        } else if (!msg.isMe) {
+            // 只有别人发给你的转账才有领取/退回按钮
             actionsHtml = `
 <div class="transfer-actions">
   <div class="transfer-btn accept" onclick="PhoneInteractions.handleTransfer('${phoneId}','${transferId}','accept','${escapeHtml(msg.from || contact)}')">领取</div>
