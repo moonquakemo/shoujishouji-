@@ -105,6 +105,9 @@ const PhoneInteractions = (() => {
         const card = document.querySelector(`[data-transfer-id="${transferId}"]`);
         if (!card) return;
 
+        // 防连击：已经处理过的转账直接跳过
+        if (card.classList.contains('accepted') || card.classList.contains('declined')) return;
+
         const statusEl = card.querySelector('.transfer-status');
 
         if (action === 'accept') {
@@ -126,6 +129,9 @@ const PhoneInteractions = (() => {
         }
 
         // 记录操作到 pending，等待 generate_interceptor 注入
+        // 去重：同一个 transferId 不重复入队
+        if (pendingActions.some(a => a.transferId === transferId)) return;
+
         const actionDesc = action === 'accept'
             ? `用户已领取${fromName}的转账（¥${card.querySelector('.transfer-amount')?.textContent || ''}）`
             : `用户已退回${fromName}的转账`;
@@ -137,6 +143,8 @@ const PhoneInteractions = (() => {
             from: fromName,
             desc: actionDesc,
         });
+
+        updatePendingCount();
 
         // 也保存到 chatMetadata（如果在 ST 环境中）
         saveToChatMetadata(transferId, action);
@@ -164,6 +172,7 @@ const PhoneInteractions = (() => {
     function consumePendingActions() {
         const actions = [...pendingActions];
         pendingActions = [];
+        updatePendingCount();
         return actions;
     }
 
@@ -187,6 +196,14 @@ const PhoneInteractions = (() => {
     /**
      * 所有手机自动滚底
      */
+    /**
+     * 更新设置面板中的 pending 计数
+     */
+    function updatePendingCount() {
+        const el = document.getElementById('phone_ui_pending_count');
+        if (el) el.textContent = pendingActions.length;
+    }
+
     function scrollAllToBottom() {
         document.querySelectorAll('.st-phone-chat').forEach(chat => {
             chat.scrollTop = chat.scrollHeight;
