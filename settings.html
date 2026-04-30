@@ -13,71 +13,71 @@
                     <span>启用手机 UI 渲染</span>
                 </label>
             </div>
-
-            <!-- 跨层聚合开关 -->
             <div style="margin-bottom: 10px;">
                 <label class="checkbox_label" for="phone_ui_aggregate">
                     <input type="checkbox" id="phone_ui_aggregate" checked />
                     <span>跨层聚合消息</span>
                 </label>
-                <small style="display:block; color:#888; margin-top:2px;">开启后，手机内显示历史所有消息；关闭则每层独立渲染</small>
+                <small style="display:block; color:#888; margin-top:2px;">开启后显示历史所有消息；关闭则每层独立渲染</small>
             </div>
-
-            <!-- 交互注入开关 -->
             <div style="margin-bottom: 10px;">
                 <label class="checkbox_label" for="phone_ui_inject">
                     <input type="checkbox" id="phone_ui_inject" checked />
                     <span>交互操作注入 AI 上下文</span>
                 </label>
-                <small style="display:block; color:#888; margin-top:2px;">转账领取/退回等操作自动告知 AI</small>
+                <small style="display:block; color:#888; margin-top:2px;">转账/表情包/语音等操作自动告知 AI</small>
             </div>
 
             <hr />
 
-            <!-- ====== 表情包管理 ====== -->
+            <!-- 头像和背景 -->
             <div style="margin-bottom: 10px;">
-                <b>🎨 表情包库</b>
-                <small style="display:block; color:#888; margin-top:4px;">
-                    AI 输出 <code>src=key</code> → 自动映射为图片 URL<br>
-                    查找顺序：角色专属 → 全局 → 回退为描述文字
-                </small>
+                <b>🖼️ 头像 & 背景</b>
+                <small style="display:block; color:#888; margin-top:2px;">当前角色: <b id="phone_ui_char_name">-</b></small>
+            </div>
+            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="margin-bottom:6px;">
+                    <small>角色头像 URL</small>
+                    <input type="text" id="phone_ui_char_avatar" class="text_pole" placeholder="https://..." style="font-size:12px;">
+                </div>
+                <div style="margin-bottom:6px;">
+                    <small>用户头像 URL（全局）</small>
+                    <input type="text" id="phone_ui_user_avatar" class="text_pole" placeholder="https://..." style="font-size:12px;">
+                </div>
+                <div style="margin-bottom:6px;">
+                    <small>聊天背景图 URL</small>
+                    <input type="text" id="phone_ui_chat_bg" class="text_pole" placeholder="https://... 或留空使用默认" style="font-size:12px;">
+                </div>
+                <div class="menu_button" id="phone_ui_save_config">💾 保存头像/背景</div>
             </div>
 
-            <!-- 当前角色表情包 -->
+            <hr />
+
+            <!-- 表情包 -->
+            <div style="margin-bottom: 10px;"><b>🎨 表情包库</b></div>
             <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                    <span>🎭 角色专属：</span>
-                    <b id="phone_ui_char_name" style="color:#ee7b30;">-</b>
-                </div>
-                <textarea id="phone_ui_char_stickers" rows="5" class="text_pole"
-                    placeholder='&#10;{&#10;  "happy": "https://i.imgur.com/xxx.png",&#10;  "sad": "https://i.imgur.com/yyy.png",&#10;  "blush": "https://i.imgur.com/zzz.png"&#10;}'
+                <div style="margin-bottom:6px;"><span>🎭 角色专属</span></div>
+                <textarea id="phone_ui_char_stickers" rows="4" class="text_pole"
+                    placeholder='{"happy":"https://...","sad":"https://..."}'
                     style="font-size: 12px; font-family: monospace;"></textarea>
                 <div style="display:flex; gap:6px; margin-top: 4px;">
                     <div class="menu_button" id="phone_ui_save_char_stickers">💾 保存角色表情包</div>
-                    <div class="menu_button" id="phone_ui_export_char_stickers" title="写入角色卡（导出时自带）">📤 写入角色卡</div>
+                    <div class="menu_button" id="phone_ui_export_char_stickers">📤 写入角色卡</div>
                 </div>
             </div>
-
-            <!-- 全局表情包 -->
             <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;">
-                    <span>🌐 全局表情包</span>
-                    <small style="color:#888;">（所有角色通用的兜底映射）</small>
-                </div>
-                <textarea id="phone_ui_global_stickers" rows="4" class="text_pole"
+                <div style="margin-bottom:6px;"><span>🌐 全局表情包</span></div>
+                <textarea id="phone_ui_global_stickers" rows="3" class="text_pole"
                     placeholder='{"laugh":"https://...","cry":"https://..."}'
                     style="font-size: 12px; font-family: monospace;"></textarea>
                 <div class="menu_button" id="phone_ui_save_global_stickers" style="margin-top: 4px;">💾 保存全局表情包</div>
             </div>
 
             <hr />
-
-            <!-- 状态信息 -->
             <div style="color: #888; font-size: 12px;">
-                <span>版本 1.0.0 | </span>
+                <span>版本 1.1.0 | </span>
                 <span>待注入操作: <b id="phone_ui_pending_count">0</b></span>
             </div>
-
         </div>
     </div>
 </div>

@@ -27,10 +27,16 @@ const PhoneRenderer = (() => {
     }
 
     /**
-     * 获取头像首字
+     * 渲染头像（支持图片URL）
      */
-    function getAvatarLetter(name) {
-        return name ? name.charAt(0) : '?';
+    function renderAvatar(name, isMe) {
+        const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
+        const url = isMe ? cfg.userAvatar : cfg.charAvatar;
+        const letter = escapeHtml(name ? name.charAt(0) : '?');
+        if (url) {
+            return `<div class="st-phone-avatar"><img src="${escapeHtml(url)}" alt="${letter}" onerror="this.remove()"><span class="avatar-fallback">${letter}</span></div>`;
+        }
+        return `<div class="st-phone-avatar">${letter}</div>`;
     }
 
     /**
@@ -41,17 +47,19 @@ const PhoneRenderer = (() => {
     function render(phoneData, phoneId) {
         const { contact, messages, actions = {} } = phoneData;
         const id = phoneId || `phone_${Date.now()}`;
+        const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
+        const bgStyle = cfg.chatBackground ? `background-image:url('${escapeHtml(cfg.chatBackground)}');background-size:cover;` : '';
 
         return `
 <div class="st-phone" data-phone-id="${id}">
   ${renderStatusBar()}
   ${renderNavBar(contact, id)}
   ${renderSearchBar(id)}
-  <div class="st-phone-chat" id="chat_${id}">
+  <div class="st-phone-chat" id="chat_${id}" style="${bgStyle}">
     <div class="st-phone-chat-spacer"></div>
     ${messages.map((msg, i) => renderMessage(msg, contact, actions, id, i)).join('\n')}
   </div>
-  ${renderInputBar()}
+  ${renderInputBar(id)}
   <div class="st-phone-bottom-safe"></div>
 </div>`;
     }
@@ -79,16 +87,22 @@ const PhoneRenderer = (() => {
         return `
 <div class="st-phone-search" id="search_${id}">
   <input type="text" placeholder="搜索聊天记录..." oninput="PhoneInteractions.handleSearch('${id}', this.value)">
+  <span id="search_count_${id}" class="search-counter"></span>
+  <span class="search-nav-btn" onclick="PhoneInteractions.navigateSearch('${id}',-1)">◀</span>
+  <span class="search-nav-btn" onclick="PhoneInteractions.navigateSearch('${id}',1)">▶</span>
   <span class="search-close" onclick="PhoneInteractions.toggleSearch('${id}')">取消</span>
 </div>`;
     }
 
-    function renderInputBar() {
+    function renderInputBar(phoneId) {
         return `
 <div class="st-phone-inputbar">
-  <div class="input-voice-btn">${ICONS.mic}</div>
+  <div class="input-voice-btn" onclick="PhoneInteractions.showForm('${phoneId}','voice')" title="发送语音">${ICONS.mic}</div>
   <div class="input-field">输入消息...</div>
-  <div class="input-actions">${ICONS.emoji}${ICONS.plus}</div>
+  <div class="input-actions">
+    <div class="input-action-btn" onclick="PhoneInteractions.toggleStickerPicker('${phoneId}')" title="表情包">${ICONS.emoji}</div>
+    <div class="input-action-btn" onclick="PhoneInteractions.toggleActionPanel('${phoneId}')" title="更多">${ICONS.plus}</div>
+  </div>
 </div>`;
     }
 
@@ -132,7 +146,7 @@ const PhoneRenderer = (() => {
 
         return `${quoteHtml}
 <div class="st-phone-msg-row ${side}" data-searchable>
-  <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
+  ${renderAvatar(avatarName, msg.isMe)}
   <div>
     <div class="st-phone-bubble">${escapeHtml(msg.content)}${transHtml}</div>
     ${timeHtml}
@@ -147,7 +161,7 @@ const PhoneRenderer = (() => {
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
+  ${renderAvatar(avatarName, msg.isMe)}
   <div>
     <div class="st-phone-bubble">
       <div class="st-phone-voice">
@@ -183,7 +197,7 @@ const PhoneRenderer = (() => {
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
+  ${renderAvatar(avatarName, msg.isMe)}
   <div>
     <div class="st-phone-sticker">${stickerInner}</div>
     ${timeHtml}
@@ -228,7 +242,7 @@ const PhoneRenderer = (() => {
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
+  ${renderAvatar(avatarName, msg.isMe)}
   <div>
     <div class="st-phone-transfer ${statusClass}" data-transfer-id="${transferId}">
       <div class="transfer-header">
@@ -253,7 +267,7 @@ ${noticeHtml}`;
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  <div class="st-phone-avatar">${escapeHtml(getAvatarLetter(avatarName))}</div>
+  ${renderAvatar(avatarName, msg.isMe)}
   <div>
     <div class="st-phone-location">
       <div class="location-map">${ICONS.location}</div>

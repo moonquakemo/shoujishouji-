@@ -22,6 +22,9 @@
                     inject: true,
                     char_stickers: {},
                     global_stickers: {},
+                    char_avatars: {},
+                    user_avatar: '',
+                    chat_backgrounds: {},
                 };
             }
             const settings = ctx.extensionSettings[MODULE_NAME];
@@ -29,6 +32,8 @@
             // 兼容旧版：如果还没有新字段就补上
             if (!settings.char_stickers) settings.char_stickers = {};
             if (!settings.global_stickers) settings.global_stickers = {};
+            if (!settings.char_avatars) settings.char_avatars = {};
+            if (!settings.chat_backgrounds) settings.chat_backgrounds = {};
             if (settings.inject === undefined) settings.inject = true;
 
             const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
@@ -98,6 +103,20 @@
         $inject.on('change', function () {
             settings.inject = !!$(this).prop('checked');
             SillyTavern.getContext().saveSettingsDebounced();
+        });
+
+        // --- 头像和背景 ---
+        $('#phone_ui_save_config').on('click', function () {
+            const ctx = SillyTavern.getContext();
+            const charName = ctx.name2 || '';
+            if (!charName) { if (typeof toastr !== 'undefined') toastr.warning('请先选择角色', 'Phone UI'); return; }
+            settings.char_avatars[charName] = $('#phone_ui_char_avatar').val().trim();
+            settings.user_avatar = $('#phone_ui_user_avatar').val().trim();
+            settings.chat_backgrounds[charName] = $('#phone_ui_chat_bg').val().trim();
+            ctx.saveSettingsDebounced();
+            loadStickersForCurrentCharacter();
+            renderAllExistingMessages();
+            if (typeof toastr !== 'undefined') toastr.success('头像/背景配置已保存', 'Phone UI');
         });
 
         // --- 角色专属表情包 ---
@@ -185,16 +204,29 @@
             // 3. 全局表情包
             const globalStickerMap = settings.global_stickers || {};
 
+            // 4. 头像和背景配置
+            const charAvatar = settings.char_avatars[charName] || '';
+            const userAvatar = settings.user_avatar || '';
+            const chatBackground = settings.chat_backgrounds[charName] || '';
+
             // 设置到 PhoneInteractions
             if (typeof PhoneInteractions !== 'undefined') {
                 PhoneInteractions.setStickers(charStickers, globalStickerMap);
+                PhoneInteractions.setConfig({ charAvatar, userAvatar, chatBackground });
             }
 
             // 更新设置面板 UI
             updateStickerUI(charName, charStickers, globalStickerMap);
+            updateConfigUI(charName, charAvatar, userAvatar, chatBackground);
         } catch (e) {
-            console.warn('[Phone UI] 表情包加载失败:', e);
+            console.warn('[Phone UI] 配置加载失败:', e);
         }
+    }
+
+    function updateConfigUI(charName, charAvatar, userAvatar, chatBackground) {
+        $('#phone_ui_char_avatar').val(charAvatar);
+        $('#phone_ui_user_avatar').val(userAvatar);
+        $('#phone_ui_chat_bg').val(chatBackground);
     }
 
     function updateStickerUI(charName, charStickers, globalStickers) {

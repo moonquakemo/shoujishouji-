@@ -1,40 +1,33 @@
 /**
  * SillyTavern Phone UI Extension — 交互处理
- * 处理搜索、语音展开、翻译展开、撤回查看、转账领取/退回
+ * 搜索导航、语音/翻译/撤回展开、转账、用户操作面板、表情包选择器
  */
 
 const PhoneInteractions = (() => {
 
-    // 待注入 AI 上下文的操作队列
     let pendingActions = [];
 
-    // ========== 表情包映射 ==========
+    // ========== 表情包 ==========
     let currentCharStickers = {};
     let globalStickers = {};
 
-    /**
-     * 设置表情包映射（由 index.js 在角色切换时调用）
-     */
-    function setStickers(charStickerMap, globalStickerMap) {
-        currentCharStickers = charStickerMap || {};
-        globalStickers = globalStickerMap || {};
-    }
-
-    /**
-     * 解析表情包 key → URL
-     * 优先级：直接URL > 角色专属 > 全局 > null
-     */
+    function setStickers(c, g) { currentCharStickers = c || {}; globalStickers = g || {}; }
     function resolveSticker(key) {
         if (!key) return null;
         if (key.startsWith('http://') || key.startsWith('https://')) return key;
-        if (currentCharStickers[key]) return currentCharStickers[key];
-        if (globalStickers[key]) return globalStickers[key];
-        return null;
+        return currentCharStickers[key] || globalStickers[key] || null;
     }
+    function getAllStickers() { return { ...globalStickers, ...currentCharStickers }; }
 
-    /**
-     * 搜索
-     */
+    // ========== 配置（头像/背景）==========
+    let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '' };
+    function setConfig(cfg) { phoneConfig = { ...phoneConfig, ...cfg }; }
+    function getConfig() { return phoneConfig; }
+
+    // ========== 搜索 ==========
+    let searchMatches = [];
+    let searchIndex = -1;
+
     function toggleSearch(phoneId) {
         const bar = document.getElementById(`search_${phoneId}`);
         if (!bar) return;
@@ -49,13 +42,14 @@ const PhoneInteractions = (() => {
 
     function handleSearch(phoneId, query) {
         clearSearchHighlights(phoneId);
+        searchMatches = [];
+        searchIndex = -1;
+        updateSearchCounter(phoneId);
         if (!query.trim()) return;
 
         const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
         if (!phone) return;
-
         const rows = phone.querySelectorAll('[data-searchable]');
-        let firstMatch = null;
 
         rows.forEach(row => {
             const bubble = row.querySelector('.st-phone-bubble');
@@ -74,14 +68,31 @@ const PhoneInteractions = (() => {
                     span.appendChild(hl);
                     span.appendChild(document.createTextNode(text.substring(idx + query.length)));
                     node.parentNode.replaceChild(span, node);
-                    if (!firstMatch) firstMatch = hl;
+                    searchMatches.push(hl);
                 }
             }
         });
 
-        if (firstMatch) {
-            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (searchMatches.length) {
+            searchIndex = 0;
+            searchMatches[0].classList.add('search-highlight-active');
+            searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        updateSearchCounter(phoneId);
+    }
+
+    function navigateSearch(phoneId, dir) {
+        if (!searchMatches.length) return;
+        searchMatches[searchIndex]?.classList.remove('search-highlight-active');
+        searchIndex = (searchIndex + dir + searchMatches.length) % searchMatches.length;
+        searchMatches[searchIndex].classList.add('search-highlight-active');
+        searchMatches[searchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        updateSearchCounter(phoneId);
+    }
+
+    function updateSearchCounter(phoneId) {
+        const el = document.getElementById(`search_count_${phoneId}`);
+        if (el) el.textContent = searchMatches.length ? `${searchIndex + 1}/${searchMatches.length}` : '';
     }
 
     function clearSearchHighlights(phoneId) {
@@ -92,48 +103,35 @@ const PhoneInteractions = (() => {
             parent.replaceChild(document.createTextNode(el.textContent), el);
             parent.normalize();
         });
+        searchMatches = [];
+        searchIndex = -1;
     }
 
-    /**
-     * 语音转文字
-     */
-    function toggleVoiceText(toggleEl) {
-        const textEl = toggleEl.nextElementSibling;
-        textEl.classList.toggle('expanded');
-        toggleEl.textContent = textEl.classList.contains('expanded') ? '📝 收起' : '📝 转文字';
+    // ========== 基础交互 ==========
+    function toggleVoiceText(el) {
+        const t = el.nextElementSibling;
+        t.classList.toggle('expanded');
+        el.textContent = t.classList.contains('expanded') ? '📝 收起' : '📝 转文字';
+    }
+    function toggleTranslation(el) {
+        const c = el.nextElementSibling;
+        c.classList.toggle('expanded');
+        el.textContent = c.classList.contains('expanded') ? '🌐 收起翻译' : '🌐 查看翻译';
+    }
+    function toggleRecall(el) {
+        const g = el.closest('.st-phone-recall-group');
+        const r = g.querySelector('.st-phone-recall-revealed');
+        r.classList.toggle('visible');
+        el.textContent = r.classList.contains('visible') ? '收起' : '查看';
     }
 
-    /**
-     * 翻译
-     */
-    function toggleTranslation(toggleEl) {
-        const contentEl = toggleEl.nextElementSibling;
-        contentEl.classList.toggle('expanded');
-        toggleEl.textContent = contentEl.classList.contains('expanded') ? '🌐 收起翻译' : '🌐 查看翻译';
-    }
-
-    /**
-     * 撤回消息查看
-     */
-    function toggleRecall(viewEl) {
-        const group = viewEl.closest('.st-phone-recall-group');
-        const revealed = group.querySelector('.st-phone-recall-revealed');
-        revealed.classList.toggle('visible');
-        viewEl.textContent = revealed.classList.contains('visible') ? '收起' : '查看';
-    }
-
-    /**
-     * 转账领取/退回
-     */
+    // ========== 转账处理 ==========
     function handleTransfer(phoneId, transferId, action, fromName) {
         const card = document.querySelector(`[data-transfer-id="${transferId}"]`);
         if (!card) return;
-
-        // 防连击：已经处理过的转账直接跳过
         if (card.classList.contains('accepted') || card.classList.contains('declined')) return;
 
         const statusEl = card.querySelector('.transfer-status');
-
         if (action === 'accept') {
             card.classList.add('accepted');
             statusEl.textContent = '✅ 已领取';
@@ -142,108 +140,182 @@ const PhoneInteractions = (() => {
             statusEl.textContent = '已退回';
         }
 
-        // 在转账卡片后插入通知
         const msgRow = card.closest('.st-phone-msg-row');
         if (msgRow) {
             const notice = document.createElement('div');
             notice.className = 'st-phone-time-sep';
-            const actionText = action === 'accept' ? '领取' : '退回';
-            notice.innerHTML = `<span>你已${actionText}${fromName}的转账</span>`;
+            notice.innerHTML = `<span>你已${action === 'accept' ? '领取' : '退回'}${fromName}的转账</span>`;
             msgRow.parentNode.insertBefore(notice, msgRow.nextSibling);
         }
 
-        // 记录操作到 pending，等待 generate_interceptor 注入
-        // 去重：同一个 transferId 不重复入队
         if (pendingActions.some(a => a.transferId === transferId)) return;
-
-        const actionDesc = action === 'accept'
+        const desc = action === 'accept'
             ? `用户已领取${fromName}的转账（¥${card.querySelector('.transfer-amount')?.textContent || ''}）`
             : `用户已退回${fromName}的转账`;
-
-        pendingActions.push({
-            type: 'transfer',
-            transferId,
-            action,
-            from: fromName,
-            desc: actionDesc,
-        });
-
+        pendingActions.push({ type: 'transfer', transferId, action, from: fromName, desc });
         updatePendingCount();
-
-        // 也保存到 chatMetadata（如果在 ST 环境中）
         saveToChatMetadata(transferId, action);
     }
 
-    /**
-     * 保存到 chatMetadata
-     */
+    // ========== 用户主动操作 ==========
+    function toggleStickerPicker(phoneId) {
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (!phone) return;
+        closeActionPanel(phoneId);
+        const existing = phone.querySelector('.st-phone-sticker-picker');
+        if (existing) { existing.remove(); return; }
+
+        const all = getAllStickers();
+        if (!Object.keys(all).length) {
+            if (typeof toastr !== 'undefined') toastr.warning('还没有配置表情包哦~', 'Phone UI');
+            return;
+        }
+
+        const grid = Object.entries(all).map(([key, url]) =>
+            `<div class="sticker-picker-item" onclick="PhoneInteractions.sendUserSticker('${phoneId}','${key.replace(/'/g, "\\'")}')">
+                <img src="${url}" alt="${key}" title="${key}" onerror="this.outerHTML='<span>${key}</span>'">
+            </div>`
+        ).join('');
+
+        const picker = document.createElement('div');
+        picker.className = 'st-phone-sticker-picker';
+        picker.innerHTML = `<div class="sticker-picker-header"><span>表情包</span><span class="sticker-picker-close" onclick="PhoneInteractions.closeStickerPicker('${phoneId}')">✕</span></div><div class="sticker-picker-grid">${grid}</div>`;
+        const inputbar = phone.querySelector('.st-phone-inputbar');
+        inputbar.parentNode.insertBefore(picker, inputbar);
+    }
+
+    function closeStickerPicker(phoneId) {
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (phone) phone.querySelector('.st-phone-sticker-picker')?.remove();
+    }
+
+    function sendUserSticker(phoneId, key) {
+        pendingActions.push({ type: 'sticker', desc: `用户发送了表情包「${key}」` });
+        updatePendingCount();
+        closeStickerPicker(phoneId);
+        if (typeof toastr !== 'undefined') toastr.info(`已发送表情包: ${key}`, 'Phone UI');
+    }
+
+    function toggleActionPanel(phoneId) {
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (!phone) return;
+        closeStickerPicker(phoneId);
+        const existing = phone.querySelector('.st-phone-action-panel');
+        if (existing) { existing.remove(); return; }
+
+        const panel = document.createElement('div');
+        panel.className = 'st-phone-action-panel';
+        panel.innerHTML = `
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','transfer')"><div class="action-icon">💰</div><span>转账</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','location')"><div class="action-icon">📍</div><span>位置</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','voice')"><div class="action-icon">🎤</div><span>语音</span></div>
+        `;
+        const inputbar = phone.querySelector('.st-phone-inputbar');
+        inputbar.parentNode.insertBefore(panel, inputbar);
+    }
+
+    function closeActionPanel(phoneId) {
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (phone) phone.querySelector('.st-phone-action-panel')?.remove();
+    }
+
+    function showForm(phoneId, type) {
+        closeActionPanel(phoneId);
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (!phone) return;
+        phone.querySelector('.st-phone-form-overlay')?.remove();
+
+        let formHtml = '';
+        if (type === 'transfer') {
+            formHtml = `<div class="form-title">发送转账</div>
+                <input type="number" id="pf_amount_${phoneId}" placeholder="金额" class="phone-form-input">
+                <input type="text" id="pf_note_${phoneId}" placeholder="备注（选填）" class="phone-form-input">`;
+        } else if (type === 'location') {
+            formHtml = `<div class="form-title">发送位置</div>
+                <input type="text" id="pf_locname_${phoneId}" placeholder="地点名称" class="phone-form-input">
+                <input type="text" id="pf_locaddr_${phoneId}" placeholder="详细地址（选填）" class="phone-form-input">`;
+        } else if (type === 'voice') {
+            formHtml = `<div class="form-title">发送语音</div>
+                <textarea id="pf_voice_${phoneId}" placeholder="输入语音内容（AI会将其作为你发的语音消息）" class="phone-form-input" rows="3"></textarea>`;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'st-phone-form-overlay';
+        overlay.innerHTML = `${formHtml}
+            <div class="form-btns">
+                <div class="form-btn send" onclick="PhoneInteractions.submitForm('${phoneId}','${type}')">发送</div>
+                <div class="form-btn cancel" onclick="PhoneInteractions.closeForm('${phoneId}')">取消</div>
+            </div>`;
+        const chat = phone.querySelector('.st-phone-chat');
+        chat.parentNode.insertBefore(overlay, chat.nextSibling);
+    }
+
+    function submitForm(phoneId, type) {
+        if (type === 'transfer') {
+            const amount = document.getElementById(`pf_amount_${phoneId}`)?.value;
+            const note = document.getElementById(`pf_note_${phoneId}`)?.value || '';
+            if (!amount) return;
+            pendingActions.push({ type: 'transfer', desc: `用户向对方发送了转账 ¥${amount}${note ? '（' + note + '）' : ''}` });
+        } else if (type === 'location') {
+            const name = document.getElementById(`pf_locname_${phoneId}`)?.value;
+            const addr = document.getElementById(`pf_locaddr_${phoneId}`)?.value || '';
+            if (!name) return;
+            pendingActions.push({ type: 'location', desc: `用户发送了位置「${name}」${addr ? '(' + addr + ')' : ''}` });
+        } else if (type === 'voice') {
+            const text = document.getElementById(`pf_voice_${phoneId}`)?.value;
+            if (!text) return;
+            pendingActions.push({ type: 'voice', desc: `用户发送了语音消息，内容为："${text}"` });
+        }
+        updatePendingCount();
+        closeForm(phoneId);
+        if (typeof toastr !== 'undefined') toastr.info('操作已记录，发送消息后 AI 将收到通知', 'Phone UI');
+    }
+
+    function closeForm(phoneId) {
+        const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
+        if (phone) phone.querySelector('.st-phone-form-overlay')?.remove();
+    }
+
+    // ========== 工具函数 ==========
     function saveToChatMetadata(transferId, action) {
         try {
             const ctx = SillyTavern.getContext();
-            if (!ctx.chatMetadata.phone_actions) {
-                ctx.chatMetadata.phone_actions = {};
-            }
+            if (!ctx.chatMetadata.phone_actions) ctx.chatMetadata.phone_actions = {};
             ctx.chatMetadata.phone_actions[transferId] = action;
             ctx.saveMetadataDebounced();
-        } catch (e) {
-            // 非 ST 环境，忽略
-        }
+        } catch (e) { }
     }
 
-    /**
-     * 获取并清除待注入的操作
-     */
     function consumePendingActions() {
-        const actions = [...pendingActions];
-        pendingActions = [];
-        updatePendingCount();
-        return actions;
+        const a = [...pendingActions]; pendingActions = []; updatePendingCount(); return a;
     }
+    function getPendingActions() { return pendingActions; }
 
-    /**
-     * 获取 pending（不清除）
-     */
-    function getPendingActions() {
-        return pendingActions;
-    }
-
-    /**
-     * 自动滚动到底部
-     */
-    function scrollToBottom(phoneId) {
-        const chat = document.getElementById(`chat_${phoneId}`);
-        if (chat) {
-            chat.scrollTop = chat.scrollHeight;
-        }
-    }
-
-    /**
-     * 所有手机自动滚底
-     */
-    /**
-     * 更新设置面板中的 pending 计数
-     */
     function updatePendingCount() {
         const el = document.getElementById('phone_ui_pending_count');
         if (el) el.textContent = pendingActions.length;
     }
 
+    function scrollToBottom(phoneId) {
+        const c = document.getElementById(`chat_${phoneId}`);
+        if (c) c.scrollTop = c.scrollHeight;
+    }
     function scrollAllToBottom() {
-        document.querySelectorAll('.st-phone-chat').forEach(chat => {
-            chat.scrollTop = chat.scrollHeight;
-        });
+        document.querySelectorAll('.st-phone-chat').forEach(c => { c.scrollTop = c.scrollHeight; });
     }
 
     return {
-        toggleSearch, handleSearch,
+        toggleSearch, handleSearch, navigateSearch, clearSearchHighlights,
         toggleVoiceText, toggleTranslation, toggleRecall,
         handleTransfer,
+        toggleStickerPicker, closeStickerPicker, sendUserSticker,
+        toggleActionPanel, closeActionPanel,
+        showForm, submitForm, closeForm,
         consumePendingActions, getPendingActions,
         scrollToBottom, scrollAllToBottom,
-        setStickers, resolveSticker,
+        setStickers, resolveSticker, getAllStickers,
+        setConfig, getConfig,
     };
 })();
 
-if (typeof window !== 'undefined') {
-    window.PhoneInteractions = PhoneInteractions;
-}
+if (typeof window !== 'undefined') { window.PhoneInteractions = PhoneInteractions; }
