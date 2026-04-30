@@ -23,7 +23,7 @@
                     char_stickers: {},
                     global_stickers: {},
                     char_avatars: {},
-                    user_avatar: '',
+                    user_avatars: {},
                     chat_backgrounds: {},
                 };
             }
@@ -111,7 +111,8 @@
             const charName = ctx.name2 || '';
             if (!charName) { if (typeof toastr !== 'undefined') toastr.warning('请先选择角色', 'Phone UI'); return; }
             settings.char_avatars[charName] = $('#phone_ui_char_avatar').val().trim();
-            settings.user_avatar = $('#phone_ui_user_avatar').val().trim();
+            if (!settings.user_avatars) settings.user_avatars = {};
+            settings.user_avatars[charName] = $('#phone_ui_user_avatar').val().trim();
             settings.chat_backgrounds[charName] = $('#phone_ui_chat_bg').val().trim();
             ctx.saveSettingsDebounced();
             loadStickersForCurrentCharacter();
@@ -206,7 +207,14 @@
 
             // 4. 头像和背景配置
             const charAvatar = settings.char_avatars[charName] || '';
-            const userAvatar = settings.user_avatar || '';
+            // 用户头像：设置 > 酒馆默认persona头像 > 空
+            let userAvatar = (settings.user_avatars && settings.user_avatars[charName]) || '';
+            if (!userAvatar) {
+                try {
+                    const personaAvatar = document.querySelector('.mes[is_user="true"] .avatar img');
+                    if (personaAvatar && personaAvatar.src) userAvatar = personaAvatar.src;
+                } catch (e) { }
+            }
             const chatBackground = settings.chat_backgrounds[charName] || '';
 
             // 设置到 PhoneInteractions

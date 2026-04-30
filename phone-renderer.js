@@ -87,9 +87,6 @@ const PhoneRenderer = (() => {
         return `
 <div class="st-phone-search" id="search_${id}">
   <input type="text" placeholder="搜索聊天记录..." oninput="PhoneInteractions.handleSearch('${id}', this.value)">
-  <span id="search_count_${id}" class="search-counter"></span>
-  <span class="search-nav-btn" onclick="PhoneInteractions.navigateSearch('${id}',-1)">◀</span>
-  <span class="search-nav-btn" onclick="PhoneInteractions.navigateSearch('${id}',1)">▶</span>
   <span class="search-close" onclick="PhoneInteractions.toggleSearch('${id}')">取消</span>
 </div>`;
     }

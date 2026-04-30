@@ -25,9 +25,6 @@ const PhoneInteractions = (() => {
     function getConfig() { return phoneConfig; }
 
     // ========== 搜索 ==========
-    let searchMatches = [];
-    let searchIndex = -1;
-
     function toggleSearch(phoneId) {
         const bar = document.getElementById(`search_${phoneId}`);
         if (!bar) return;
@@ -36,76 +33,72 @@ const PhoneInteractions = (() => {
             bar.querySelector('input').focus();
         } else {
             bar.querySelector('input').value = '';
-            clearSearchHighlights(phoneId);
+            closeSearchResults(phoneId);
         }
     }
 
     function handleSearch(phoneId, query) {
-        clearSearchHighlights(phoneId);
-        searchMatches = [];
-        searchIndex = -1;
-        updateSearchCounter(phoneId);
+        closeSearchResults(phoneId);
         if (!query.trim()) return;
-
         const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
         if (!phone) return;
-        const rows = phone.querySelectorAll('[data-searchable]');
+        const chat = phone.querySelector('.st-phone-chat');
+        const rows = chat.querySelectorAll('[data-searchable]');
+        const lq = query.toLowerCase();
+        const results = [];
 
         rows.forEach(row => {
-            const bubble = row.querySelector('.st-phone-bubble');
-            if (!bubble) return;
-            const walker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT, null, false);
-            let node;
-            while (node = walker.nextNode()) {
-                const text = node.textContent;
-                const idx = text.toLowerCase().indexOf(query.toLowerCase());
-                if (idx !== -1) {
-                    const span = document.createElement('span');
-                    span.appendChild(document.createTextNode(text.substring(0, idx)));
-                    const hl = document.createElement('span');
-                    hl.className = 'search-highlight';
-                    hl.textContent = text.substring(idx, idx + query.length);
-                    span.appendChild(hl);
-                    span.appendChild(document.createTextNode(text.substring(idx + query.length)));
-                    node.parentNode.replaceChild(span, node);
-                    searchMatches.push(hl);
-                }
-            }
+            const el = row.querySelector('.st-phone-bubble') || row.querySelector('.st-phone-sticker') || row.querySelector('.st-phone-transfer');
+            if (!el) return;
+            const text = el.textContent;
+            if (!text.toLowerCase().includes(lq)) return;
+            const sender = row.querySelector('.st-phone-avatar')?.textContent?.trim() || '?';
+            const time = row.querySelector('.st-phone-msg-time')?.textContent || '';
+            const idx = text.toLowerCase().indexOf(lq);
+            const s = Math.max(0, idx - 20);
+            const e = Math.min(text.length, idx + query.length + 20);
+            results.push({ row, sender, time,
+                pre: (s > 0 ? '...' : '') + text.substring(s, idx),
+                match: text.substring(idx, idx + query.length),
+                post: text.substring(idx + query.length, e) + (e < text.length ? '...' : '')
+            });
         });
 
-        if (searchMatches.length) {
-            searchIndex = 0;
-            searchMatches[0].classList.add('search-highlight-active');
-            searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        updateSearchCounter(phoneId);
+        if (!results.length) return;
+        const panel = document.createElement('div');
+        panel.className = 'st-phone-search-results';
+        const header = document.createElement('div');
+        header.className = 'search-results-header';
+        header.textContent = `\u627e\u5230 ${results.length} \u6761\u6d88\u606f`;
+        panel.appendChild(header);
+
+        results.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.innerHTML = `<div class="result-avatar">${esc(r.sender)}</div><div class="result-body"><div class="result-snippet">${esc(r.pre)}<b>${esc(r.match)}</b>${esc(r.post)}</div><div class="result-time">${esc(r.time)}</div></div>`;
+            item.onclick = () => {
+                closeSearchResults(phoneId);
+                r.row.classList.add('search-result-flash');
+                r.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => r.row.classList.remove('search-result-flash'), 2000);
+            };
+            panel.appendChild(item);
+        });
+
+        chat.style.display = 'none';
+        chat.parentNode.insertBefore(panel, chat);
     }
 
-    function navigateSearch(phoneId, dir) {
-        if (!searchMatches.length) return;
-        searchMatches[searchIndex]?.classList.remove('search-highlight-active');
-        searchIndex = (searchIndex + dir + searchMatches.length) % searchMatches.length;
-        searchMatches[searchIndex].classList.add('search-highlight-active');
-        searchMatches[searchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        updateSearchCounter(phoneId);
-    }
-
-    function updateSearchCounter(phoneId) {
-        const el = document.getElementById(`search_count_${phoneId}`);
-        if (el) el.textContent = searchMatches.length ? `${searchIndex + 1}/${searchMatches.length}` : '';
-    }
-
-    function clearSearchHighlights(phoneId) {
+    function closeSearchResults(phoneId) {
         const phone = document.querySelector(`[data-phone-id="${phoneId}"]`);
         if (!phone) return;
-        phone.querySelectorAll('.search-highlight').forEach(el => {
-            const parent = el.parentNode;
-            parent.replaceChild(document.createTextNode(el.textContent), el);
-            parent.normalize();
-        });
-        searchMatches = [];
-        searchIndex = -1;
+        const p = phone.querySelector('.st-phone-search-results');
+        if (p) p.remove();
+        const chat = phone.querySelector('.st-phone-chat');
+        if (chat) chat.style.display = '';
     }
+
+    function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
     // ========== 基础交互 ==========
     function toggleVoiceText(el) {
@@ -305,7 +298,7 @@ const PhoneInteractions = (() => {
     }
 
     return {
-        toggleSearch, handleSearch, navigateSearch, clearSearchHighlights,
+        toggleSearch, handleSearch, closeSearchResults,
         toggleVoiceText, toggleTranslation, toggleRecall,
         handleTransfer,
         toggleStickerPicker, closeStickerPicker, sendUserSticker,
