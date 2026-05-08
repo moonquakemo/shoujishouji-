@@ -179,6 +179,48 @@
                 if (typeof toastr !== 'undefined') toastr.error("JSON 格式有误，请检查！\n" + e.message, "Phone UI");
             }
         });
+
+        // ========== 主题 ==========
+        // 加载已保存的主题
+        if (settings.theme_css) {
+            $('#phone_ui_theme_css').val(settings.theme_css);
+            applyThemeCSS(settings.theme_css);
+        }
+
+        $('#phone_ui_apply_theme').on('click', function () {
+            const ctx = SillyTavern.getContext();
+            const css = $('#phone_ui_theme_css').val().trim();
+            if (!css) {
+                if (typeof toastr !== 'undefined') toastr.warning('请先粘贴主题 CSS', 'Phone UI');
+                return;
+            }
+            settings.theme_css = css;
+            ctx.saveSettingsDebounced();
+            applyThemeCSS(css);
+            if (typeof toastr !== 'undefined') toastr.success('主题已应用！', 'Phone UI');
+        });
+
+        $('#phone_ui_reset_theme').on('click', function () {
+            const ctx = SillyTavern.getContext();
+            settings.theme_css = '';
+            ctx.saveSettingsDebounced();
+            $('#phone_ui_theme_css').val('');
+            removeThemeCSS();
+            if (typeof toastr !== 'undefined') toastr.info('已恢复默认主题', 'Phone UI');
+        });
+    }
+
+    function applyThemeCSS(css) {
+        removeThemeCSS();
+        const style = document.createElement('style');
+        style.id = 'phone-ui-custom-theme';
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
+    function removeThemeCSS() {
+        const existing = document.getElementById('phone-ui-custom-theme');
+        if (existing) existing.remove();
     }
 
     // ========== 表情包加载 ==========
