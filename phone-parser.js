@@ -57,7 +57,7 @@ const PhoneParser = (() => {
   function parseMessages(innerText) {
     const messages = [];
     // 统一正则：匹配所有消息类型
-    const tokenRegex = /\[(msg|voice|sticker|transfer|location|recall|time-sep)(?::([^\]]*))?\](?:([\s\S]*?)\[\/\1\])?/gi;
+    const tokenRegex = /\[(msg|voice|sticker|transfer|location|recall|image|video|time-sep)(?::([^\]]*))?\](?:([\s\S]*?)\[\/\1\])?/gi;
     let m;
 
     while ((m = tokenRegex.exec(innerText)) !== null) {
@@ -91,6 +91,11 @@ const PhoneParser = (() => {
         msg.name = attrs.name || '';
         msg.addr = attrs.addr || '';
       } else if (type === 'recall') {
+        msg.isMe = (attrs.from || '').toLowerCase() === 'me';
+      } else if (type === 'image') {
+        msg.isMe = (attrs.from || '').toLowerCase() === 'me';
+        msg.src = attrs.src || '';
+      } else if (type === 'video') {
         msg.isMe = (attrs.from || '').toLowerCase() === 'me';
       } else if (type === 'time-sep') {
         msg.time = attrs[''] || m[2] || '';

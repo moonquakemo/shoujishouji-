@@ -278,8 +278,10 @@ const PhoneInteractions = (() => {
         panel.className = 'st-phone-action-panel';
         panel.innerHTML = `
             <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','transfer')"><div class="action-icon">💰</div><span>转账</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','image')"><div class="action-icon">🖼️</div><span>图片</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','video')"><div class="action-icon">🎬</div><span>视频</span></div>
             <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','location')"><div class="action-icon">📍</div><span>位置</span></div>
-            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','voice')"><div class="action-icon">🎤</div><span>语音</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','voice')"><div class="action-icon">🎙️</div><span>语音</span></div>
         `;
         const inputbar = phone.querySelector('.st-phone-inputbar');
         inputbar.parentNode.insertBefore(panel, inputbar);
@@ -308,6 +310,13 @@ const PhoneInteractions = (() => {
         } else if (type === 'voice') {
             formHtml = `<div class="form-title">发送语音</div>
                 <textarea id="pf_voice_${phoneId}" placeholder="输入语音内容（AI会将其作为你发的语音消息）" class="phone-form-input" rows="3"></textarea>`;
+        } else if (type === 'image') {
+            formHtml = `<div class="form-title">发送图片</div>
+                <input type="text" id="pf_imgurl_${phoneId}" placeholder="图片URL（选填，支持多模态AI识图）" class="phone-form-input">
+                <input type="text" id="pf_imgdesc_${phoneId}" placeholder="图片描述（如“发了一张自拍”）" class="phone-form-input">`;
+        } else if (type === 'video') {
+            formHtml = `<div class="form-title">发送视频</div>
+                <input type="text" id="pf_videodesc_${phoneId}" placeholder="视频描述（如“发了一段旅行vlog”）" class="phone-form-input">`;
         }
 
         const overlay = document.createElement('div');
@@ -336,6 +345,18 @@ const PhoneInteractions = (() => {
             const text = document.getElementById(`pf_voice_${phoneId}`)?.value;
             if (!text) return;
             pendingActions.push({ type: 'voice', desc: `用户发送了语音消息，内容为："${text}"` });
+        } else if (type === 'image') {
+            const url = document.getElementById(`pf_imgurl_${phoneId}`)?.value?.trim() || '';
+            const desc = document.getElementById(`pf_imgdesc_${phoneId}`)?.value?.trim() || '';
+            if (!url && !desc) return;
+            let d = '用户发送了一张图片';
+            if (desc) d += `，内容为：${desc}`;
+            if (url) d += `\n图片URL: ${url}`;
+            pendingActions.push({ type: 'image', desc: d });
+        } else if (type === 'video') {
+            const desc = document.getElementById(`pf_videodesc_${phoneId}`)?.value?.trim();
+            if (!desc) return;
+            pendingActions.push({ type: 'video', desc: `用户发送了一段视频，内容为：${desc}` });
         }
         updatePendingCount();
         closeForm(phoneId);

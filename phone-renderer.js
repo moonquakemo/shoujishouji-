@@ -121,6 +121,8 @@ const PhoneRenderer = (() => {
             case 'transfer': return renderTransferMsg(msg, contact, actions, phoneId);
             case 'location': return renderLocationMsg(msg, contact);
             case 'recall': return renderRecallMsg(msg, contact, phoneId, index);
+            case 'image': return renderImageMsg(msg, contact);
+            case 'video': return renderVideoMsg(msg, contact);
             case 'time-sep': return renderTimeSep(msg);
             default: return '';
         }
@@ -298,6 +300,48 @@ ${noticeHtml}`;
       <div class="recall-label">已撤回的消息</div>
       <div class="recall-original">${escapeHtml(msg.content)}</div>
     </div>
+  </div>
+</div>`;
+    }
+
+    function renderImageMsg(msg, contact) {
+        const side = msg.isMe ? 'msg-me' : 'msg-other';
+        const avatarName = msg.isMe ? 'Me' : contact;
+        const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
+        const desc = msg.content || '';
+
+        let inner;
+        if (msg.src && (msg.src.startsWith('http://') || msg.src.startsWith('https://'))) {
+            inner = `<img class="phone-media-img" src="${escapeHtml(msg.src)}" alt="${escapeHtml(desc)}" onerror="this.outerHTML='<div class=phone-media-desc>\ud83d\uddbc '+this.alt+'</div>'">`;
+        } else {
+            inner = `<div class="phone-media-desc">\ud83d\uddbc ${escapeHtml(desc || '\u56fe\u7247')}</div>`;
+        }
+
+        return `
+<div class="st-phone-msg-row ${side}" data-searchable>
+  ${renderAvatar(avatarName, msg.isMe)}
+  <div>
+    <div class="st-phone-media">${inner}</div>
+    ${timeHtml}
+  </div>
+</div>`;
+    }
+
+    function renderVideoMsg(msg, contact) {
+        const side = msg.isMe ? 'msg-me' : 'msg-other';
+        const avatarName = msg.isMe ? 'Me' : contact;
+        const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
+        const desc = msg.content || '\u89c6\u9891';
+
+        return `
+<div class="st-phone-msg-row ${side}" data-searchable>
+  ${renderAvatar(avatarName, msg.isMe)}
+  <div>
+    <div class="st-phone-media st-phone-video">
+      <div class="phone-media-desc">\ud83c\udfac ${escapeHtml(desc)}</div>
+      <div class="phone-video-play">\u25b6</div>
+    </div>
+    ${timeHtml}
   </div>
 </div>`;
     }
