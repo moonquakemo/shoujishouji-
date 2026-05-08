@@ -768,14 +768,15 @@
 
 .st-phone-inputbar .input-field-real {
   flex: 1;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 20px;
-  padding: 8px 14px;
+  background-color: #fff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  padding: 8px 14px !important;
   font-size: var(--font-size-base);
-  color: #333;
+  color: #333 !important;
   font-family: var(--font-family);
-  outline: none;
+  outline: none !important;
 }
 .st-phone-inputbar .input-field-real::placeholder {
   color: #ccc;
