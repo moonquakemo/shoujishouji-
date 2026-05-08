@@ -294,10 +294,10 @@ const PhoneInteractions = (() => {
         const panel = document.createElement('div');
         panel.className = 'st-phone-action-panel';
         panel.innerHTML = `
-            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','transfer')"><div class="action-icon">💰</div><span>转账</span></div>
-            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','image')"><div class="action-icon">🖼️</div><span>图片</span></div>
-            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','video')"><div class="action-icon">🎬</div><span>视频</span></div>
-            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','location')"><div class="action-icon">📍</div><span>位置</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','transfer')"><div class="action-icon"><svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path></svg></div><span>转账</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','image')"><div class="action-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg></div><span>图片</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','video')"><div class="action-icon"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div><span>视频</span></div>
+            <div class="action-item" onclick="PhoneInteractions.showForm('${phoneId}','location')"><div class="action-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div><span>位置</span></div>
         `;
         const inputbar = phone.querySelector('.st-phone-inputbar');
         inputbar.parentNode.insertBefore(panel, inputbar);
