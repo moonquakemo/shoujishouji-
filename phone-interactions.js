@@ -100,6 +100,62 @@ const PhoneInteractions = (() => {
 
     function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
+    // ========== 消息缓冲（截断/发送） ==========
+    let msgBuffer = {};
+
+    function splitSend(phoneId) {
+        const input = document.getElementById(`input_${phoneId}`);
+        if (!input || !input.value.trim()) return;
+        if (!msgBuffer[phoneId]) msgBuffer[phoneId] = [];
+        msgBuffer[phoneId].push(input.value.trim());
+        input.value = '';
+        input.focus();
+        updateBufferUI(phoneId);
+    }
+
+    function batchSend(phoneId) {
+        const input = document.getElementById(`input_${phoneId}`);
+        const cur = input?.value?.trim() || '';
+        if (!msgBuffer[phoneId]) msgBuffer[phoneId] = [];
+        if (cur) msgBuffer[phoneId].push(cur);
+        if (!msgBuffer[phoneId].length) return;
+
+        const msgs = msgBuffer[phoneId];
+        const desc = msgs.length === 1
+            ? `\u7528\u6237\u5728\u624b\u673a\u4e0a\u53d1\u9001\u4e86\u6d88\u606f\uff1a\u300c${msgs[0]}\u300d`
+            : `\u7528\u6237\u5728\u624b\u673a\u4e0a\u8fde\u7eed\u53d1\u9001\u4e86${msgs.length}\u6761\u6d88\u606f\uff1a\n${msgs.map(m => `\u300c${m}\u300d`).join('\n')}`;
+
+        pendingActions.push({ type: 'message', desc });
+        updatePendingCount();
+        msgBuffer[phoneId] = [];
+        if (input) input.value = '';
+        updateBufferUI(phoneId);
+        if (typeof toastr !== 'undefined') toastr.info(`\u5df2\u8bb0\u5f55${msgs.length}\u6761\u6d88\u606f\uff0c\u53d1\u9001\u540e AI \u5c06\u6536\u5230`, 'Phone UI');
+    }
+
+    function showToolbar(phoneId) {
+        const toolbar = document.getElementById(`toolbar_${phoneId}`);
+        if (toolbar) toolbar.style.display = 'flex';
+    }
+
+    function onInputChange(phoneId) {
+        showToolbar(phoneId);
+    }
+
+    function handleInputKeydown(phoneId, e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            batchSend(phoneId);
+        }
+    }
+
+    function updateBufferUI(phoneId) {
+        const el = document.getElementById(`buffer_${phoneId}`);
+        if (!el) return;
+        const count = msgBuffer[phoneId]?.length || 0;
+        el.textContent = count > 0 ? `\u5df2\u6682\u5b58 ${count} \u6761\u6d88\u606f` : '';
+    }
+
     // ========== 基础交互 ==========
     function toggleVoiceText(el) {
         const t = el.nextElementSibling;
@@ -299,6 +355,7 @@ const PhoneInteractions = (() => {
 
     return {
         toggleSearch, handleSearch, closeSearchResults,
+        splitSend, batchSend, showToolbar, onInputChange, handleInputKeydown,
         toggleVoiceText, toggleTranslation, toggleRecall,
         handleTransfer,
         toggleStickerPicker, closeStickerPicker, sendUserSticker,
