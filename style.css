@@ -8,39 +8,100 @@
 
 /* --- CSS Variables --- */
 :root {
+  /* === Phone Shell === */
   --phone-width: 360px;
   --phone-radius: 32px;
   --phone-bg: #0a0a0f;
+  --phone-border: rgba(255, 255, 255, 0.06);
   --phone-chat-bg: #f5f5f7;
 
-  /* Bubble colors */
+  /* === Status Bar & Navbar === */
+  --navbar-bg: #1a1a2e;
+  --navbar-text: #fff;
+  --navbar-icon-fill: #fff;
+
+  /* === Bubble Colors === */
   --bubble-other-bg: #ffffff;
   --bubble-other-text: #1a1a1a;
   --bubble-me-bg: linear-gradient(135deg, #95ec69, #69d946);
   --bubble-me-text: #1a1a1a;
   --bubble-radius: 20px;
 
-  /* Accent colors */
+  /* === Avatar === */
+  --avatar-other-bg: linear-gradient(135deg, #667eea, #764ba2);
+  --avatar-me-bg: linear-gradient(135deg, var(--accent-green), #34d058);
+  --avatar-text: #fff;
+  --avatar-size: 36px;
+
+  /* === Accent Colors === */
   --accent-blue: #576b95;
   --accent-green: #07c160;
   --accent-orange: #ee7b30;
   --accent-red: #fa5151;
   --accent-purple: #8b5cf6;
 
-  /* Typography */
+  /* === Input Bar === */
+  --inputbar-bg: #f7f7f8;
+  --inputbar-border-top: rgba(0, 0, 0, 0.06);
+  --input-bg: #fff;
+  --input-border: rgba(0, 0, 0, 0.08);
+  --input-text: #333;
+  --input-placeholder: #ccc;
+  --input-icon-fill: #333;
+  --input-radius: 20px;
+
+  /* === Transfer Card === */
+  --transfer-bg: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  --transfer-border: rgba(238, 123, 48, 0.15);
+  --transfer-label-color: #8a6a3a;
+
+  /* === Sticker / Media Card === */
+  --media-bg: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  --media-border: rgba(238, 123, 48, 0.15);
+  --media-desc-color: #555;
+  --media-scrollbar: rgba(238, 123, 48, 0.3);
+
+  /* === Location Card === */
+  --location-bg: #fff;
+  --location-map-bg: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  --location-name-color: #1a1a1a;
+  --location-addr-color: #999;
+
+  /* === Time Separator === */
+  --time-sep-bg: rgba(0, 0, 0, 0.06);
+  --time-sep-text: #999;
+
+  /* === Misc Text Colors === */
+  --msg-time-color: #bbb;
+  --quote-bg: rgba(0, 0, 0, 0.08);
+  --quote-text: #888;
+  --recall-text: #bbb;
+  --voice-wave-color: rgba(0, 0, 0, 0.25);
+  --voice-duration-color: rgba(0, 0, 0, 0.45);
+
+  /* === Send Buttons === */
+  --send-buffer-bg: #e0e0e0;
+  --send-buffer-text: #555;
+  --send-final-bg: var(--accent-green);
+  --send-final-text: #fff;
+  --preview-opacity: 0.55;
+  --preview-border: rgba(7, 193, 96, 0.4);
+  --sent-border: rgba(7, 193, 96, 0.3);
+
+  /* === Typography === */
   --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-size-xs: 10px;
   --font-size-sm: 12px;
   --font-size-base: 14px;
   --font-size-lg: 16px;
 
-  /* Spacing */
+  /* === Spacing === */
   --gap-xs: 4px;
   --gap-sm: 8px;
   --gap-md: 12px;
   --gap-lg: 16px;
 
-  /* Shadows */
+  /* === Shadows === */
   --shadow-phone: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-bubble: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -57,7 +118,7 @@
   overflow: hidden;
   font-family: var(--font-family);
   position: relative;
-  border: 2px solid rgba(255, 255, 255, 0.06);
+  border: 2px solid var(--phone-border);
 }
 
 /* --- Status Bar (Top) --- */
@@ -66,8 +127,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 24px;
-  background: #1a1a2e;
-  color: #fff;
+  background: var(--navbar-bg);
+  color: var(--navbar-text);
   font-size: var(--font-size-xs);
   font-weight: 500;
   user-select: none;
@@ -87,16 +148,15 @@
 .st-phone-statusbar .status-right svg {
   width: 14px;
   height: 14px;
-  fill: #fff;
-}
+  fill: var(--navbar-icon-fill);
 
 /* --- Navigation Bar --- */
 .st-phone-navbar {
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  background: #1a1a2e;
-  color: #fff;
+  background: var(--navbar-bg);
+  color: var(--navbar-text);
   position: relative;
 }
 
@@ -116,8 +176,7 @@
 .st-phone-navbar .nav-back svg {
   width: 20px;
   height: 20px;
-  fill: #fff;
-}
+  fill: var(--navbar-icon-fill);
 
 .st-phone-navbar .nav-title {
   flex: 1;
@@ -143,14 +202,13 @@
 .st-phone-navbar .nav-search-btn svg {
   width: 18px;
   height: 18px;
-  fill: #fff;
-}
+  fill: var(--navbar-icon-fill);
 
 /* --- Search Bar (hidden by default) --- */
 .st-phone-search {
   display: none;
   padding: 8px 16px;
-  background: #1a1a2e;
+  background: var(--navbar-bg);
 }
 
 .st-phone-search.active {
@@ -237,8 +295,8 @@
 }
 
 .st-phone-time-sep span {
-  background: rgba(0, 0, 0, 0.06);
-  color: #999;
+  background: var(--time-sep-bg);
+  color: var(--time-sep-text);
   font-size: var(--font-size-xs);
   padding: 3px 10px;
   border-radius: 10px;
@@ -269,14 +327,14 @@
 
 /* Avatar */
 .st-phone-avatar {
-  width: 36px;
-  height: 36px;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--avatar-other-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--avatar-text);
   font-size: var(--font-size-sm);
   font-weight: 700;
   flex-shrink: 0;
@@ -284,7 +342,7 @@
 }
 
 .st-phone-msg-row.msg-me .st-phone-avatar {
-  background: linear-gradient(135deg, var(--accent-green), #34d058);
+  background: var(--avatar-me-bg);
 }
 
 /* Bubble */
@@ -313,7 +371,7 @@
 /* Message timestamp */
 .st-phone-msg-time {
   font-size: var(--font-size-xs);
-  color: #bbb;
+  color: var(--msg-time-color);
   margin-top: 2px;
   padding: 0 4px;
 }
@@ -324,11 +382,11 @@
 
 /* --- Quote / Reply (compact pill label between messages) --- */
 .st-phone-quote {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--quote-bg);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: var(--font-size-sm);
-  color: #888;
+  color: var(--quote-text);
   line-height: 1.4;
   max-width: 75%;
   white-space: nowrap;
@@ -392,7 +450,7 @@
   display: inline-block;
   width: 3px;
   border-radius: 2px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--voice-wave-color);
   animation: voiceWave 0.8s ease-in-out infinite alternate;
 }
 
@@ -410,7 +468,7 @@
 
 .st-phone-voice .voice-duration {
   font-size: var(--font-size-sm);
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--voice-duration-color);
   white-space: nowrap;
 }
 
@@ -480,12 +538,12 @@
 
 /* --- Transfer Card --- */
 .st-phone-transfer {
-  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  background: var(--transfer-bg);
   border-radius: 12px;
   padding: 14px;
   min-width: 200px;
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(238, 123, 48, 0.15);
+  border: 1px solid var(--transfer-border);
 }
 
 .st-phone-transfer .transfer-header {
@@ -513,7 +571,7 @@
 
 .st-phone-transfer .transfer-label {
   font-size: var(--font-size-sm);
-  color: #8a6a3a;
+  color: var(--transfer-label-color);
   font-weight: 500;
 }
 
@@ -605,7 +663,7 @@
 
 /* --- Location Card --- */
 .st-phone-location {
-  background: #fff;
+  background: var(--location-bg);
   border-radius: 12px;
   overflow: hidden;
   min-width: 200px;
@@ -615,7 +673,7 @@
 
 .st-phone-location .location-map {
   height: 80px;
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  background: var(--location-map-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -648,13 +706,13 @@
 .st-phone-location .location-name {
   font-size: var(--font-size-base);
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--location-name-color);
   margin-bottom: 2px;
 }
 
 .st-phone-location .location-addr {
   font-size: var(--font-size-xs);
-  color: #999;
+  color: var(--location-addr-color);
 }
 
 /* --- Recall Message --- */
@@ -677,7 +735,7 @@
 
 .st-phone-recall .recall-text {
   font-size: var(--font-size-xs);
-  color: #bbb;
+  color: var(--recall-text);
 }
 
 .st-phone-recall .recall-view {
@@ -737,10 +795,10 @@
   justify-content: center;
   width: 120px;
   height: 120px;
-  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  background: var(--media-bg);
   border-radius: 12px;
   font-size: 48px;
-  border: 1px solid rgba(238, 123, 48, 0.15);
+  border: 1px solid var(--media-border);
   box-shadow: var(--shadow-card);
 }
 
@@ -750,8 +808,8 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #f7f7f8;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--inputbar-bg);
+  border-top: 1px solid var(--inputbar-border-top);
 }
 
 .st-phone-inputbar .input-voice-btn {
@@ -763,23 +821,23 @@
 .st-phone-inputbar .input-voice-btn svg {
   width: 22px;
   height: 22px;
-  fill: #333;
+  fill: var(--input-icon-fill);
 }
 
 .st-phone-inputbar .input-field-real {
   flex: 1;
-  background-color: #fff !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
   box-shadow: none !important;
-  border-radius: 20px !important;
+  border-radius: var(--input-radius) !important;
   padding: 8px 14px !important;
   font-size: var(--font-size-base);
-  color: #333 !important;
+  color: var(--input-text) !important;
   font-family: var(--font-family);
   outline: none !important;
 }
 .st-phone-inputbar .input-field-real::placeholder {
-  color: #ccc;
+  color: var(--input-placeholder);
 }
 
 .st-phone-inputbar .input-actions {
@@ -792,13 +850,13 @@
 .st-phone-inputbar .input-actions svg {
   width: 22px;
   height: 22px;
-  fill: #333;
+  fill: var(--input-icon-fill);
 }
 
 /* --- Bottom safe area --- */
 .st-phone-bottom-safe {
   height: 16px;
-  background: #f7f7f8;
+  background: var(--inputbar-bg);
   border-radius: 0 0 var(--phone-radius) var(--phone-radius);
 }
 
@@ -1061,10 +1119,10 @@
 
 /* Preview bubble (buffered messages) */
 .phone-preview-msg {
-  opacity: 0.7;
+  opacity: var(--preview-opacity);
 }
 .phone-preview-msg .st-phone-bubble {
-  border: 1px dashed rgba(7, 193, 96, 0.4);
+  border: 1px dashed var(--preview-border);
 }
 
 /* Sent (confirmed) bubble */
@@ -1072,7 +1130,7 @@
   opacity: 1;
 }
 .phone-sent-msg .st-phone-bubble {
-  border: 1px solid rgba(7, 193, 96, 0.3);
+  border: 1px solid var(--sent-border);
 }
 
 /* --- Media Messages (Image/Video) --- */
@@ -1080,8 +1138,8 @@
   max-width: 200px;
   border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
-  border: 1px solid rgba(238, 123, 48, 0.15);
+  background: var(--media-bg);
+  border: 1px solid var(--media-border);
   box-shadow: var(--shadow-card);
 }
 .phone-media-img {
@@ -1094,7 +1152,7 @@
 .phone-media-desc {
   padding: 12px 14px;
   font-size: var(--font-size-sm);
-  color: #555;
+  color: var(--media-desc-color);
   text-align: left;
   line-height: 1.5;
   max-height: 120px;
@@ -1109,7 +1167,7 @@
   background: transparent;
 }
 .phone-media-desc::-webkit-scrollbar-thumb {
-  background: rgba(238, 123, 48, 0.3);
+  background: var(--media-scrollbar);
   border-radius: 4px;
 }
 .phone-media-desc::-webkit-scrollbar-thumb:hover {

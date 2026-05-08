@@ -1,0 +1,58 @@
+/* ============================================
+   Phone UI Theme: WeChat (默认主题)
+   微信风格 — 绿色 + 深色导航
+   ============================================ */
+
+:root {
+  /* Phone Shell */
+  --phone-bg: #0a0a0f;
+  --phone-border: rgba(255, 255, 255, 0.06);
+  --phone-chat-bg: #f5f5f7;
+
+  /* Navbar */
+  --navbar-bg: #1a1a2e;
+  --navbar-text: #fff;
+  --navbar-icon-fill: #fff;
+
+  /* Bubbles */
+  --bubble-other-bg: #ffffff;
+  --bubble-other-text: #1a1a1a;
+  --bubble-me-bg: linear-gradient(135deg, #95ec69, #69d946);
+  --bubble-me-text: #1a1a1a;
+  --bubble-radius: 20px;
+
+  /* Avatar */
+  --avatar-other-bg: linear-gradient(135deg, #667eea, #764ba2);
+  --avatar-me-bg: linear-gradient(135deg, #07c160, #34d058);
+  --avatar-text: #fff;
+  --avatar-size: 36px;
+
+  /* Accent */
+  --accent-blue: #576b95;
+  --accent-green: #07c160;
+  --accent-orange: #ee7b30;
+  --accent-red: #fa5151;
+
+  /* Input Bar */
+  --inputbar-bg: #f7f7f8;
+  --inputbar-border-top: rgba(0, 0, 0, 0.06);
+  --input-bg: #fff;
+  --input-border: rgba(0, 0, 0, 0.08);
+  --input-text: #333;
+  --input-placeholder: #ccc;
+  --input-icon-fill: #333;
+  --input-radius: 20px;
+
+  /* Cards */
+  --transfer-bg: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  --transfer-border: rgba(238, 123, 48, 0.15);
+  --transfer-label-color: #8a6a3a;
+  --media-bg: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  --media-border: rgba(238, 123, 48, 0.15);
+  --media-desc-color: #555;
+  --location-bg: #fff;
+  --location-map-bg: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+
+  /* Typography */
+  --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
