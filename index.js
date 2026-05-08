@@ -25,6 +25,8 @@
                     char_avatars: {},
                     user_avatars: {},
                     chat_backgrounds: {},
+                    char_themes: {},
+                    global_theme_css: "",
                 };
             }
             const settings = ctx.extensionSettings[MODULE_NAME];
@@ -34,6 +36,8 @@
             if (!settings.global_stickers) settings.global_stickers = {};
             if (!settings.char_avatars) settings.char_avatars = {};
             if (!settings.chat_backgrounds) settings.chat_backgrounds = {};
+            if (!settings.char_themes) settings.char_themes = {};
+            if (typeof settings.global_theme_css !== 'string') settings.global_theme_css = "";
             if (settings.inject === undefined) settings.inject = true;
 
             const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
@@ -69,8 +73,9 @@
 
             eventSource.on(eventTypes.CHAT_CHANGED, onChatChanged);
 
-            // 初始化表情包
+            // 初始化表情包与主题
             loadStickersForCurrentCharacter();
+            loadThemeForCurrentCharacter();
 
             renderAllExistingMessages();
             console.log('[Phone UI] Extension initialized');
@@ -181,32 +186,66 @@
         });
 
         // ========== 主题 ==========
-        // 加载已保存的主题
-        if (settings.theme_css) {
-            $('#phone_ui_theme_css').val(settings.theme_css);
-            applyThemeCSS(settings.theme_css);
-        }
-
-        $('#phone_ui_apply_theme').on('click', function () {
+        $('#phone_ui_save_char_theme').on('click', function () {
             const ctx = SillyTavern.getContext();
-            const css = $('#phone_ui_theme_css').val().trim();
-            if (!css) {
-                if (typeof toastr !== 'undefined') toastr.warning('请先粘贴主题 CSS', 'Phone UI');
+            const charName = ctx.name2 || '';
+            if (!charName) {
+                if (typeof toastr !== 'undefined') toastr.warning('请先选择一个角色', 'Phone UI');
                 return;
             }
-            settings.theme_css = css;
+            const css = $('#phone_ui_char_theme_css').val().trim();
+            settings.char_themes[charName] = css;
             ctx.saveSettingsDebounced();
-            applyThemeCSS(css);
-            if (typeof toastr !== 'undefined') toastr.success('主题已应用！', 'Phone UI');
+            loadThemeForCurrentCharacter();
+            if (typeof toastr !== 'undefined') toastr.success(`「${charName}」的主题已保存！`, 'Phone UI');
+        });
+
+        $('#phone_ui_export_char_theme').on('click', function () {
+            const ctx = SillyTavern.getContext();
+            const charName = ctx.name2 || '';
+            const charId = ctx.characterId;
+            if (!charName || charId === undefined) {
+                if (typeof toastr !== 'undefined') toastr.warning("请先选择一个角色", "Phone UI");
+                return;
+            }
+            const css = $('#phone_ui_char_theme_css').val().trim();
+            if (!css) {
+                if (typeof toastr !== 'undefined') toastr.warning("没有可导出的主题代码", "Phone UI");
+                return;
+            }
+            const charData = ctx.characters[charId];
+            if (!charData) return;
+            if (!charData.data) charData.data = {};
+            if (!charData.data.extensions) charData.data.extensions = {};
+            charData.data.extensions.phone_theme_css = css;
+            
+            if (typeof saveCharacter === 'function') {
+                saveCharacter(charId);
+                if (typeof toastr !== 'undefined') toastr.success(`主题已成功写入角色卡「${charName}」`, "Phone UI");
+            } else if (typeof writeExtensionData === 'function') {
+                writeExtensionData(charId, charData.data.extensions).then(() => {
+                    if (typeof toastr !== 'undefined') toastr.success(`主题已成功写入角色卡「${charName}」`, "Phone UI");
+                });
+            } else {
+                if (typeof toastr !== 'undefined') toastr.warning("未找到保存角色卡的函数，请检查酒馆版本", "Phone UI");
+            }
+        });
+
+        $('#phone_ui_save_global_theme').on('click', function () {
+            const ctx = SillyTavern.getContext();
+            const css = $('#phone_ui_global_theme_css').val().trim();
+            settings.global_theme_css = css;
+            ctx.saveSettingsDebounced();
+            loadThemeForCurrentCharacter();
+            if (typeof toastr !== 'undefined') toastr.success('全局主题已保存！', 'Phone UI');
         });
 
         $('#phone_ui_reset_theme').on('click', function () {
             const ctx = SillyTavern.getContext();
-            settings.theme_css = '';
+            settings.global_theme_css = '';
             ctx.saveSettingsDebounced();
-            $('#phone_ui_theme_css').val('');
-            removeThemeCSS();
-            if (typeof toastr !== 'undefined') toastr.info('已恢复默认主题', 'Phone UI');
+            loadThemeForCurrentCharacter();
+            if (typeof toastr !== 'undefined') toastr.info('全局主题已清空，恢复默认', 'Phone UI');
         });
     }
 
@@ -221,6 +260,49 @@
     function removeThemeCSS() {
         const existing = document.getElementById('phone-ui-custom-theme');
         if (existing) existing.remove();
+    }
+
+    // ========== 主题加载 ==========
+    function loadThemeForCurrentCharacter() {
+        try {
+            const ctx = SillyTavern.getContext();
+            const settings = ctx.extensionSettings[MODULE_NAME];
+            const charName = ctx.name2 || '';
+
+            let cssToApply = settings.global_theme_css || '';
+
+            if (charName) {
+                // 1. 优先从角色卡的 extension data 读取
+                try {
+                    const charData = ctx.characters[ctx.characterId];
+                    if (charData?.data?.extensions?.phone_theme_css) {
+                        cssToApply = charData.data.extensions.phone_theme_css;
+                    }
+                } catch (e) { }
+
+                // 2. 扩展设置中的角色配置覆盖角色卡数据
+                if (settings.char_themes[charName]) {
+                    cssToApply = settings.char_themes[charName];
+                }
+            }
+
+            // 更新 UI 和页面样式
+            if (cssToApply) {
+                applyThemeCSS(cssToApply);
+            } else {
+                removeThemeCSS();
+            }
+
+            // 更新文本框
+            $('#phone_ui_global_theme_css').val(settings.global_theme_css || '');
+            if (charName) {
+                $('#phone_ui_char_theme_css').val(settings.char_themes[charName] || '');
+            } else {
+                $('#phone_ui_char_theme_css').val('');
+            }
+        } catch (e) {
+            console.warn('[Phone UI] 主题加载失败:', e);
+        }
     }
 
     // ========== 表情包加载 ==========
@@ -363,6 +445,7 @@
 
     function onChatChanged() {
         loadStickersForCurrentCharacter();
+        loadThemeForCurrentCharacter();
         setTimeout(renderAllExistingMessages, 200);
     }
 

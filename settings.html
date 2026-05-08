@@ -78,12 +78,23 @@
             <!-- 主题 -->
             <div style="margin-bottom: 10px;"><b>🎨 主题</b></div>
             <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <small style="display:block; color:#888; margin-bottom:6px;">粘贴主题 CSS（只需 :root { ... } 变量部分）</small>
-                <textarea id="phone_ui_theme_css" rows="6" class="text_pole"
-                    placeholder=':root { --navbar-bg: #00B900; --bubble-me-bg: #00B900; ... }'
+                <div style="margin-bottom:6px;"><span>🎭 角色专属主题</span></div>
+                <small style="display:block; color:#888; margin-bottom:6px;">粘贴主题 CSS（只需 :root { ... } 部分）</small>
+                <textarea id="phone_ui_char_theme_css" rows="4" class="text_pole"
+                    placeholder=':root { --navbar-bg: #00B900; ... }'
                     style="font-size: 12px; font-family: monospace;"></textarea>
                 <div style="display:flex; gap:6px; margin-top: 4px;">
-                    <div class="menu_button" id="phone_ui_apply_theme">🎨 应用主题</div>
+                    <div class="menu_button" id="phone_ui_save_char_theme">💾 保存角色主题</div>
+                    <div class="menu_button" id="phone_ui_export_char_theme">📤 写入角色卡</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="margin-bottom:6px;"><span>🌐 全局默认主题</span></div>
+                <textarea id="phone_ui_global_theme_css" rows="4" class="text_pole"
+                    placeholder=':root { --navbar-bg: #1a1a2e; ... }'
+                    style="font-size: 12px; font-family: monospace;"></textarea>
+                <div style="display:flex; gap:6px; margin-top: 4px;">
+                    <div class="menu_button" id="phone_ui_save_global_theme">💾 保存全局主题</div>
                     <div class="menu_button" id="phone_ui_reset_theme">🔄 恢复默认</div>
                 </div>
             </div>
