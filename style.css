@@ -766,15 +766,19 @@
   fill: #333;
 }
 
-.st-phone-inputbar .input-field {
+.st-phone-inputbar .input-field-real {
   flex: 1;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
   padding: 8px 14px;
   font-size: var(--font-size-base);
-  color: #ccc;
+  color: #333;
   font-family: var(--font-family);
+  outline: none;
+}
+.st-phone-inputbar .input-field-real::placeholder {
+  color: #ccc;
 }
 
 .st-phone-inputbar .input-actions {
