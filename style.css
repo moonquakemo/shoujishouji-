@@ -1087,11 +1087,28 @@
   border-radius: 12px;
 }
 .phone-media-desc {
-  padding: 16px 14px;
+  padding: 12px 14px;
   font-size: var(--font-size-sm);
   color: #555;
-  text-align: center;
+  text-align: left;
   line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+/* Scrollbar styling for media desc */
+.phone-media-desc::-webkit-scrollbar {
+  width: 4px;
+}
+.phone-media-desc::-webkit-scrollbar-track {
+  background: transparent;
+}
+.phone-media-desc::-webkit-scrollbar-thumb {
+  background: rgba(238, 123, 48, 0.3);
+  border-radius: 4px;
+}
+.phone-media-desc::-webkit-scrollbar-thumb:hover {
+  background: rgba(238, 123, 48, 0.5);
 }
 .st-phone-video {
   position: relative;
