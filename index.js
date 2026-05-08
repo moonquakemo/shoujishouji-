@@ -200,34 +200,23 @@
             if (typeof toastr !== 'undefined') toastr.success(`「${charName}」的主题已保存！`, 'Phone UI');
         });
 
-        $('#phone_ui_export_char_theme').on('click', function () {
-            const ctx = SillyTavern.getContext();
-            const charName = ctx.name2 || '';
-            const charId = ctx.characterId;
-            if (!charName || charId === undefined) {
-                if (typeof toastr !== 'undefined') toastr.warning("请先选择一个角色", "Phone UI");
-                return;
-            }
-            const css = $('#phone_ui_char_theme_css').val().trim();
-            if (!css) {
-                if (typeof toastr !== 'undefined') toastr.warning("没有可导出的主题代码", "Phone UI");
-                return;
-            }
-            const charData = ctx.characters[charId];
-            if (!charData) return;
-            if (!charData.data) charData.data = {};
-            if (!charData.data.extensions) charData.data.extensions = {};
-            charData.data.extensions.phone_theme_css = css;
-            
-            if (typeof saveCharacter === 'function') {
-                saveCharacter(charId);
-                if (typeof toastr !== 'undefined') toastr.success(`主题已成功写入角色卡「${charName}」`, "Phone UI");
-            } else if (typeof writeExtensionData === 'function') {
-                writeExtensionData(charId, charData.data.extensions).then(() => {
-                    if (typeof toastr !== 'undefined') toastr.success(`主题已成功写入角色卡「${charName}」`, "Phone UI");
-                });
-            } else {
-                if (typeof toastr !== 'undefined') toastr.warning("未找到保存角色卡的函数，请检查酒馆版本", "Phone UI");
+        $('#phone_ui_export_char_theme').on('click', async function () {
+            try {
+                const ctx = SillyTavern.getContext();
+                const charName = ctx.name2 || '';
+                if (!charName) {
+                    if (typeof toastr !== 'undefined') toastr.warning("请先选择一个角色", "Phone UI");
+                    return;
+                }
+                const css = $('#phone_ui_char_theme_css').val().trim();
+                if (!css) {
+                    if (typeof toastr !== 'undefined') toastr.warning("没有可导出的主题代码", "Phone UI");
+                    return;
+                }
+                await ctx.writeExtensionField(ctx.characterId, 'phone_theme_css', css);
+                if (typeof toastr !== 'undefined') toastr.success(`已写入「${charName}」的角色卡\n导出角色卡时会自带这套主题`, "Phone UI");
+            } catch (e) {
+                if (typeof toastr !== 'undefined') toastr.error("写入失败: " + e.message, "Phone UI");
             }
         });
 
