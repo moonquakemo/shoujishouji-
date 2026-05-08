@@ -6,6 +6,25 @@
         </div>
         <div class="inline-drawer-content">
 
+            <style>
+                #phone_ui_settings .menu_button {
+                    justify-content: center;
+                    white-space: nowrap;
+                    text-align: center;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                }
+                #phone_ui_settings .flex-btn-group {
+                    display: flex;
+                    gap: 6px;
+                    margin-top: 4px;
+                }
+                #phone_ui_settings .flex-btn-group .menu_button {
+                    flex: 1;
+                    margin: 0;
+                }
+            </style>
+
             <!-- 开关 -->
             <div style="margin-bottom: 10px;">
                 <label class="checkbox_label" for="phone_ui_enabled">
@@ -60,7 +79,7 @@
                 <textarea id="phone_ui_char_stickers" rows="4" class="text_pole"
                     placeholder='{"happy":"https://...","sad":"https://..."}'
                     style="font-size: 12px; font-family: monospace;"></textarea>
-                <div style="display:flex; gap:6px; margin-top: 4px;">
+                <div class="flex-btn-group">
                     <div class="menu_button" id="phone_ui_save_char_stickers">💾 保存角色表情包</div>
                     <div class="menu_button" id="phone_ui_export_char_stickers">📤 写入角色卡</div>
                 </div>
@@ -83,7 +102,7 @@
                 <textarea id="phone_ui_char_theme_css" rows="4" class="text_pole"
                     placeholder=':root { --navbar-bg: #00B900; ... }'
                     style="font-size: 12px; font-family: monospace;"></textarea>
-                <div style="display:flex; gap:6px; margin-top: 4px;">
+                <div class="flex-btn-group">
                     <div class="menu_button" id="phone_ui_save_char_theme">💾 保存角色主题</div>
                     <div class="menu_button" id="phone_ui_export_char_theme">📤 写入角色卡</div>
                 </div>
@@ -93,7 +112,7 @@
                 <textarea id="phone_ui_global_theme_css" rows="4" class="text_pole"
                     placeholder=':root { --navbar-bg: #1a1a2e; ... }'
                     style="font-size: 12px; font-family: monospace;"></textarea>
-                <div style="display:flex; gap:6px; margin-top: 4px;">
+                <div class="flex-btn-group">
                     <div class="menu_button" id="phone_ui_save_global_theme">💾 保存全局主题</div>
                     <div class="menu_button" id="phone_ui_reset_theme">🔄 恢复默认</div>
                 </div>
