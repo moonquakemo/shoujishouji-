@@ -549,6 +549,7 @@
   font-family: var(--font-family);
   font-weight: 600;
   cursor: pointer;
+  text-align: center;
   transition: all 0.2s;
 }
 
