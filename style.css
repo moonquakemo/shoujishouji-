@@ -1075,7 +1075,9 @@
   max-width: 200px;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(0,0,0,0.04);
+  background: linear-gradient(135deg, #fff3e0, #ffe8cc);
+  border: 1px solid rgba(238, 123, 48, 0.15);
+  box-shadow: var(--shadow-card);
 }
 .phone-media-img {
   width: 100%;
