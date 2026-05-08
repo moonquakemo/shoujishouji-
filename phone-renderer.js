@@ -93,22 +93,19 @@ const PhoneRenderer = (() => {
 
     function renderInputBar(phoneId) {
         return `
-<div class="st-phone-send-toolbar" id="toolbar_${phoneId}" style="display:none;">
-  <div class="send-toolbar-info" id="buffer_${phoneId}"></div>
-  <div class="send-toolbar-btns">
-    <div class="toolbar-btn split" onclick="PhoneInteractions.splitSend('${phoneId}')">截断</div>
-    <div class="toolbar-btn send" onclick="PhoneInteractions.batchSend('${phoneId}')">发送</div>
-  </div>
-</div>
 <div class="st-phone-inputbar">
   <div class="input-voice-btn" onclick="PhoneInteractions.showForm('${phoneId}','voice')" title="发送语音">${ICONS.mic}</div>
   <input type="text" class="input-field-real" id="input_${phoneId}" placeholder="输入消息..."
-    onfocus="PhoneInteractions.showToolbar('${phoneId}')"
-    oninput="PhoneInteractions.onInputChange('${phoneId}')"
+    onfocus="PhoneInteractions.onInputFocus('${phoneId}',true)"
+    onblur="PhoneInteractions.onInputFocus('${phoneId}',false)"
     onkeydown="PhoneInteractions.handleInputKeydown('${phoneId}', event)">
-  <div class="input-actions">
+  <div class="input-actions" id="input_default_${phoneId}">
     <div class="input-action-btn" onclick="PhoneInteractions.toggleStickerPicker('${phoneId}')" title="表情包">${ICONS.emoji}</div>
     <div class="input-action-btn" onclick="PhoneInteractions.toggleActionPanel('${phoneId}')" title="更多">${ICONS.plus}</div>
+  </div>
+  <div class="input-actions" id="input_send_${phoneId}" style="display:none;">
+    <div class="input-send-btn buffer" onclick="PhoneInteractions.splitSend('${phoneId}')" title="暂存这条，继续打下一条">→</div>
+    <div class="input-send-btn final" onclick="PhoneInteractions.batchSend('${phoneId}')" title="发送全部">↑</div>
   </div>
 </div>`;
     }

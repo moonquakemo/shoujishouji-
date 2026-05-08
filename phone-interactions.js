@@ -102,15 +102,49 @@ const PhoneInteractions = (() => {
 
     // ========== 消息缓冲（截断/发送） ==========
     let msgBuffer = {};
+    let focusedPhone = '';
+
+    function onInputFocus(phoneId, focused) {
+        const def = document.getElementById(`input_default_${phoneId}`);
+        const send = document.getElementById(`input_send_${phoneId}`);
+        if (!def || !send) return;
+        if (focused) {
+            focusedPhone = phoneId;
+            def.style.display = 'none';
+            send.style.display = 'flex';
+        } else {
+            // 延迟切回，让按钮点击事件先触发
+            setTimeout(() => {
+                if (focusedPhone !== phoneId) return;
+                const input = document.getElementById(`input_${phoneId}`);
+                const hasBuffer = msgBuffer[phoneId]?.length > 0;
+                const hasText = input && input.value.trim();
+                if (!hasBuffer && !hasText) {
+                    def.style.display = 'flex';
+                    send.style.display = 'none';
+                }
+            }, 200);
+        }
+    }
 
     function splitSend(phoneId) {
         const input = document.getElementById(`input_${phoneId}`);
         if (!input || !input.value.trim()) return;
+        const text = input.value.trim();
         if (!msgBuffer[phoneId]) msgBuffer[phoneId] = [];
-        msgBuffer[phoneId].push(input.value.trim());
+        msgBuffer[phoneId].push(text);
         input.value = '';
         input.focus();
-        updateBufferUI(phoneId);
+
+        // 在聊天区显示预览气泡
+        const chat = document.getElementById(`chat_${phoneId}`);
+        if (chat) {
+            const preview = document.createElement('div');
+            preview.className = 'st-phone-msg-row msg-me phone-preview-msg';
+            preview.innerHTML = `<div class="st-phone-bubble">${esc(text)}</div>`;
+            chat.appendChild(preview);
+            chat.scrollTop = chat.scrollHeight;
+        }
     }
 
     function batchSend(phoneId) {
@@ -129,17 +163,12 @@ const PhoneInteractions = (() => {
         updatePendingCount();
         msgBuffer[phoneId] = [];
         if (input) input.value = '';
-        updateBufferUI(phoneId);
+
+        // 清除预览气泡
+        const chat = document.getElementById(`chat_${phoneId}`);
+        if (chat) chat.querySelectorAll('.phone-preview-msg').forEach(el => el.remove());
+
         if (typeof toastr !== 'undefined') toastr.info(`\u5df2\u8bb0\u5f55${msgs.length}\u6761\u6d88\u606f\uff0c\u53d1\u9001\u540e AI \u5c06\u6536\u5230`, 'Phone UI');
-    }
-
-    function showToolbar(phoneId) {
-        const toolbar = document.getElementById(`toolbar_${phoneId}`);
-        if (toolbar) toolbar.style.display = 'flex';
-    }
-
-    function onInputChange(phoneId) {
-        showToolbar(phoneId);
     }
 
     function handleInputKeydown(phoneId, e) {
@@ -147,13 +176,6 @@ const PhoneInteractions = (() => {
             e.preventDefault();
             batchSend(phoneId);
         }
-    }
-
-    function updateBufferUI(phoneId) {
-        const el = document.getElementById(`buffer_${phoneId}`);
-        if (!el) return;
-        const count = msgBuffer[phoneId]?.length || 0;
-        el.textContent = count > 0 ? `\u5df2\u6682\u5b58 ${count} \u6761\u6d88\u606f` : '';
     }
 
     // ========== 基础交互 ==========
@@ -355,7 +377,7 @@ const PhoneInteractions = (() => {
 
     return {
         toggleSearch, handleSearch, closeSearchResults,
-        splitSend, batchSend, showToolbar, onInputChange, handleInputKeydown,
+        splitSend, batchSend, onInputFocus, handleInputKeydown,
         toggleVoiceText, toggleTranslation, toggleRecall,
         handleTransfer,
         toggleStickerPicker, closeStickerPicker, sendUserSticker,

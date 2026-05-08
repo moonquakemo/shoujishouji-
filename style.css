@@ -1023,6 +1023,45 @@
 }
 .form-btn.cancel:hover { background: rgba(0,0,0,0.1); color: #666; }
 
+/* Send buttons (→ ↑) */
+.input-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.input-send-btn.buffer {
+  background: rgba(0,0,0,0.06);
+  color: #666;
+}
+.input-send-btn.buffer:hover {
+  background: rgba(0,0,0,0.12);
+  color: #333;
+}
+.input-send-btn.final {
+  background: var(--accent-green);
+  color: #fff;
+}
+.input-send-btn.final:hover {
+  background: #06a850;
+  transform: scale(1.05);
+}
+
+/* Preview bubble (buffered messages) */
+.phone-preview-msg {
+  opacity: 0.7;
+}
+.phone-preview-msg .st-phone-bubble {
+  border: 1px dashed rgba(7, 193, 96, 0.4);
+}
+
 /* --- Utility --- */
 .st-phone-hidden {
   display: none !important;
