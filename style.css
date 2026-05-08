@@ -26,6 +26,7 @@
   --bubble-me-bg: linear-gradient(135deg, #95ec69, #69d946);
   --bubble-me-text: #1a1a1a;
   --bubble-radius: 20px;
+  --card-radius: 12px;
 
   /* === Avatar === */
   --avatar-other-bg: linear-gradient(135deg, #667eea, #764ba2);
@@ -149,6 +150,7 @@
   width: 14px;
   height: 14px;
   fill: var(--navbar-icon-fill);
+}
 
 /* --- Navigation Bar --- */
 .st-phone-navbar {
@@ -177,6 +179,7 @@
   width: 20px;
   height: 20px;
   fill: var(--navbar-icon-fill);
+}
 
 .st-phone-navbar .nav-title {
   flex: 1;
@@ -203,6 +206,7 @@
   width: 18px;
   height: 18px;
   fill: var(--navbar-icon-fill);
+}
 
 /* --- Search Bar (hidden by default) --- */
 .st-phone-search {
@@ -539,7 +543,7 @@
 /* --- Transfer Card --- */
 .st-phone-transfer {
   background: var(--transfer-bg);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   padding: 14px;
   min-width: 200px;
   box-shadow: var(--shadow-card);
@@ -646,7 +650,7 @@
   font-weight: 500;
   text-align: center;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
 }
 
 .st-phone-transfer.accepted .transfer-status {
@@ -664,7 +668,7 @@
 /* --- Location Card --- */
 .st-phone-location {
   background: var(--location-bg);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   overflow: hidden;
   min-width: 200px;
   box-shadow: var(--shadow-card);
@@ -796,7 +800,7 @@
   width: 120px;
   height: 120px;
   background: var(--media-bg);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   font-size: 48px;
   border: 1px solid var(--media-border);
   box-shadow: var(--shadow-card);
@@ -1136,7 +1140,7 @@
 /* --- Media Messages (Image/Video) --- */
 .st-phone-media {
   max-width: 200px;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   overflow: hidden;
   background: var(--media-bg);
   border: 1px solid var(--media-border);
@@ -1147,7 +1151,7 @@
   max-height: 240px;
   object-fit: cover;
   display: block;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
 }
 .phone-media-desc {
   padding: 12px 14px;
