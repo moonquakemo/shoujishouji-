@@ -154,6 +154,17 @@ const PhoneInteractions = (() => {
         if (cur) msgBuffer[phoneId].push(cur);
         if (!msgBuffer[phoneId].length) return;
 
+        // 如果当前输入有文字，也显示为气泡
+        if (cur) {
+            const chat = document.getElementById(`chat_${phoneId}`);
+            if (chat) {
+                const bubble = document.createElement('div');
+                bubble.className = 'st-phone-msg-row msg-me phone-preview-msg';
+                bubble.innerHTML = `<div class="st-phone-bubble">${esc(cur)}</div>`;
+                chat.appendChild(bubble);
+            }
+        }
+
         const msgs = msgBuffer[phoneId];
         const desc = msgs.length === 1
             ? `\u7528\u6237\u5728\u624b\u673a\u4e0a\u53d1\u9001\u4e86\u6d88\u606f\uff1a\u300c${msgs[0]}\u300d`
@@ -164,9 +175,15 @@ const PhoneInteractions = (() => {
         msgBuffer[phoneId] = [];
         if (input) input.value = '';
 
-        // 清除预览气泡
+        // 预览气泡变为已发送状态（不删除，变为正常显示）
         const chat = document.getElementById(`chat_${phoneId}`);
-        if (chat) chat.querySelectorAll('.phone-preview-msg').forEach(el => el.remove());
+        if (chat) {
+            chat.querySelectorAll('.phone-preview-msg').forEach(el => {
+                el.classList.remove('phone-preview-msg');
+                el.classList.add('phone-sent-msg');
+            });
+            chat.scrollTop = chat.scrollHeight;
+        }
 
         if (typeof toastr !== 'undefined') toastr.info(`\u5df2\u8bb0\u5f55${msgs.length}\u6761\u6d88\u606f\uff0c\u53d1\u9001\u540e AI \u5c06\u6536\u5230`, 'Phone UI');
     }

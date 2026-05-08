@@ -1062,6 +1062,14 @@
   border: 1px dashed rgba(7, 193, 96, 0.4);
 }
 
+/* Sent (confirmed) bubble */
+.phone-sent-msg {
+  opacity: 1;
+}
+.phone-sent-msg .st-phone-bubble {
+  border: 1px solid rgba(7, 193, 96, 0.3);
+}
+
 /* --- Media Messages (Image/Video) --- */
 .st-phone-media {
   max-width: 200px;
