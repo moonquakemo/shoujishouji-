@@ -1,0 +1,84 @@
+/* ============================================
+   Phone UI Theme: KakaoTalk (韩国常用)
+   经典可可黄 + 柔和蓝背景
+   ============================================ */
+
+:root {
+  /* ===== 手机外壳 ===== */
+  --phone-bg: #000000;
+  --phone-border: rgba(255,255,255,0.08);
+  --phone-chat-bg: #b2c7d9;             /* KakaoTalk 经典的柔和蓝背景 */
+  --phone-radius: 32px;
+
+  /* ===== 状态栏 & 导航栏 ===== */
+  --navbar-bg: #b2c7d9;                 /* 导航栏和背景同色 */
+  --navbar-text: #1a1a1a;               /* 黑色文字 */
+  --navbar-icon-fill: #1a1a1a;          /* 黑色图标 */
+
+  /* ===== 聊天气泡 ===== */
+  --bubble-other-bg: #ffffff;           /* 对方消息气泡：纯白 */
+  --bubble-other-text: #1a1a1a;
+  --bubble-me-bg: #fee500;              /* 我的消息气泡：经典 Kakao 黄 */
+  --bubble-me-text: #1a1a1a;
+  --bubble-radius: 12px;                /* Kakao 的气泡圆角稍微小一点点 */
+
+  /* ===== 头像 ===== */
+  --avatar-other-bg: linear-gradient(135deg, #a8a8a8, #888888); 
+  --avatar-me-bg: linear-gradient(135deg, #fee500, #f1d900);    
+  --avatar-text: #fff;
+  --avatar-size: 36px;
+
+  /* ===== 强调色 ===== */
+  --accent-blue: #4a88ce;
+  --accent-green: #fee500;              /* 这里的强调色换成黄色 */
+  --accent-orange: #f4a100;
+  --accent-red: #ff3b30;
+
+  /* ===== 输入栏 ===== */
+  --inputbar-bg: #ffffff;               /* 底部输入区纯白 */
+  --inputbar-border-top: rgba(0,0,0,0.06); 
+  --input-bg: #f5f5f5;                  /* 输入框浅灰色 */
+  --input-border: transparent;          /* 无边框 */
+  --input-text: #333;
+  --input-placeholder: #aaa;
+  --input-icon-fill: #555;
+  --input-radius: 20px;
+
+  /* ===== 转账卡片 ===== */
+  --transfer-bg: #ffffff;
+  --transfer-border: rgba(0,0,0,0.06);
+  --transfer-label-color: #f4a100;
+
+  /* ===== 表情包 & 媒体卡片 ===== */
+  --media-bg: #ffffff;
+  --media-border: rgba(0,0,0,0.06);
+  --media-desc-color: #555;
+  --media-scrollbar: rgba(0,0,0,0.15);
+
+  /* ===== 位置卡片 ===== */
+  --location-bg: #fff;
+  --location-map-bg: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+  --location-name-color: #1a1a1a;
+  --location-addr-color: #999;
+
+  /* ===== 时间分隔线 ===== */
+  --time-sep-bg: rgba(0,0,0,0.12);
+  --time-sep-text: #ffffff;             /* Kakao的时间通常是深色背景+白字 */
+
+  /* ===== 其他文字颜色 ===== */
+  --msg-time-color: #666;               /* 时间戳较深，因为背景是蓝色的 */
+  --quote-bg: rgba(0,0,0,0.05);
+  --quote-text: #777;
+  --recall-text: #888;
+  --voice-wave-color: rgba(0,0,0,0.3);
+  --voice-duration-color: rgba(0,0,0,0.6);
+
+  /* ===== 发送按钮 ===== */
+  --send-buffer-bg: #e0e0e0;
+  --send-buffer-text: #555;
+  --send-final-bg: #fee500;             /* 发送按钮Kakao黄 */
+  --send-final-text: #1a1a1a;           /* 黑色文字 */
+  --preview-opacity: 0.6;
+  --preview-border: rgba(254, 229, 0, 0.6);
+  --sent-border: rgba(254, 229, 0, 0.4);
+}
