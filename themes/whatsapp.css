@@ -1,0 +1,113 @@
+/* ============================================
+   SillyTavern Phone UI - WhatsApp Theme (German Standard)
+   ============================================ */
+
+.st-phone[data-theme="whatsapp"] {
+  /* --- Colors --- */
+  --navbar-bg: #075e54; /* Classic WhatsApp Green */
+  --phone-bg: #ece5dd;
+  --phone-chat-bg: #ece5dd;
+  
+  /* --- Bubbles --- */
+  --bubble-other-bg: #ffffff;
+  --bubble-other-text: #303030;
+  --bubble-me-bg: #dcf8c6; /* WhatsApp outgoing light green */
+  --bubble-me-text: #303030;
+  --bubble-radius: 8px; /* Sharper corners than default */
+  
+  /* --- Input Bar --- */
+  --inputbar-bg: #f0f0f0;
+  --inputbar-border-top: transparent;
+  --input-bg: #ffffff;
+  --input-radius: 24px;
+  --input-icon-fill: #858e92;
+  
+  /* --- Send Button --- */
+  --send-final-bg: #128c7e;
+  --send-final-text: #ffffff;
+
+  /* --- Top bar icons --- */
+  --navbar-icon-fill: #ffffff;
+  --navbar-text: #ffffff;
+  
+  /* --- Time Sep --- */
+  --time-sep-bg: rgba(225, 243, 251, 0.8);
+  --time-sep-text: #556269;
+}
+
+/* ============================================
+   Structural & Visual Overrides
+   ============================================ */
+
+/* Chat background doodle pattern (simulated with CSS pattern) */
+.st-phone[data-theme="whatsapp"] .st-phone-chat {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px), radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+}
+
+/* WhatsApp hides avatars in 1-on-1 chats to save space! */
+.st-phone[data-theme="whatsapp"] .st-phone-avatar {
+  display: none !important;
+}
+
+/* Bubble drop shadows and tails */
+.st-phone[data-theme="whatsapp"] .st-phone-bubble {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  padding: 8px 12px;
+}
+
+.st-phone[data-theme="whatsapp"] .msg-other .st-phone-bubble {
+  border-top-left-radius: 0;
+  margin-left: 8px; /* Compensate for hidden avatar */
+}
+
+.st-phone[data-theme="whatsapp"] .msg-me .st-phone-bubble {
+  border-top-right-radius: 0;
+  margin-right: 8px; /* Compensate for hidden avatar */
+}
+
+/* WhatsApp puts timestamps very close to bubbles */
+.st-phone[data-theme="whatsapp"] .st-phone-msg-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.st-phone[data-theme="whatsapp"] .msg-other .st-phone-msg-time {
+  margin-left: 10px;
+}
+
+.st-phone[data-theme="whatsapp"] .msg-me .st-phone-msg-time {
+  margin-right: 10px;
+}
+
+/* ============================================
+   The "Fake" Read Ticks Trick
+   ============================================ */
+/* We use a CSS ::after pseudo-element to add the double ticks 
+   without needing any javascript or HTML structure changes! */
+.st-phone[data-theme="whatsapp"] .msg-me .st-phone-msg-time::after {
+  content: '✓✓';
+  color: #53bdeb; /* WhatsApp blue read color */
+  font-weight: 700;
+  font-size: 12px;
+  margin-left: 4px;
+  letter-spacing: -3px; /* Pull them close together */
+  display: inline-block;
+  transform: translateY(1px);
+}
+
+/* Customize the input bar slightly */
+.st-phone[data-theme="whatsapp"] .st-phone-inputbar {
+  padding: 8px;
+}
+
+.st-phone[data-theme="whatsapp"] .input-field-real {
+  padding: 10px 14px !important;
+}
+
+.st-phone[data-theme="whatsapp"] .input-send-btn {
+  width: 40px;
+  height: 40px;
+}
