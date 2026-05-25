@@ -112,6 +112,8 @@
 .st-phone {
   width: var(--phone-width);
   max-width: 100%;
+  height: 650px;
+  max-height: 85vh;
   margin: 16px auto;
   border-radius: var(--phone-radius);
   background: var(--phone-bg);
@@ -120,6 +122,8 @@
   font-family: var(--font-family);
   position: relative;
   border: 2px solid var(--phone-border);
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Status Bar (Top) --- */
@@ -262,7 +266,8 @@
 
 /* --- Chat Body --- */
 .st-phone-chat {
-  height: 450px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--gap-lg);
   background: var(--phone-chat-bg);
