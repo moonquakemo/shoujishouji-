@@ -35,13 +35,13 @@
   --accent-red: #ff7e82;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #fff0f5;               /* 底部输入区与聊天背景同色，融为一体 */
-  --inputbar-border-top: rgba(255, 183, 197, 0.4); 
-  --input-bg: #ffffff;                  /* 输入框本身变成纯白，像云朵一样凸显 */
+  --inputbar-bg: #ffb7c5;               /* 底部输入区与顶部导航栏同色，上下呼应 */
+  --inputbar-border-top: transparent; 
+  --input-bg: #fff0f5;                  /* 极浅粉输入框，保持原本好看的颜色 */
   --input-border: transparent;          
   --input-text: #5a4a4d;
   --input-placeholder: #bbaeb0;
-  --input-icon-fill: #ff9eaf;           /* 粉色图标 */
+  --input-icon-fill: #5a4a4d;           /* 配合深粉背景，图标改回原本柔和的深灰棕色 */
   --input-radius: 20px;
 
   /* ===== 转账卡片 ===== */
