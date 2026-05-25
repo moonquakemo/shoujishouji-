@@ -11,7 +11,7 @@
   --phone-radius: 32px;
 
   /* ===== 状态栏 & 导航栏 ===== */
-  --navbar-bg: #dbb2da;                 /* 用户自定义的灰紫粉 */
+  --navbar-bg: #ffcdd2;                 /* 更加清透的浅樱花粉 */
   --navbar-text: #5a4a4d;               /* 深灰棕色字，比纯黑更柔和 */
   --navbar-icon-fill: #5a4a4d;          /* 深灰棕色图标 */
 
@@ -35,7 +35,7 @@
   --accent-red: #ff7e82;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #dbb2da;               /* 底部输入区与顶部导航栏同色，上下呼应 */
+  --inputbar-bg: #ffcdd2;               /* 底部输入区与顶部导航栏同色，上下呼应 */
   --inputbar-border-top: transparent; 
   --input-bg: #fff0f5;                  /* 极浅粉输入框，保持原本好看的颜色 */
   --input-border: transparent;          
