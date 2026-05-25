@@ -35,9 +35,9 @@
   --accent-red: #ff7e82;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #ffffff;               /* 纯白 */
-  --inputbar-border-top: rgba(255, 183, 197, 0.3); 
-  --input-bg: #fff0f5;                  /* 极浅粉输入框 */
+  --inputbar-bg: #fff0f5;               /* 底部输入区与聊天背景同色，融为一体 */
+  --inputbar-border-top: rgba(255, 183, 197, 0.4); 
+  --input-bg: #ffffff;                  /* 输入框本身变成纯白，像云朵一样凸显 */
   --input-border: transparent;          
   --input-text: #5a4a4d;
   --input-placeholder: #bbaeb0;
