@@ -1,84 +1,126 @@
 /* ============================================
-   SillyTavern Phone UI - WhatsApp Theme (German Standard)
+   Phone UI Theme: WhatsApp (德国主流)
+   经典绿白配色 + 气泡投影 + 隐藏双人头像
    ============================================ */
 
-.st-phone[data-theme="whatsapp"] {
-  /* --- Colors --- */
-  --navbar-bg: #075e54; /* Classic WhatsApp Green */
-  --phone-bg: #ece5dd;
-  --phone-chat-bg: #ece5dd;
-  
-  /* --- Bubbles --- */
-  --bubble-other-bg: #ffffff;
-  --bubble-other-text: #303030;
-  --bubble-me-bg: #dcf8c6; /* WhatsApp outgoing light green */
-  --bubble-me-text: #303030;
-  --bubble-radius: 8px; /* Sharper corners than default */
-  
-  /* --- Input Bar --- */
-  --inputbar-bg: #f0f0f0;
-  --inputbar-border-top: transparent;
-  --input-bg: #ffffff;
-  --input-radius: 24px;
-  --input-icon-fill: #858e92;
-  
-  /* --- Send Button --- */
-  --send-final-bg: #128c7e;
-  --send-final-text: #ffffff;
+:root {
+  /* ===== 手机外壳 ===== */
+  --phone-bg: #ece5dd;                  /* WhatsApp默认聊天背景米色 */
+  --phone-border: rgba(0,0,0,0.1);
+  --phone-chat-bg: #ece5dd;             /* 聊天区背景同色 */
+  --phone-radius: 32px;
 
-  /* --- Top bar icons --- */
-  --navbar-icon-fill: #ffffff;
-  --navbar-text: #ffffff;
-  
-  /* --- Time Sep --- */
-  --time-sep-bg: rgba(225, 243, 251, 0.8);
+  /* ===== 状态栏 & 导航栏 ===== */
+  --navbar-bg: #075e54;                 /* WhatsApp经典深绿 */
+  --navbar-text: #ffffff;               /* 白色文字 */
+  --navbar-icon-fill: #ffffff;          /* 白色图标 */
+
+  /* ===== 聊天气泡 ===== */
+  --bubble-other-bg: #ffffff;           /* 对方消息气泡：纯白 */
+  --bubble-other-text: #303030;
+  --bubble-me-bg: #dcf8c6;              /* 我的消息气泡：WhatsApp浅草绿 */
+  --bubble-me-text: #303030;
+  --bubble-radius: 8px;                 /* WhatsApp气泡比较方正 */
+
+  /* ===== 头像 ===== */
+  --avatar-other-bg: linear-gradient(135deg, #a8a8a8, #888888); 
+  --avatar-me-bg: linear-gradient(135deg, #25d366, #128c7e);    
+  --avatar-text: #fff;
+  --avatar-size: 36px;
+
+  /* ===== 强调色 ===== */
+  --accent-blue: #34b7f1;               /* WhatsApp蓝勾颜色 */
+  --accent-green: #25d366;              /* WhatsApp亮绿 */
+  --accent-orange: #f4a100;
+  --accent-red: #ff3b30;
+
+  /* ===== 输入栏 ===== */
+  --inputbar-bg: #f0f0f0;               /* 底部输入区浅灰 */
+  --inputbar-border-top: transparent; 
+  --input-bg: #ffffff;                  /* 输入框纯白 */
+  --input-border: transparent;          
+  --input-text: #333;
+  --input-placeholder: #999;
+  --input-icon-fill: #858e92;           /* 图标灰绿色 */
+  --input-radius: 24px;
+
+  /* ===== 转账卡片 ===== */
+  --transfer-bg: #ffffff;
+  --transfer-border: rgba(0,0,0,0.06);
+  --transfer-label-color: #075e54;
+
+  /* ===== 位置卡片 ===== */
+  --location-bg: #fff;
+  --location-map-bg: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  --location-name-color: #1a1a1a;
+  --location-addr-color: #999;
+
+  /* ===== 时间分隔线 ===== */
+  --time-sep-bg: rgba(225, 243, 251, 0.8); /* 浅蓝色半透明 */
   --time-sep-text: #556269;
+
+  /* ===== 其他文字颜色 ===== */
+  --msg-time-color: #999;               
+  --quote-bg: rgba(0,0,0,0.05);
+  --quote-text: #777;
+  --recall-text: #888;
+  --voice-wave-color: rgba(0,0,0,0.3);
+  --voice-duration-color: rgba(0,0,0,0.6);
+
+  /* ===== 发送按钮 ===== */
+  --send-buffer-bg: #e0e0e0;
+  --send-buffer-text: #555;
+  --send-final-bg: #128c7e;             /* 发送按钮深绿 */
+  --send-final-text: #ffffff;           
+  --preview-opacity: 0.6;
+  --preview-border: rgba(18, 140, 126, 0.6);
+  --sent-border: rgba(18, 140, 126, 0.4);
 }
 
 /* ============================================
    Structural & Visual Overrides
    ============================================ */
 
-/* Chat background doodle pattern (simulated with CSS pattern) */
-.st-phone[data-theme="whatsapp"] .st-phone-chat {
+/* Chat background doodle pattern */
+.st-phone-chat {
   background-image: radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px), radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px);
   background-size: 32px 32px;
   background-position: 0 0, 16px 16px;
 }
 
 /* WhatsApp hides avatars in 1-on-1 chats to save space! */
-.st-phone[data-theme="whatsapp"] .st-phone-avatar {
+.st-phone-avatar {
   display: none !important;
 }
 
 /* Bubble drop shadows and tails */
-.st-phone[data-theme="whatsapp"] .st-phone-bubble {
+.st-phone-bubble {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   padding: 8px 12px;
 }
 
-.st-phone[data-theme="whatsapp"] .msg-other .st-phone-bubble {
+.msg-other .st-phone-bubble {
   border-top-left-radius: 0;
   margin-left: 8px; /* Compensate for hidden avatar */
 }
 
-.st-phone[data-theme="whatsapp"] .msg-me .st-phone-bubble {
+.msg-me .st-phone-bubble {
   border-top-right-radius: 0;
   margin-right: 8px; /* Compensate for hidden avatar */
 }
 
 /* WhatsApp puts timestamps very close to bubbles */
-.st-phone[data-theme="whatsapp"] .st-phone-msg-time {
+.st-phone-msg-time {
   font-size: 11px;
   color: #999;
   margin-top: 2px;
 }
 
-.st-phone[data-theme="whatsapp"] .msg-other .st-phone-msg-time {
+.msg-other .st-phone-msg-time {
   margin-left: 10px;
 }
 
-.st-phone[data-theme="whatsapp"] .msg-me .st-phone-msg-time {
+.msg-me .st-phone-msg-time {
   margin-right: 10px;
 }
 
@@ -87,9 +129,9 @@
    ============================================ */
 /* We use a CSS ::after pseudo-element to add the double ticks 
    without needing any javascript or HTML structure changes! */
-.st-phone[data-theme="whatsapp"] .msg-me .st-phone-msg-time::after {
+.msg-me .st-phone-msg-time::after {
   content: '✓✓';
-  color: #53bdeb; /* WhatsApp blue read color */
+  color: #34b7f1; /* WhatsApp blue read color */
   font-weight: 700;
   font-size: 12px;
   margin-left: 4px;
@@ -99,15 +141,15 @@
 }
 
 /* Customize the input bar slightly */
-.st-phone[data-theme="whatsapp"] .st-phone-inputbar {
+.st-phone-inputbar {
   padding: 8px;
 }
 
-.st-phone[data-theme="whatsapp"] .input-field-real {
+.input-field-real {
   padding: 10px 14px !important;
 }
 
-.st-phone[data-theme="whatsapp"] .input-send-btn {
+.input-send-btn {
   width: 40px;
   height: 40px;
 }
