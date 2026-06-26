@@ -478,82 +478,11 @@
         setTimeout(renderAllExistingMessages, 200);
     }
 
-    // ========== phone 块精简：标记语法 → 纯文本对话 ==========
-    function condensePhoneBlock(block) {
-        const lines = [`[与${block.contact}的手机对话]`];
-        for (const msg of block.messages) {
-            const name = msg.isMe ? '我' : (msg.from || block.contact);
-            switch (msg.type) {
-                case 'msg':
-                    lines.push(`${name}: ${msg.content}`);
-                    break;
-                case 'voice':
-                    lines.push(`${name}: [语音${msg.duration ? ' ' + msg.duration : ''}] ${msg.content}`);
-                    break;
-                case 'sticker':
-                    lines.push(`${name}: [表情包${msg.content ? ' ' + msg.content : ''}]`);
-                    break;
-                case 'transfer':
-                    lines.push(`${name}: [转账 ¥${msg.amount || '?'}${msg.note ? ' ' + msg.note : ''}]${msg.status ? ' ' + msg.status : ''}`);
-                    break;
-                case 'location':
-                    lines.push(`${name}: [位置: ${msg.name || ''}${msg.addr ? ' ' + msg.addr : ''}]`);
-                    break;
-                case 'recall':
-                    lines.push(`${name}: [撤回了一条消息] ${msg.content}`);
-                    break;
-                case 'image':
-                    lines.push(`${name}: [图片${msg.content ? ' ' + msg.content : ''}]`);
-                    break;
-                case 'video':
-                    lines.push(`${name}: [视频${msg.content ? ' ' + msg.content : ''}]`);
-                    break;
-                case 'time-sep':
-                    lines.push(`--- ${msg.time} ---`);
-                    break;
-            }
-        }
-        return lines.join('\n');
-    }
-
     // ========== generate_interceptor ==========
     globalThis.phoneUIInterceptor = async function (chat, contextSize, abort, type) {
-
-        // ---- 第一步：清理所有历史消息中的 [phone] 标记，减少上下文污染 ----
-        // 保留对话内容，只去掉冗余的标记语法
-        const phoneBlockRegex = /\[phone(?::([^\]]*))?\][\s\S]*?\[\/phone\]/gi;
-        for (const msg of chat) {
-            if (!msg.mes || typeof msg.mes !== 'string') continue;
-            if (!phoneBlockRegex.test(msg.mes)) continue;
-            phoneBlockRegex.lastIndex = 0;
-
-            // 用 PhoneParser 解析后转成精简文本
-            if (typeof PhoneParser !== 'undefined') {
-                const blocks = PhoneParser.extractPhoneBlocks(msg.mes);
-                let cleaned = msg.mes;
-                // 从后往前替换，避免索引偏移
-                for (let i = blocks.length - 1; i >= 0; i--) {
-                    const block = blocks[i];
-                    const condensed = condensePhoneBlock(block);
-                    cleaned = cleaned.substring(0, block.startIndex) + condensed + cleaned.substring(block.endIndex);
-                }
-                msg.mes = cleaned;
-            } else {
-                // PhoneParser 未加载时的回退：只保留联系人名
-                msg.mes = msg.mes.replace(phoneBlockRegex, (match, attrs) => {
-                    let contact = '对方';
-                    if (attrs) {
-                        const cm = attrs.match(/contact=([^|]*)/i);
-                        if (cm) contact = cm[1].trim();
-                    }
-                    return `[手机聊天界面: 与${contact}的对话]`;
-                });
-            }
-        }
-
-        // ---- 第二步：注入用户操作（受 inject 开关控制）----
         if (typeof PhoneInteractions === 'undefined') return;
 
+        // 检查注入开关
         try {
             const ctx = SillyTavern.getContext();
             const settings = ctx.extensionSettings[MODULE_NAME];
