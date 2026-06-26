@@ -432,15 +432,26 @@
             savedActions = ctx.chatMetadata.phone_actions || {};
         } catch (e) { }
 
+        // 按联系人去重合并：AI 经常输出多个同 contact 的 [phone] 块，合并成一个
+        const mergedBlocks = new Map();
         for (const block of blocks) {
+            const key = block.contact;
+            if (mergedBlocks.has(key)) {
+                mergedBlocks.get(key).messages.push(...block.messages);
+            } else {
+                mergedBlocks.set(key, { contact: block.contact, messages: [...block.messages] });
+            }
+        }
+
+        for (const [contactName, merged] of mergedBlocks) {
             let phoneData;
             if (settings && settings.aggregate) {
-                phoneData = PhoneAggregator.aggregate(ctx.chat, msgIndex, block.contact);
+                phoneData = PhoneAggregator.aggregate(ctx.chat, msgIndex, contactName);
             } else {
-                phoneData = { contact: block.contact, messages: block.messages, actions: savedActions };
+                phoneData = { contact: contactName, messages: merged.messages, actions: savedActions };
             }
 
-            const phoneId = `p_${msgIndex}_${block.contact.replace(/\s/g, '_')}`;
+            const phoneId = `p_${msgIndex}_${contactName.replace(/\s/g, '_')}`;
             injectedPhonesHtml += PhoneRenderer.render(phoneData, phoneId);
         }
 
