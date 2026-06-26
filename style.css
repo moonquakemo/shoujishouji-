@@ -154,6 +154,13 @@
   width: 14px;
   height: 14px;
   fill: var(--navbar-icon-fill);
+  color: var(--navbar-icon-fill);
+}
+
+/* iOS 风格电池图标（横向比例更宽） */
+.st-phone-statusbar .status-right svg[viewBox="0 0 28 14"] {
+  width: 22px;
+  height: 11px;
 }
 
 /* --- Navigation Bar --- */

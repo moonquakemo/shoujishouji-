@@ -27,6 +27,7 @@
                     chat_backgrounds: {},
                     char_themes: {},
                     global_theme_css: "",
+                    char_avatar_map: {},
                 };
             }
             const settings = ctx.extensionSettings[MODULE_NAME];
@@ -37,6 +38,7 @@
             if (!settings.char_avatars) settings.char_avatars = {};
             if (!settings.chat_backgrounds) settings.chat_backgrounds = {};
             if (!settings.char_themes) settings.char_themes = {};
+            if (!settings.char_avatar_map) settings.char_avatar_map = {};
             if (typeof settings.global_theme_css !== 'string') settings.global_theme_css = "";
             if (settings.inject === undefined) settings.inject = true;
 
@@ -123,6 +125,24 @@
             loadStickersForCurrentCharacter();
             renderAllExistingMessages();
             if (typeof toastr !== 'undefined') toastr.success('头像/背景配置已保存', 'Phone UI');
+        });
+
+        // --- 多角色头像映射 ---
+        $('#phone_ui_save_avatar_map').on('click', function () {
+            try {
+                const ctx = SillyTavern.getContext();
+                const charName = ctx.name2 || '';
+                if (!charName) { if (typeof toastr !== 'undefined') toastr.warning('请先选择角色', 'Phone UI'); return; }
+                const raw = $('#phone_ui_avatar_map').val().trim();
+                const parsed = raw ? JSON.parse(raw) : {};
+                settings.char_avatar_map[charName] = parsed;
+                ctx.saveSettingsDebounced();
+                loadStickersForCurrentCharacter();
+                renderAllExistingMessages();
+                if (typeof toastr !== 'undefined') toastr.success(`「${charName}」的多角色头像已保存 (${Object.keys(parsed).length} 个)`, 'Phone UI');
+            } catch (e) {
+                if (typeof toastr !== 'undefined') toastr.error('JSON 格式有误，请检查！\n' + e.message, 'Phone UI');
+            }
         });
 
         // --- 角色专属表情包 ---
@@ -333,15 +353,24 @@
             // 设置到 PhoneInteractions
             if (typeof PhoneInteractions !== 'undefined') {
                 PhoneInteractions.setStickers(charStickers, globalStickerMap);
-                PhoneInteractions.setConfig({ charAvatar, userAvatar, chatBackground });
+                const charAvatarMap = (settings.char_avatar_map && settings.char_avatar_map[charName]) || {};
+                PhoneInteractions.setConfig({ charAvatar, userAvatar, chatBackground, charAvatarMap });
             }
 
             // 更新设置面板 UI
             updateStickerUI(charName, charStickers, globalStickerMap);
             updateConfigUI(charName, charAvatar, userAvatar, chatBackground);
+            updateAvatarMapUI(charName, settings);
         } catch (e) {
             console.warn('[Phone UI] 配置加载失败:', e);
         }
+    }
+
+    function updateAvatarMapUI(charName, settings) {
+        const $area = $('#phone_ui_avatar_map');
+        if (!$area.length) return;
+        const map = (settings.char_avatar_map && settings.char_avatar_map[charName]) || {};
+        $area.val(Object.keys(map).length ? JSON.stringify(map, null, 2) : '');
     }
 
     function updateConfigUI(charName, charAvatar, userAvatar, chatBackground) {

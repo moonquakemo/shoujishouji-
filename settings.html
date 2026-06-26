@@ -68,6 +68,16 @@
                     <input type="text" id="phone_ui_chat_bg" class="text_pole" placeholder="https://... 或留空使用默认" style="font-size:12px;">
                 </div>
                 <div class="menu_button" id="phone_ui_save_config">💾 保存头像/背景</div>
+                <div style="margin-top:10px; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <div style="margin-bottom:6px;">
+                        <small>👥 多角色头像映射 <span style="color:#666;">(大小号/群聊卡专用)</span></small>
+                        <small style="display:block; color:#888; margin-top:2px;">JSON 格式，key 为消息中 from 字段的角色名，value 为头像 URL</small>
+                    </div>
+                    <textarea id="phone_ui_avatar_map" rows="3" class="text_pole"
+                        placeholder='{"角色A": "https://...", "角色B": "https://..."}'
+                        style="font-size: 12px; font-family: monospace;"></textarea>
+                    <div class="menu_button" id="phone_ui_save_avatar_map" style="margin-top: 4px;">💾 保存多角色头像</div>
+                </div>
             </div>
 
             <hr />

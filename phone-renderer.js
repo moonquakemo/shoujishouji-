@@ -5,13 +5,16 @@
 
 const PhoneRenderer = (() => {
 
-    // SVG 图标常量
+    // SVG 图标常量 — iOS 风格
     const ICONS = {
         back: '<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>',
         search: '<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
-        signal: '<svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22zm18-2H6.83L20 6.83V20z" opacity=".3"/><path d="M2 22h20V2L2 22zm18-2H6.83L20 6.83V20zM20 2v20L2 22z"/></svg>',
-        wifi: '<svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>',
-        battery: '<svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM15 18H9V6h6v12z"/></svg>',
+        // iOS 风格信号格 (4 bars)
+        signal: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.8"/><rect x="7" y="14" width="3" height="8" rx="0.8"/><rect x="12" y="9" width="3" height="13" rx="0.8"/><rect x="17" y="4" width="3" height="18" rx="0.8"/></svg>',
+        // iOS 风格 WiFi
+        wifi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5.07 12.5a10 10 0 0 1 13.86 0"/><path d="M8.72 16a5 5 0 0 1 6.56 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>',
+        // iOS 风格电池 (横向圆角 + 正极凸起)
+        battery: '<svg viewBox="0 0 28 14" fill="currentColor"><rect x="0.5" y="0.5" width="23" height="13" rx="2.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="3" width="18" height="8" rx="1"/><path d="M24.5 4.5 C26 4.5 26 9.5 24.5 9.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
         volume: '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
         dollar: '<svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
         location: '<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
@@ -27,16 +30,50 @@ const PhoneRenderer = (() => {
     }
 
     /**
-     * 渲染头像（支持图片URL）
+     * 渲染头像（支持多角色名字匹配）
+     * @param {string} name - 显示名，如 "Me" 或角色名
+     * @param {boolean} isMe - 是否是用户自己
+     * @param {string} [senderName] - 消息实际发送者名字（用于多角色匹配）
      */
-    function renderAvatar(name, isMe) {
+    function renderAvatar(name, isMe, senderName) {
         const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
-        const url = isMe ? cfg.userAvatar : cfg.charAvatar;
+        let url = '';
+        if (isMe) {
+            url = cfg.userAvatar || '';
+        } else {
+            // 优先级: 多角色映射表(精确匹配) → ST角色列表自动匹配 → 单个charAvatar回退
+            const avatarMap = cfg.charAvatarMap || {};
+            const lookupName = senderName || name;
+            if (lookupName && avatarMap[lookupName]) {
+                url = avatarMap[lookupName];
+            } else if (lookupName) {
+                // 尝试从 SillyTavern 角色列表自动匹配
+                url = tryMatchSTAvatar(lookupName) || cfg.charAvatar || '';
+            } else {
+                url = cfg.charAvatar || '';
+            }
+        }
         const letter = escapeHtml(name ? name.charAt(0) : '?');
         if (url) {
             return `<div class="st-phone-avatar"><img src="${escapeHtml(url)}" alt="${letter}" onerror="this.remove()"><span class="avatar-fallback">${letter}</span></div>`;
         }
         return `<div class="st-phone-avatar">${letter}</div>`;
+    }
+
+    /**
+     * 尝试从 SillyTavern 角色列表中按名字匹配头像
+     */
+    function tryMatchSTAvatar(name) {
+        try {
+            const ctx = SillyTavern.getContext();
+            if (!ctx.characters) return null;
+            for (const char of ctx.characters) {
+                if (char.name === name && char.avatar) {
+                    return `/characters/${char.avatar}`;
+                }
+            }
+        } catch (e) { }
+        return null;
     }
 
     /**
@@ -130,8 +167,8 @@ const PhoneRenderer = (() => {
 
     function renderTextMsg(msg, contact, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
         const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
 
         let quoteHtml = '';
         if (msg.quote) {
@@ -152,7 +189,7 @@ const PhoneRenderer = (() => {
 
         return `${quoteHtml}
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-bubble">${escapeHtml(msg.content)}${transHtml}</div>
     ${timeHtml}
@@ -162,12 +199,13 @@ const PhoneRenderer = (() => {
 
     function renderVoiceMsg(msg, contact, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-bubble">
       <div class="st-phone-voice">
@@ -185,7 +223,8 @@ const PhoneRenderer = (() => {
 
     function renderStickerMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         // 表情包解析：key → URL（角色专属 → 全局 → 回退）
@@ -203,7 +242,7 @@ const PhoneRenderer = (() => {
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-sticker">${stickerInner}</div>
     ${timeHtml}
@@ -213,7 +252,8 @@ const PhoneRenderer = (() => {
 
     function renderTransferMsg(msg, contact, actions, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
         const transferId = msg.id;
 
@@ -248,7 +288,7 @@ const PhoneRenderer = (() => {
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-transfer ${statusClass}" data-transfer-id="${transferId}">
       <div class="transfer-header">
@@ -268,12 +308,13 @@ ${noticeHtml}`;
 
     function renderLocationMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-location">
       <div class="location-map">${ICONS.location}</div>
@@ -306,7 +347,8 @@ ${noticeHtml}`;
 
     function renderImageMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
         const desc = msg.content || '';
 
@@ -319,7 +361,7 @@ ${noticeHtml}`;
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-media">${inner}</div>
     ${timeHtml}
@@ -329,13 +371,14 @@ ${noticeHtml}`;
 
     function renderVideoMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
-        const avatarName = msg.isMe ? 'Me' : contact;
+        const from = msg.from || contact;
+        const avatarName = msg.isMe ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
         const desc = msg.content || '\u89c6\u9891';
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
-  ${renderAvatar(avatarName, msg.isMe)}
+  ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-media st-phone-video">
       <div class="phone-media-desc">\ud83c\udfac ${escapeHtml(desc)}</div>

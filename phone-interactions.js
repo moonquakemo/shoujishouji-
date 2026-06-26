@@ -20,7 +20,7 @@ const PhoneInteractions = (() => {
     function getAllStickers() { return { ...globalStickers, ...currentCharStickers }; }
 
     // ========== 配置（头像/背景）==========
-    let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '' };
+    let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '', charAvatarMap: {} };
     function setConfig(cfg) { phoneConfig = { ...phoneConfig, ...cfg }; }
     function getConfig() { return phoneConfig; }
 
