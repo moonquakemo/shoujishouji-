@@ -124,6 +124,13 @@
   border: 2px solid var(--phone-border);
   display: flex;
   flex-direction: column;
+  outline: none;
+}
+
+/* 消除手机界面内所有元素的浏览器默认 focus 黑线 */
+.st-phone *:focus,
+.st-phone *:focus-visible {
+  outline: none;
 }
 
 /* --- Status Bar (Top) --- */
