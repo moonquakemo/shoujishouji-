@@ -29,6 +29,18 @@ const PhoneRenderer = (() => {
         return div.innerHTML;
     }
 
+    function formatUrl(url) {
+        if (!url) return null;
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image') || url.startsWith('/')) {
+            return url;
+        }
+        // 如果像是 domain.com/path 这样的短链，自动补全 https://
+        if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(url)) {
+            return 'https://' + url;
+        }
+        return null;
+    }
+
     /**
      * 渲染头像（支持多角色名字匹配）
      * @param {string} name - 显示名，如 "Me" 或角色名
@@ -54,7 +66,12 @@ const PhoneRenderer = (() => {
             }
         }
         const letter = escapeHtml(name ? name.charAt(0) : '?');
+        
         if (url) {
+            // 自动补全可能缺失协议的短链
+            if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(url)) {
+                url = 'https://' + url;
+            }
             return `<div class="st-phone-avatar"><img src="${escapeHtml(url)}" alt="${letter}" onerror="this.remove()"><span class="avatar-fallback">${letter}</span></div>`;
         }
         return `<div class="st-phone-avatar">${letter}</div>`;
@@ -231,8 +248,9 @@ const PhoneRenderer = (() => {
         let imgSrc = null;
         if (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.resolveSticker) {
             imgSrc = PhoneInteractions.resolveSticker(msg.src);
-        } else if (msg.src && msg.src.startsWith('http')) {
-            imgSrc = msg.src;
+        } else {
+            const formatted = formatUrl(msg.src);
+            if (formatted) imgSrc = formatted;
         }
 
         const fallbackText = msg.content || '😊';
@@ -353,8 +371,9 @@ ${noticeHtml}`;
         const desc = msg.content || '';
 
         let inner;
-        if (msg.src && (msg.src.startsWith('http://') || msg.src.startsWith('https://'))) {
-            inner = `<img class="phone-media-img" src="${escapeHtml(msg.src)}" alt="${escapeHtml(desc)}" onerror="this.outerHTML='<div class=phone-media-desc>\ud83d\uddbc '+this.alt+'</div>'">`;
+        const formattedSrc = formatUrl(msg.src);
+        if (formattedSrc) {
+            inner = `<img class="phone-media-img" src="${escapeHtml(formattedSrc)}" alt="${escapeHtml(desc)}" onerror="this.outerHTML='<div class=phone-media-desc>\ud83d\uddbc '+this.alt+'</div>'">`;
         } else {
             inner = `<div class="phone-media-desc">\ud83d\uddbc ${escapeHtml(desc || '\u56fe\u7247')}</div>`;
         }
