@@ -34,8 +34,8 @@ const PhoneRenderer = (() => {
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image') || url.startsWith('/')) {
             return url;
         }
-        // 如果像是 domain.com/path 这样的短链，自动补全 https://
-        if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(url)) {
+        // 如果像是 domain.com/path 或 sub.domain.com/path 这样的短链，自动补全 https://
+        if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\//.test(url)) {
             return 'https://' + url;
         }
         return null;
@@ -68,8 +68,8 @@ const PhoneRenderer = (() => {
         const letter = escapeHtml(name ? name.charAt(0) : '?');
         
         if (url) {
-            // 自动补全可能缺失协议的短链
-            if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(url)) {
+            // 自动补全可能缺失协议的短链 (支持子域名)
+            if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\//.test(url)) {
                 url = 'https://' + url;
             }
             return `<div class="st-phone-avatar"><img src="${escapeHtml(url)}" alt="${letter}" onerror="this.remove()"><span class="avatar-fallback">${letter}</span></div>`;

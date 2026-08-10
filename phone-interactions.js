@@ -15,7 +15,7 @@ const PhoneInteractions = (() => {
     function resolveSticker(key) {
         if (!key) return null;
         if (key.startsWith('http://') || key.startsWith('https://')) return key;
-        if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(key)) return 'https://' + key;
+        if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\//.test(key)) return 'https://' + key;
         return currentCharStickers[key] || globalStickers[key] || null;
     }
     function getAllStickers() { return { ...globalStickers, ...currentCharStickers }; }
