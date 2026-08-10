@@ -53,16 +53,16 @@ const PhoneRenderer = (() => {
         if (isMe) {
             url = cfg.userAvatar || '';
         } else {
-            // 优先级: 多角色映射表(精确匹配) → ST角色列表自动匹配 → 单个charAvatar回退
+            // 优先级: 多角色映射表(精确匹配) → 用户填写的单个charAvatar → ST角色列表自动匹配
             const avatarMap = cfg.charAvatarMap || {};
             const lookupName = senderName || name;
             if (lookupName && avatarMap[lookupName]) {
                 url = avatarMap[lookupName];
+            } else if (cfg.charAvatar) {
+                url = cfg.charAvatar;
             } else if (lookupName) {
                 // 尝试从 SillyTavern 角色列表自动匹配
-                url = tryMatchSTAvatar(lookupName) || cfg.charAvatar || '';
-            } else {
-                url = cfg.charAvatar || '';
+                url = tryMatchSTAvatar(lookupName) || '';
             }
         }
         const letter = escapeHtml(name ? name.charAt(0) : '?');
