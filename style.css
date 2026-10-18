@@ -2046,8 +2046,8 @@
 @media (max-width: 768px) {
   .st-phone-composer-trigger {
     /* 避开移动端底部打字区域 (ST 的 #form_sheld 及右下角发送/扩展按钮) */
-    bottom: calc(135px + env(safe-area-inset-bottom, 0px)) !important;
-    right: 14px !important;
+    bottom: calc(135px + env(safe-area-inset-bottom, 0px));
+    right: 14px;
     width: 46px;
     height: 46px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -2057,18 +2057,30 @@
     font-size: 22px;
   }
 
+  /* 方案 2：移动端固定停靠在 Quick Bar / 底部打字区上方 */
   .st-phone-composer-panel {
+    left: 10px !important;
+    right: 10px !important;
+    margin: 0 auto !important;
     width: calc(100vw - 20px) !important;
-    max-width: 420px !important;
-    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(82vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 22px !important;
+    max-width: 440px !important;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(75vh - env(safe-area-inset-bottom, 0px)) !important;
+    border-radius: 20px !important;
+    transform: none !important;
+    animation: composerMobileFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 100000 !important;
   }
 
-  /* 移动端未被手动拖拽移动时，默认居中展示 */
-  .st-phone-composer-panel:not([style*="left"]) {
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) !important;
+  @keyframes composerMobileFade {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
+

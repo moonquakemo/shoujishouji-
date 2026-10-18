@@ -119,11 +119,19 @@ const PhoneComposer = (() => {
      * 绑定各类交互事件
      */
     function bindEvents() {
-        // 1. 悬浮胶囊开合 (防拖拽误触)
-        $('#st_phone_composer_trigger').on('click', function (e) {
+        // 1. 悬浮胶囊开合 (支持 touch 与 click，防拖拽误触与双重触发)
+        let triggerLastTap = 0;
+        $('#st_phone_composer_trigger').on('click touchend', function (e) {
             if (this._pu_drag_prevent_click) {
                 e.stopImmediatePropagation();
                 return;
+            }
+            const now = Date.now();
+            if (now - triggerLastTap < 350) return;
+            triggerLastTap = now;
+
+            if (e.type === 'touchend') {
+                e.preventDefault(); // 阻止后续合成的 ghost click 导致反复开合
             }
             toggleComposer();
         });
@@ -214,6 +222,32 @@ const PhoneComposer = (() => {
     }
 
     /**
+     * 获取 SillyTavern 底部快捷栏 (Quick Bar / Form Sheld) 相对屏幕底部的安全停靠高度
+     */
+    function getQuickBarBottomOffset() {
+        let bottomOffset = 85;
+        try {
+            const $qr = $('#quick_reply_context, #quickReplyContainer, .quick-reply-wrapper, #qr--bar, [id*="quick-reply"]:visible');
+            const $sheld = $('#form_sheld');
+            let targetEl = null;
+
+            if ($qr.length && $qr.is(':visible')) {
+                targetEl = $qr[0];
+            } else if ($sheld.length && $sheld.is(':visible')) {
+                targetEl = $sheld[0];
+            }
+
+            if (targetEl) {
+                const rect = targetEl.getBoundingClientRect();
+                if (rect.top > 60 && rect.top < window.innerHeight) {
+                    bottomOffset = Math.round(window.innerHeight - rect.top + 8);
+                }
+            }
+        } catch (e) { }
+        return Math.min(Math.max(bottomOffset, 75), 260);
+    }
+
+    /**
      * 初始化悬浮按钮和悬浮窗的拖拽功能
      */
     function initDraggables() {
@@ -222,17 +256,37 @@ const PhoneComposer = (() => {
 
         $(window).on('resize.pu_draggables orientationchange.pu_draggables', function () {
             clampToViewport('#st_phone_composer_trigger');
-            clampToViewport('#st_phone_composer_panel');
+            if (window.innerWidth <= 768) {
+                if (isOpen) {
+                    const bOffset = getQuickBarBottomOffset();
+                    $('#st_phone_composer_panel').css({
+                        left: '10px',
+                        right: '10px',
+                        margin: '0 auto',
+                        bottom: `${bOffset}px`,
+                        top: 'auto',
+                        transform: 'none'
+                    });
+                }
+            } else {
+                clampToViewport('#st_phone_composer_panel');
+            }
         });
 
         // 挂载完成后立即做一次安全视口检查，确保在小屏或旋转屏幕下永远处于安全区
         setTimeout(() => {
             clampToViewport('#st_phone_composer_trigger');
-            clampToViewport('#st_phone_composer_panel');
+            if (window.innerWidth > 768) {
+                clampToViewport('#st_phone_composer_panel');
+            }
         }, 200);
     }
 
     function clampToViewport(selector) {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile && selector === '#st_phone_composer_panel') {
+            return; // 移动端伴侣面板由 getQuickBarBottomOffset 统一停靠
+        }
         const $el = $(selector);
         if (!$el.length || $el.css('display') === 'none') return;
         const rect = $el[0].getBoundingClientRect();
@@ -267,27 +321,34 @@ const PhoneComposer = (() => {
         const actualKey = getStorageKey(storageKey);
 
         try {
-            const saved = localStorage.getItem(actualKey);
-            if (saved) {
-                const pos = JSON.parse(saved);
-                if (typeof pos.left === 'number' && typeof pos.top === 'number') {
-                    const elW = $el.outerWidth() || 48;
-                    const elH = $el.outerHeight() || 48;
-                    const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
-                    const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
-                    const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
-                    $el.css({
-                        left: `${Math.round(clampLeft)}px`,
-                        top: `${Math.round(clampTop)}px`,
-                        right: 'auto',
-                        bottom: 'auto'
-                    });
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile && elementSelector === '#st_phone_composer_panel') {
+                // 移动端方案 2：面板固定停靠在 quick bar 上，不读取和恢复历史拖拽坐标
+                localStorage.removeItem('st_phone_panel_pos_mobile');
+            } else {
+                const saved = localStorage.getItem(actualKey);
+                if (saved) {
+                    const pos = JSON.parse(saved);
+                    if (typeof pos.left === 'number' && typeof pos.top === 'number') {
+                        const elW = $el.outerWidth() || 48;
+                        const elH = $el.outerHeight() || 48;
+                        const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
+                        const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
+                        const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
+                        $el.css({
+                            left: `${Math.round(clampLeft)}px`,
+                            top: `${Math.round(clampTop)}px`,
+                            right: 'auto',
+                            bottom: 'auto'
+                        });
+                    }
                 }
             }
         } catch (e) { }
 
         let isDragging = false;
         let hasMoved = false;
+        let isTouchDrag = false;
         let startX = 0, startY = 0;
         let initLeft = 0, initTop = 0;
 
@@ -312,6 +373,12 @@ const PhoneComposer = (() => {
                 return;
             }
 
+            // 移动端方案 2：面板固定停靠在 quick bar 上方，不启用面板拖动
+            if (elementSelector === '#st_phone_composer_panel' && window.innerWidth <= 768) {
+                return;
+            }
+
+            isTouchDrag = e.type === 'touchstart';
             const coords = getCoords(e);
             startX = coords.x;
             startY = coords.y;
@@ -332,8 +399,9 @@ const PhoneComposer = (() => {
             const coords = getCoords(e);
             const dx = coords.x - startX;
             const dy = coords.y - startY;
+            const threshold = isTouchDrag ? 12 : 5;
 
-            if (!hasMoved && Math.hypot(dx, dy) > 4) {
+            if (!hasMoved && Math.hypot(dx, dy) > threshold) {
                 hasMoved = true;
                 $el.addClass('dragging');
             }
@@ -380,7 +448,9 @@ const PhoneComposer = (() => {
                 el._pu_drag_prevent_click = true;
                 setTimeout(() => {
                     el._pu_drag_prevent_click = false;
-                }, 100);
+                }, 300);
+            } else {
+                el._pu_drag_prevent_click = false;
             }
         }
     }
@@ -399,21 +469,23 @@ const PhoneComposer = (() => {
                 syncLatestTime();
             }
 
-            // 如果面板未被单独拖拽过，但按钮被拖拽过，则就近在按钮周围展开
-            try {
-                const isMobile = window.innerWidth <= 768;
-                const panelKey = isMobile ? 'st_phone_panel_pos_mobile' : 'st_phone_panel_pos';
-                const savedPanelPos = localStorage.getItem(panelKey);
-                if (!savedPanelPos) {
-                    if (isMobile) {
-                        // 移动端默认使用 CSS 弹性居中，不写入固定坐标
-                        $panel.css({
-                            left: '',
-                            top: '',
-                            right: '',
-                            bottom: ''
-                        });
-                    } else if ($trigger.length) {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                // 方案 2：移动端固定停靠在 quick bar / 底部打字区上方
+                const bOffset = getQuickBarBottomOffset();
+                $panel.css({
+                    left: '10px',
+                    right: '10px',
+                    margin: '0 auto',
+                    bottom: `${bOffset}px`,
+                    top: 'auto',
+                    transform: 'none'
+                });
+            } else {
+                // 桌面端：如果未单独拖动过面板，则在悬浮按钮周围展开
+                try {
+                    const savedPanelPos = localStorage.getItem('st_phone_panel_pos');
+                    if (!savedPanelPos && $trigger.length) {
                         const tRect = $trigger[0].getBoundingClientRect();
                         const pW = 360;
                         const pH = 520;
@@ -429,8 +501,8 @@ const PhoneComposer = (() => {
                             bottom: 'auto'
                         });
                     }
-                }
-            } catch (e) { }
+                } catch (e) { }
+            }
 
             if (pendingDrafts.length > 0) {
                 $('#composer_idle_canvas').hide();
@@ -439,9 +511,13 @@ const PhoneComposer = (() => {
                 $('#composer_chat_stream').hide();
                 $('#composer_idle_canvas').show();
             }
-            $panel.stop(true, true).fadeIn(180);
+            $panel.stop(true, true).css('display', 'flex').hide().fadeIn(180);
             $trigger.addClass('active');
-            $('#composer_text_input').focus();
+
+            // 移动端严格取消自动聚焦，防止拉起虚拟键盘遮挡屏幕；仅桌面端自动聚焦
+            if (!isMobile) {
+                $('#composer_text_input').focus();
+            }
         } else {
             $panel.stop(true, true).fadeOut(150);
             $trigger.removeClass('active');
@@ -822,7 +898,7 @@ const PhoneComposer = (() => {
     </div>
     <div class="form-row">
         <label>金额 (¥)</label>
-        <input type="number" id="cp_transfer_amt" class="composer-form-input" placeholder="0.00" min="1" step="any" autofocus>
+        <input type="number" id="cp_transfer_amt" class="composer-form-input" placeholder="0.00" min="1" step="any">
     </div>
     <div class="form-row">
         <label>备注 (选填)</label>
@@ -863,7 +939,7 @@ const PhoneComposer = (() => {
     </div>
     <div class="form-row">
         <label>图片描述</label>
-        <input type="text" id="cp_img_desc" class="composer-form-input" placeholder="如：发了一张自拍 / 刚才拍的晚霞" autofocus>
+        <input type="text" id="cp_img_desc" class="composer-form-input" placeholder="如：发了一张自拍 / 刚才拍的晚霞">
     </div>
     <div class="form-btn-group">
         <button type="button" class="form-btn append" id="cp_img_append">发送</button>
@@ -895,7 +971,7 @@ const PhoneComposer = (() => {
     </div>
     <div class="form-row">
         <label>视频描述</label>
-        <input type="text" id="cp_video_desc" class="composer-form-input" placeholder="如：发了一段旅行vlog / 搞笑猫咪视频" autofocus>
+        <input type="text" id="cp_video_desc" class="composer-form-input" placeholder="如：发了一段旅行vlog / 搞笑猫咪视频">
     </div>
     <div class="form-btn-group">
         <button type="button" class="form-btn append" id="cp_video_append">发送</button>
@@ -927,7 +1003,7 @@ const PhoneComposer = (() => {
     </div>
     <div class="form-row">
         <label>地点名称</label>
-        <input type="text" id="cp_loc_name" class="composer-form-input" placeholder="如：人民广场 / 7-11便利店" autofocus>
+        <input type="text" id="cp_loc_name" class="composer-form-input" placeholder="如：人民广场 / 7-11便利店">
     </div>
     <div class="form-row">
         <label>详细地址 (选填)</label>
