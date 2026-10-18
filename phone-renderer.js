@@ -104,6 +104,8 @@ const PhoneRenderer = (() => {
         const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
         const bgStyle = cfg.chatBackground ? `background-image:url('${escapeHtml(cfg.chatBackground)}');background-size:cover;` : '';
 
+        const processedMessages = clusterMessagesWithTimeSeparators(messages);
+
         return `
 <div class="st-phone" data-phone-id="${id}">
   ${renderStatusBar()}
@@ -111,11 +113,97 @@ const PhoneRenderer = (() => {
   ${renderSearchBar(id)}
   <div class="st-phone-chat" id="chat_${id}" style="${bgStyle}">
     <div class="st-phone-chat-spacer"></div>
-    ${messages.map((msg, i) => renderMessage(msg, contact, actions, id, i)).join('\n')}
+    ${processedMessages.map((msg, i) => renderMessage(msg, contact, actions, id, i)).join('\n')}
   </div>
   ${renderInputBar(id)}
   <div class="st-phone-bottom-safe"></div>
 </div>`;
+    }
+
+    /**
+     * 智能时间聚类处理 (仿真微信 5 分钟与跨天/跨周药丸插入)
+     * @param {Array} rawMessages 
+     * @returns {Array}
+     */
+    function clusterMessagesWithTimeSeparators(rawMessages) {
+        if (!rawMessages || !rawMessages.length) return [];
+
+        const getTimeInfo = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
+            ? PhoneParser.parseTimeInfo
+            : (t) => ({ dateKey: t, displayDate: t, timeOfDay: t, minuteStamp: null, raw: t });
+
+        const result = [];
+        let lastDateKey = null;
+        let lastMinuteStamp = null;
+        let lastFullTime = '';
+
+        for (let i = 0; i < rawMessages.length; i++) {
+            const msg = rawMessages[i];
+            if (!msg) continue;
+
+            // 如果原本就是显式的 time-sep (例如世界书输出的或短代码〖时间：...】)
+            if (msg.type === 'time-sep') {
+                const rawT = (msg.time || msg.content || '').trim();
+                const info = getTimeInfo(rawT);
+                if (info.dateKey) lastDateKey = info.dateKey;
+                if (info.minuteStamp !== null) lastMinuteStamp = info.minuteStamp;
+                lastFullTime = rawT;
+                result.push(msg);
+                continue;
+            }
+
+            // 提取消息的时间 (若未标注，继承上一条已知时间)
+            let timeStr = (msg.time || '').trim();
+            if (!timeStr) {
+                timeStr = lastFullTime || '';
+                msg.time = timeStr;
+            } else {
+                lastFullTime = timeStr;
+            }
+
+            const info = getTimeInfo(timeStr);
+            const isFirst = (lastDateKey === null && lastMinuteStamp === null);
+            const isDateChanged = info.dateKey && lastDateKey && (info.dateKey !== lastDateKey);
+            const isTimeGap = (info.minuteStamp !== null && lastMinuteStamp !== null && (info.minuteStamp - lastMinuteStamp > 5 || info.minuteStamp < lastMinuteStamp));
+
+            if (isFirst || isDateChanged) {
+                // 跨天、跨周或整个对话第一条：展示带日期的完整药丸
+                let pillText = '';
+                if (info.displayDate) {
+                    pillText = info.timeOfDay ? `${info.displayDate} ${info.timeOfDay}` : info.displayDate;
+                } else if (info.timeOfDay) {
+                    pillText = info.timeOfDay;
+                } else {
+                    pillText = info.raw || timeStr;
+                }
+                if (pillText) {
+                    result.push({
+                        type: 'time-sep',
+                        time: pillText,
+                        content: pillText,
+                    });
+                }
+                lastDateKey = info.dateKey || 'today';
+                lastMinuteStamp = info.minuteStamp;
+            } else if (isTimeGap) {
+                // 同一天内，间隔超过 5 分钟：展示纯时分药丸
+                const pillText = info.timeOfDay || timeStr;
+                if (pillText) {
+                    result.push({
+                        type: 'time-sep',
+                        time: pillText,
+                        content: pillText,
+                    });
+                }
+                lastMinuteStamp = info.minuteStamp;
+            } else if (lastMinuteStamp === null && info.minuteStamp !== null) {
+                lastMinuteStamp = info.minuteStamp;
+            }
+
+            result.push(msg);
+        }
+
+        return result;
     }
 
     function renderStatusBar() {
@@ -412,7 +500,7 @@ ${noticeHtml}`;
         return `<div class="st-phone-time-sep"><span>${escapeHtml(msg.time)}</span></div>`;
     }
 
-    return { render, escapeHtml };
+    return { render, renderMessage, renderAvatar, renderTimeSep, escapeHtml };
 })();
 
 if (typeof window !== 'undefined') {

@@ -7,18 +7,105 @@ const PhoneInteractions = (() => {
 
     let pendingActions = [];
 
-    // ========== 表情包 ==========
+    // ========== 表情包与别名映射 ==========
     let currentCharStickers = {};
     let globalStickers = {};
+
+    const STICKER_ALIASES = {
+        '流泪': 'emoji_face_cry',
+        '哭': 'emoji_face_cry',
+        '大哭': 'emoji_face_screaming',
+        '尖叫': 'emoji_face_screaming',
+        '抓狂': 'emoji_face_screaming',
+        '笑哭': 'emoji_face_laughter_crying',
+        '大笑': 'emoji_face_laughter',
+        '哈哈': 'emoji_face_laughter',
+        '笑': 'emoji_face_smile',
+        '微笑': 'emoji_face_smiling',
+        '偷笑': 'emoji_face_smirking',
+        '流汗': 'emoji_face_sweat',
+        '汗': 'emoji_face_sweat',
+        '尴尬': 'emoji_face_grimacing',
+        '脸红': 'emoji_face_flushed',
+        '害羞': 'emoji_face_flushed',
+        '思考': 'emoji_face_thinking',
+        '想': 'emoji_face_thinking',
+        '爱心': 'love',
+        '喜欢': 'love',
+        '比心': 'emoji_face_heart',
+        '亲亲': 'emoji_face_kiss_heart',
+        '点赞': 'emoji_hand_thumbs_up',
+        '赞': 'emoji_hand_thumbs_up',
+        '强': 'emoji_hand_thumbs_up',
+        '胜利': 'emoji_hand_victory',
+        '耶': 'emoji_hand_victory',
+        '双手合十': 'emoji_hand_fold',
+        '拜托': 'emoji_hand_fold',
+        '鼓掌': 'emoji_hand_clapping',
+        '加油': 'emoji_hand_biceps',
+        '肌肉': 'emoji_hand_biceps',
+        '生气': 'emoji_anger_symbol',
+        '愤怒': 'emoji_anger_symbol',
+        '火': 'emoji_fire',
+        '钞票': 'emoji_banknote',
+        '钱': 'emoji_banknote',
+        '发财': 'emoji_banknote',
+        '蛋糕': 'emoji_cake',
+        '猫': 'emoji_cat',
+        '猫咪': 'emoji_cat_face',
+        '狗': 'emoji_dog',
+        '狗头': 'emoji_dog_face',
+        '大象': 'emoji_elephant',
+        '企鹅': 'emoji_pengin',
+        '鲨鱼': 'emoji_shark',
+        '庆祝': 'emoji_poppers',
+        '礼花': 'emoji_poppers',
+        '闪烁': 'emoji_sparkles',
+        '星星': 'emoji_sparkles',
+        'OK': 'ok',
+        '好的': 'ok',
+        '对不起': 'gomen',
+        '抱歉': 'gomen',
+        '扎心': 'pien',
+        '心碎': 'pien',
+        '太棒了': 'saikouka',
+        '确实': 'sorena',
+    };
 
     function setStickers(c, g) { currentCharStickers = c || {}; globalStickers = g || {}; }
     function resolveSticker(key) {
         if (!key) return null;
-        if (key.startsWith('http://') || key.startsWith('https://')) return key;
+        key = String(key).trim();
+        if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('data:image')) return key;
         if (/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\//.test(key)) return 'https://' + key;
-        return currentCharStickers[key] || globalStickers[key] || null;
+
+        // 1. 精确匹配当前角色表情
+        if (currentCharStickers[key]) return currentCharStickers[key];
+
+        // 2. 精确匹配全局表情
+        if (globalStickers[key]) return globalStickers[key];
+
+        // 3. 中文别名映射 (例如 "流泪" -> "emoji_face_cry")
+        const alias = STICKER_ALIASES[key];
+        if (alias) {
+            if (currentCharStickers[alias]) return currentCharStickers[alias];
+            if (globalStickers[alias]) return globalStickers[alias];
+        }
+
+        // 4. 不区分大小写与模糊匹配
+        const lowerKey = key.toLowerCase();
+        const all = { ...globalStickers, ...currentCharStickers };
+        for (const [k, url] of Object.entries(all)) {
+            if (k.toLowerCase() === lowerKey) return url;
+        }
+        for (const [k, url] of Object.entries(all)) {
+            if (k.toLowerCase().includes(lowerKey)) return url;
+        }
+
+        return null;
     }
     function getAllStickers() { return { ...globalStickers, ...currentCharStickers }; }
+    function getStickerAliases() { return STICKER_ALIASES; }
 
     // ========== 配置（头像/背景）==========
     let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '', charAvatarMap: {} };
@@ -424,3 +511,5 @@ const PhoneInteractions = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.PhoneInteractions = PhoneInteractions; }
+if (typeof globalThis !== 'undefined') { globalThis.PhoneInteractions = PhoneInteractions; }
+

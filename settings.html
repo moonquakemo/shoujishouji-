@@ -1,137 +1,268 @@
 <div id="phone_ui_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>📱 Phone UI (小手机)</b>
+            <b id="phone_ui_entry_title">📱 R-Phone</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
 
             <style>
+                #phone_ui_settings {
+                    --pu-bg-card: rgba(255, 255, 255, 0.03);
+                    --pu-bg-card-hover: rgba(255, 255, 255, 0.05);
+                    --pu-border: rgba(255, 255, 255, 0.08);
+                    --pu-border-focus: rgba(120, 150, 255, 0.45);
+                    --pu-accent: #4e85f5;
+                    --pu-text-muted: rgba(255, 255, 255, 0.5);
+                }
+                #phone_ui_settings .pu-card {
+                    background: var(--pu-bg-card);
+                    border: 1px solid var(--pu-border);
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    margin-bottom: 12px;
+                    transition: all 0.2s ease;
+                }
+                #phone_ui_settings .pu-card:hover {
+                    border-color: rgba(255, 255, 255, 0.12);
+                    background: var(--pu-bg-card-hover);
+                }
+                #phone_ui_settings .pu-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                #phone_ui_settings .pu-card-title {
+                    font-size: 13px;
+                    font-weight: 600;
+                    letter-spacing: 0.3px;
+                    color: rgba(255, 255, 255, 0.92);
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                #phone_ui_settings .pu-card-subtitle {
+                    font-size: 11px;
+                    color: var(--pu-text-muted);
+                    margin-bottom: 8px;
+                    line-height: 1.4;
+                }
+                #phone_ui_settings .pu-form-group {
+                    margin-bottom: 8px;
+                }
+                #phone_ui_settings .pu-form-group label {
+                    display: block;
+                    font-size: 11px;
+                    color: var(--pu-text-muted);
+                    margin-bottom: 4px;
+                }
                 #phone_ui_settings .menu_button {
                     justify-content: center;
                     white-space: nowrap;
                     text-align: center;
-                    padding-left: 10px;
-                    padding-right: 10px;
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    border-radius: 6px;
+                    transition: all 0.2s ease;
                 }
                 #phone_ui_settings .flex-btn-group {
                     display: flex;
                     gap: 6px;
-                    margin-top: 4px;
+                    margin-top: 6px;
                 }
                 #phone_ui_settings .flex-btn-group .menu_button {
                     flex: 1;
                     margin: 0;
                 }
+                #phone_ui_settings .btn-primary {
+                    background: rgba(78, 133, 245, 0.15);
+                    border: 1px solid rgba(78, 133, 245, 0.35);
+                    color: #79a8ff;
+                }
+                #phone_ui_settings .btn-primary:hover {
+                    background: rgba(78, 133, 245, 0.28);
+                    border-color: rgba(78, 133, 245, 0.6);
+                    color: #ffffff;
+                }
+                #phone_ui_settings .btn-save {
+                    background: rgba(255, 209, 102, 0.12);
+                    border: 1px solid rgba(255, 209, 102, 0.3);
+                    color: #ffd166;
+                }
+                #phone_ui_settings .btn-save:hover {
+                    background: rgba(255, 209, 102, 0.22);
+                    color: #fff2cc;
+                }
+                #phone_ui_settings .btn-danger {
+                    color: #ff7b7b;
+                    background: rgba(255, 100, 100, 0.08);
+                    border: 1px solid rgba(255, 100, 100, 0.2);
+                }
+                #phone_ui_settings .btn-danger:hover {
+                    background: rgba(255, 100, 100, 0.18);
+                    color: #ffffff;
+                }
+                #phone_ui_settings .pu-divider {
+                    height: 1px;
+                    background: rgba(255, 255, 255, 0.06);
+                    margin: 14px 0;
+                    border: none;
+                }
+                #phone_ui_settings textarea.text_pole {
+                    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+                    font-size: 11.5px;
+                    line-height: 1.5;
+                    border-radius: 6px;
+                }
+                #phone_ui_settings select.text_pole {
+                    border-radius: 6px;
+                }
             </style>
 
-            <!-- 开关 -->
-            <div style="margin-bottom: 10px;">
-                <label class="checkbox_label" for="phone_ui_enabled">
-                    <input type="checkbox" id="phone_ui_enabled" checked />
-                    <span>启用手机 UI 渲染</span>
-                </label>
-            </div>
-            <div style="margin-bottom: 10px;">
-                <label class="checkbox_label" for="phone_ui_aggregate">
-                    <input type="checkbox" id="phone_ui_aggregate" checked />
-                    <span>跨层聚合消息</span>
-                </label>
-                <small style="display:block; color:#888; margin-top:2px;">开启后显示历史所有消息；关闭则每层独立渲染</small>
-            </div>
-            <div style="margin-bottom: 10px;">
-                <label class="checkbox_label" for="phone_ui_inject">
-                    <input type="checkbox" id="phone_ui_inject" checked />
-                    <span>交互操作注入 AI 上下文</span>
-                </label>
-                <small style="display:block; color:#888; margin-top:2px;">转账/表情包/语音等操作自动告知 AI</small>
+            <!-- 基础开关 -->
+            <div style="margin-bottom: 12px;">
+                <div style="margin-bottom: 8px;">
+                    <label class="checkbox_label" for="phone_ui_enabled">
+                        <input type="checkbox" id="phone_ui_enabled" checked />
+                        <span>启用手机界面渲染</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <label class="checkbox_label" for="phone_ui_aggregate">
+                        <input type="checkbox" id="phone_ui_aggregate" checked />
+                        <span>跨层聚合历史记录</span>
+                    </label>
+                    <small style="display:block; color:#888; margin-top:2px; margin-left: 24px;">开启后连续显示上下文历史消息；关闭则仅渲染单层</small>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <label class="checkbox_label" for="phone_ui_inject">
+                        <input type="checkbox" id="phone_ui_inject" checked />
+                        <span>操作自动注入 AI 上下文</span>
+                    </label>
+                    <small style="display:block; color:#888; margin-top:2px; margin-left: 24px;">转账、表情包、语音等操作自动告知 AI</small>
+                </div>
             </div>
 
-            <hr />
+            <hr class="pu-divider" />
 
-            <!-- 头像和背景 -->
-            <div style="margin-bottom: 10px;">
-                <b>🖼️ 头像 & 背景</b>
-                <small style="display:block; color:#888; margin-top:2px;">当前角色: <b id="phone_ui_char_name">-</b></small>
-            </div>
-            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;">
-                    <small>角色头像 URL</small>
+            <!-- 头像与背景 -->
+            <div class="pu-card">
+                <div class="pu-card-header">
+                    <span class="pu-card-title">头像与聊天背景</span>
+                    <small style="color:#888;">角色: <b id="phone_ui_char_name" style="color: #ddd;">-</b></small>
+                </div>
+                <div class="pu-form-group">
+                    <label>角色头像链接</label>
                     <input type="text" id="phone_ui_char_avatar" class="text_pole" placeholder="https://..." style="font-size:12px;">
                 </div>
-                <div style="margin-bottom:6px;">
-                    <small>用户头像 URL（当前角色下）</small>
+                <div class="pu-form-group">
+                    <label>用户专属头像链接 (当前角色下)</label>
                     <input type="text" id="phone_ui_user_avatar" class="text_pole" placeholder="https://..." style="font-size:12px;">
                 </div>
-                <div style="margin-bottom:6px;">
-                    <small>聊天背景图 URL</small>
+                <div class="pu-form-group">
+                    <label>聊天背景图链接</label>
                     <input type="text" id="phone_ui_chat_bg" class="text_pole" placeholder="https://... 或留空使用默认" style="font-size:12px;">
                 </div>
-                <div class="menu_button" id="phone_ui_save_config">💾 保存头像/背景</div>
-                <div style="margin-top:10px; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div class="menu_button btn-primary" id="phone_ui_save_config">保存头像与背景</div>
+
+                <div style="margin-top:12px; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.06);">
                     <div style="margin-bottom:6px;">
-                        <small>👥 多角色头像映射 <span style="color:#666;">(大小号/群聊卡专用)</span></small>
+                        <span style="font-size:12px; font-weight:600;">多角色头像映射</span>
+                        <small style="color:#666;">(大小号/群聊卡专用)</small>
                         <small style="display:block; color:#888; margin-top:2px;">JSON 格式，key 为消息中 from 字段的角色名，value 为头像 URL</small>
                     </div>
                     <textarea id="phone_ui_avatar_map" rows="3" class="text_pole"
-                        placeholder='{"角色A": "https://...", "角色B": "https://..."}'
-                        style="font-size: 12px; font-family: monospace;"></textarea>
-                    <div class="menu_button" id="phone_ui_save_avatar_map" style="margin-top: 4px;">💾 保存多角色头像</div>
+                        placeholder='{"角色A": "https://...", "角色B": "https://..."}'></textarea>
+                    <div class="menu_button" id="phone_ui_save_avatar_map" style="margin-top: 6px;">保存多角色头像</div>
                 </div>
             </div>
-
-            <hr />
 
             <!-- 表情包 -->
-            <div style="margin-bottom: 10px;"><b>🎨 表情包库</b></div>
-            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;"><span>🎭 角色专属</span></div>
-                <textarea id="phone_ui_char_stickers" rows="4" class="text_pole"
-                    placeholder='{"happy":"https://...","sad":"https://..."}'
-                    style="font-size: 12px; font-family: monospace;"></textarea>
-                <div class="flex-btn-group">
-                    <div class="menu_button" id="phone_ui_save_char_stickers">💾 保存角色表情包</div>
-                    <div class="menu_button" id="phone_ui_export_char_stickers">📤 写入角色卡</div>
+            <div class="pu-card">
+                <div class="pu-card-header">
+                    <span class="pu-card-title">表情包配置</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <div class="pu-card-subtitle">角色专属表情包 (JSON)</div>
+                    <textarea id="phone_ui_char_stickers" rows="3" class="text_pole"
+                        placeholder='{"happy":"https://...","sad":"https://..."}'></textarea>
+                    <div class="flex-btn-group">
+                        <div class="menu_button" id="phone_ui_save_char_stickers">保存角色表情包</div>
+                        <div class="menu_button" id="phone_ui_export_char_stickers">写入角色卡</div>
+                    </div>
+                </div>
+                <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <div class="pu-card-subtitle">全局表情包 (JSON)</div>
+                    <textarea id="phone_ui_global_stickers" rows="3" class="text_pole"
+                        placeholder='{"laugh":"https://...","cry":"https://..."}'></textarea>
+                    <div class="menu_button" id="phone_ui_save_global_stickers" style="margin-top: 6px;">保存全局表情包</div>
                 </div>
             </div>
-            <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;"><span>🌐 全局表情包</span></div>
-                <textarea id="phone_ui_global_stickers" rows="3" class="text_pole"
-                    placeholder='{"laugh":"https://...","cry":"https://..."}'
-                    style="font-size: 12px; font-family: monospace;"></textarea>
-                <div class="menu_button" id="phone_ui_save_global_stickers" style="margin-top: 4px;">💾 保存全局表情包</div>
+
+            <hr class="pu-divider" />
+
+            <!-- 主题库 & 快捷切换 -->
+            <div class="pu-card">
+                <div class="pu-card-header">
+                    <span class="pu-card-title">主题库与预设</span>
+                    <small style="color:#888;">保存即可持久调用</small>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <select id="phone_ui_theme_select" class="text_pole" style="font-size: 12px; width: 100%; height: 32px; padding: 4px 8px;">
+                        <optgroup label="官方预设">
+                            <option value="builtin:wechat">WeChat (微信风格)</option>
+                            <option value="builtin:sakura">Sakura Breeze (樱花粉)</option>
+                            <option value="builtin:kakaotalk">KakaoTalk (经典黄)</option>
+                            <option value="builtin:whatsapp">WhatsApp (绿白风格)</option>
+                        </optgroup>
+                        <optgroup id="phone_ui_custom_themes_group" label="自定义保存主题">
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="flex-btn-group" style="margin-bottom: 6px;">
+                    <div class="menu_button btn-primary" id="phone_ui_apply_to_char" title="设为当前角色的专属主题">应用给当前角色</div>
+                    <div class="menu_button" id="phone_ui_apply_to_global" title="设为全局默认主题">应用为全局</div>
+                </div>
+                <div class="flex-btn-group">
+                    <div class="menu_button" id="phone_ui_load_to_editor" title="把选中主题的 CSS 载入编辑框修改">载入编辑</div>
+                    <div class="menu_button btn-danger" id="phone_ui_delete_theme" title="删除当前选中的自定义主题">删除主题</div>
+                </div>
             </div>
 
-            <hr />
-
-            <!-- 主题 -->
-            <div style="margin-bottom: 10px;"><b>🎨 主题</b></div>
-            <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;"><span>🎭 角色专属主题</span></div>
-                <small style="display:block; color:#888; margin-bottom:6px;">粘贴主题 CSS（只需 :root { ... } 部分）</small>
+            <!-- 角色专属主题 -->
+            <div class="pu-card">
+                <div class="pu-card-header">
+                    <span class="pu-card-title">角色专属主题 (CSS)</span>
+                </div>
+                <small class="pu-card-subtitle" style="display:block;">粘贴主题 CSS（只需 :root { ... } 部分）</small>
                 <textarea id="phone_ui_char_theme_css" rows="4" class="text_pole"
-                    placeholder=':root { --navbar-bg: #00B900; ... }'
-                    style="font-size: 12px; font-family: monospace;"></textarea>
+                    placeholder=':root { --navbar-bg: #00B900; ... }'></textarea>
                 <div class="flex-btn-group">
-                    <div class="menu_button" id="phone_ui_save_char_theme">💾 保存角色主题</div>
-                    <div class="menu_button" id="phone_ui_export_char_theme">📤 写入角色卡</div>
-                </div>
-            </div>
-            <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                <div style="margin-bottom:6px;"><span>🌐 全局默认主题</span></div>
-                <textarea id="phone_ui_global_theme_css" rows="4" class="text_pole"
-                    placeholder=':root { --navbar-bg: #1a1a2e; ... }'
-                    style="font-size: 12px; font-family: monospace;"></textarea>
-                <div class="flex-btn-group">
-                    <div class="menu_button" id="phone_ui_save_global_theme">💾 保存全局主题</div>
-                    <div class="menu_button" id="phone_ui_reset_theme">🔄 恢复默认</div>
+                    <div class="menu_button" id="phone_ui_save_char_theme">保存角色主题</div>
+                    <div class="menu_button btn-save" id="phone_ui_save_to_library_char">存入主题库</div>
+                    <div class="menu_button" id="phone_ui_export_char_theme">写入角色卡</div>
                 </div>
             </div>
 
-            <hr />
-            <div style="color: #888; font-size: 12px;">
-                <span>版本 1.1.0 | </span>
-                <span>待注入操作: <b id="phone_ui_pending_count">0</b></span>
+            <!-- 全局默认主题 -->
+            <div class="pu-card">
+                <div class="pu-card-header">
+                    <span class="pu-card-title">全局默认主题 (CSS)</span>
+                </div>
+                <textarea id="phone_ui_global_theme_css" rows="4" class="text_pole"
+                    placeholder=':root { --navbar-bg: #1a1a2e; ... }'></textarea>
+                <div class="flex-btn-group">
+                    <div class="menu_button" id="phone_ui_save_global_theme">保存全局主题</div>
+                    <div class="menu_button btn-save" id="phone_ui_save_to_library_global">存入主题库</div>
+                    <div class="menu_button" id="phone_ui_reset_theme">恢复默认</div>
+                </div>
+            </div>
+
+            <hr class="pu-divider" />
+            <div style="color: #666; font-size: 11px; display: flex; justify-content: space-between;">
+                <span>版本 2.0.0</span>
+                <span>待注入操作: <b id="phone_ui_pending_count" style="color: #aaa;">0</b></span>
             </div>
         </div>
     </div>
