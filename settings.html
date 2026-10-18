@@ -7,13 +7,94 @@
         <div class="inline-drawer-content">
 
             <style>
+                /* 默认 / 暗黑模式主题变量 */
                 #phone_ui_settings {
-                    --pu-bg-card: rgba(255, 255, 255, 0.03);
-                    --pu-bg-card-hover: rgba(255, 255, 255, 0.05);
-                    --pu-border: rgba(255, 255, 255, 0.08);
-                    --pu-border-focus: rgba(120, 150, 255, 0.45);
+                    --pu-text-main: var(--SmartThemeBodyColor, rgba(255, 255, 255, 0.92));
+                    --pu-text-muted: var(--SmartThemeQuoteColor, rgba(255, 255, 255, 0.6));
+                    --pu-bg-card: rgba(255, 255, 255, 0.04);
+                    --pu-bg-card-hover: rgba(255, 255, 255, 0.07);
+                    --pu-border: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.1));
+                    --pu-border-hover: rgba(255, 255, 255, 0.2);
+                    --pu-border-focus: rgba(120, 150, 255, 0.6);
                     --pu-accent: #4e85f5;
-                    --pu-text-muted: rgba(255, 255, 255, 0.5);
+                    --pu-divider: rgba(255, 255, 255, 0.08);
+
+                    --pu-btn-primary-bg: rgba(78, 133, 245, 0.18);
+                    --pu-btn-primary-border: rgba(78, 133, 245, 0.45);
+                    --pu-btn-primary-text: #79a8ff;
+
+                    --pu-btn-save-bg: rgba(255, 209, 102, 0.15);
+                    --pu-btn-save-border: rgba(255, 209, 102, 0.4);
+                    --pu-btn-save-text: #ffd166;
+
+                    --pu-btn-danger-bg: rgba(255, 100, 100, 0.12);
+                    --pu-btn-danger-border: rgba(255, 100, 100, 0.3);
+                    --pu-btn-danger-text: #ff7b7b;
+
+                    color: var(--pu-text-main);
+                }
+
+                /* 亮色模式 / 白色背景反色自适应 (针对浅色酒馆主题) */
+                #phone_ui_settings.pu-light-theme {
+                    --pu-text-main: #1e293b;
+                    --pu-text-muted: #64748b;
+                    --pu-bg-card: rgba(0, 0, 0, 0.035);
+                    --pu-bg-card-hover: rgba(0, 0, 0, 0.06);
+                    --pu-border: rgba(0, 0, 0, 0.12);
+                    --pu-border-hover: rgba(0, 0, 0, 0.22);
+                    --pu-border-focus: #2563eb;
+                    --pu-accent: #2563eb;
+                    --pu-divider: rgba(0, 0, 0, 0.1);
+
+                    --pu-btn-primary-bg: rgba(37, 99, 235, 0.1);
+                    --pu-btn-primary-border: rgba(37, 99, 235, 0.35);
+                    --pu-btn-primary-text: #1d4ed8;
+
+                    --pu-btn-save-bg: rgba(217, 119, 6, 0.12);
+                    --pu-btn-save-border: rgba(217, 119, 6, 0.35);
+                    --pu-btn-save-text: #b45309;
+
+                    --pu-btn-danger-bg: rgba(220, 38, 38, 0.1);
+                    --pu-btn-danger-border: rgba(220, 38, 38, 0.35);
+                    --pu-btn-danger-text: #dc2626;
+                }
+
+                /* 媒体查询备用自适应 */
+                @media (prefers-color-scheme: light) {
+                    #phone_ui_settings:not(.pu-dark-theme) {
+                        --pu-text-main: #1e293b;
+                        --pu-text-muted: #64748b;
+                        --pu-bg-card: rgba(0, 0, 0, 0.035);
+                        --pu-bg-card-hover: rgba(0, 0, 0, 0.06);
+                        --pu-border: rgba(0, 0, 0, 0.12);
+                        --pu-border-hover: rgba(0, 0, 0, 0.22);
+                        --pu-border-focus: #2563eb;
+                        --pu-accent: #2563eb;
+                        --pu-divider: rgba(0, 0, 0, 0.1);
+
+                        --pu-btn-primary-bg: rgba(37, 99, 235, 0.1);
+                        --pu-btn-primary-border: rgba(37, 99, 235, 0.35);
+                        --pu-btn-primary-text: #1d4ed8;
+
+                        --pu-btn-save-bg: rgba(217, 119, 6, 0.12);
+                        --pu-btn-save-border: rgba(217, 119, 6, 0.35);
+                        --pu-btn-save-text: #b45309;
+
+                        --pu-btn-danger-bg: rgba(220, 38, 38, 0.1);
+                        --pu-btn-danger-border: rgba(220, 38, 38, 0.35);
+                        --pu-btn-danger-text: #dc2626;
+                    }
+                }
+
+                #phone_ui_settings .inline-drawer-header {
+                    color: var(--pu-text-main);
+                }
+                #phone_ui_settings .checkbox_label {
+                    color: var(--pu-text-main);
+                    cursor: pointer;
+                }
+                #phone_ui_settings .checkbox_label span {
+                    color: var(--pu-text-main);
                 }
                 #phone_ui_settings .pu-card {
                     background: var(--pu-bg-card);
@@ -24,7 +105,7 @@
                     transition: all 0.2s ease;
                 }
                 #phone_ui_settings .pu-card:hover {
-                    border-color: rgba(255, 255, 255, 0.12);
+                    border-color: var(--pu-border-hover);
                     background: var(--pu-bg-card-hover);
                 }
                 #phone_ui_settings .pu-card-header {
@@ -37,7 +118,7 @@
                     font-size: 13px;
                     font-weight: 600;
                     letter-spacing: 0.3px;
-                    color: rgba(255, 255, 255, 0.92);
+                    color: var(--pu-text-main);
                     display: flex;
                     align-items: center;
                     gap: 6px;
@@ -56,6 +137,7 @@
                     font-size: 11px;
                     color: var(--pu-text-muted);
                     margin-bottom: 4px;
+                    font-weight: 500;
                 }
                 #phone_ui_settings .menu_button {
                     justify-content: center;
@@ -65,6 +147,14 @@
                     font-size: 12px;
                     border-radius: 6px;
                     transition: all 0.2s ease;
+                    color: var(--pu-text-main);
+                    border: 1px solid var(--pu-border);
+                }
+                #phone_ui_settings .menu_button:not(.btn-primary):not(.btn-save):not(.btn-danger) {
+                    background: var(--pu-bg-card-hover);
+                }
+                #phone_ui_settings .menu_button:not(.btn-primary):not(.btn-save):not(.btn-danger):hover {
+                    background: var(--pu-border-hover);
                 }
                 #phone_ui_settings .flex-btn-group {
                     display: flex;
@@ -76,47 +166,77 @@
                     margin: 0;
                 }
                 #phone_ui_settings .btn-primary {
-                    background: rgba(78, 133, 245, 0.15);
-                    border: 1px solid rgba(78, 133, 245, 0.35);
-                    color: #79a8ff;
+                    background: var(--pu-btn-primary-bg) !important;
+                    border: 1px solid var(--pu-btn-primary-border) !important;
+                    color: var(--pu-btn-primary-text) !important;
+                    font-weight: 600;
                 }
                 #phone_ui_settings .btn-primary:hover {
-                    background: rgba(78, 133, 245, 0.28);
-                    border-color: rgba(78, 133, 245, 0.6);
-                    color: #ffffff;
+                    background: var(--pu-accent) !important;
+                    border-color: var(--pu-accent) !important;
+                    color: #ffffff !important;
                 }
                 #phone_ui_settings .btn-save {
-                    background: rgba(255, 209, 102, 0.12);
-                    border: 1px solid rgba(255, 209, 102, 0.3);
-                    color: #ffd166;
+                    background: var(--pu-btn-save-bg) !important;
+                    border: 1px solid var(--pu-btn-save-border) !important;
+                    color: var(--pu-btn-save-text) !important;
+                    font-weight: 600;
                 }
                 #phone_ui_settings .btn-save:hover {
-                    background: rgba(255, 209, 102, 0.22);
-                    color: #fff2cc;
+                    filter: brightness(1.15);
                 }
                 #phone_ui_settings .btn-danger {
-                    color: #ff7b7b;
-                    background: rgba(255, 100, 100, 0.08);
-                    border: 1px solid rgba(255, 100, 100, 0.2);
+                    color: var(--pu-btn-danger-text) !important;
+                    background: var(--pu-btn-danger-bg) !important;
+                    border: 1px solid var(--pu-btn-danger-border) !important;
+                    font-weight: 600;
                 }
                 #phone_ui_settings .btn-danger:hover {
-                    background: rgba(255, 100, 100, 0.18);
-                    color: #ffffff;
+                    background: #ef4444 !important;
+                    border-color: #ef4444 !important;
+                    color: #ffffff !important;
                 }
                 #phone_ui_settings .pu-divider {
                     height: 1px;
-                    background: rgba(255, 255, 255, 0.06);
+                    background: var(--pu-divider);
                     margin: 14px 0;
                     border: none;
                 }
-                #phone_ui_settings textarea.text_pole {
+                #phone_ui_settings .pu-subcard-section {
+                    margin-top: 12px;
+                    padding-top: 10px;
+                    border-top: 1px solid var(--pu-divider);
+                }
+                #phone_ui_settings .pu-char-badge {
+                    color: var(--pu-accent);
+                    background: var(--pu-bg-card-hover);
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    border: 1px solid var(--pu-border);
+                    font-weight: 600;
+                }
+                #phone_ui_settings .pu-badge-count {
+                    color: var(--pu-accent);
+                    font-weight: 700;
+                }
+                #phone_ui_settings .pu-text-muted {
+                    color: var(--pu-text-muted) !important;
+                }
+                #phone_ui_settings .pu-footer-row {
+                    color: var(--pu-text-muted);
+                    font-size: 11px;
+                    display: flex;
+                    justify-content: space-between;
+                }
+                #phone_ui_settings textarea.text_pole,
+                #phone_ui_settings input.text_pole,
+                #phone_ui_settings select.text_pole {
                     font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
                     font-size: 11.5px;
                     line-height: 1.5;
                     border-radius: 6px;
-                }
-                #phone_ui_settings select.text_pole {
-                    border-radius: 6px;
+                    color: var(--pu-text-main);
+                    border: 1px solid var(--pu-border);
                 }
             </style>
 
@@ -133,14 +253,14 @@
                         <input type="checkbox" id="phone_ui_aggregate" checked />
                         <span>跨层聚合历史记录</span>
                     </label>
-                    <small style="display:block; color:#888; margin-top:2px; margin-left: 24px;">开启后连续显示上下文历史消息；关闭则仅渲染单层</small>
+                    <small class="pu-text-muted" style="display:block; margin-top:2px; margin-left: 24px;">开启后连续显示上下文历史消息；关闭则仅渲染单层</small>
                 </div>
                 <div style="margin-bottom: 8px;">
                     <label class="checkbox_label" for="phone_ui_inject">
                         <input type="checkbox" id="phone_ui_inject" checked />
                         <span>操作自动注入 AI 上下文</span>
                     </label>
-                    <small style="display:block; color:#888; margin-top:2px; margin-left: 24px;">转账、表情包、语音等操作自动告知 AI</small>
+                    <small class="pu-text-muted" style="display:block; margin-top:2px; margin-left: 24px;">转账、表情包、语音等操作自动告知 AI</small>
                 </div>
             </div>
 
@@ -150,7 +270,7 @@
             <div class="pu-card">
                 <div class="pu-card-header">
                     <span class="pu-card-title">头像与聊天背景</span>
-                    <small style="color:#888;">角色: <b id="phone_ui_char_name" style="color: #ddd;">-</b></small>
+                    <small class="pu-text-muted">角色: <b id="phone_ui_char_name" class="pu-char-badge">-</b></small>
                 </div>
                 <div class="pu-form-group">
                     <label>角色头像链接</label>
@@ -166,11 +286,11 @@
                 </div>
                 <div class="menu_button btn-primary" id="phone_ui_save_config">保存头像与背景</div>
 
-                <div style="margin-top:12px; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div class="pu-subcard-section">
                     <div style="margin-bottom:6px;">
-                        <span style="font-size:12px; font-weight:600;">多角色头像映射</span>
-                        <small style="color:#666;">(大小号/群聊卡专用)</small>
-                        <small style="display:block; color:#888; margin-top:2px;">JSON 格式，key 为消息中 from 字段的角色名，value 为头像 URL</small>
+                        <span style="font-size:12px; font-weight:600; color: var(--pu-text-main);">多角色头像映射</span>
+                        <small class="pu-text-muted">(大小号/群聊卡专用)</small>
+                        <small class="pu-text-muted" style="display:block; margin-top:2px;">JSON 格式，key 为消息中 from 字段的角色名，value 为头像 URL</small>
                     </div>
                     <textarea id="phone_ui_avatar_map" rows="3" class="text_pole"
                         placeholder='{"角色A": "https://...", "角色B": "https://..."}'></textarea>
@@ -192,7 +312,7 @@
                         <div class="menu_button" id="phone_ui_export_char_stickers">写入角色卡</div>
                     </div>
                 </div>
-                <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <div class="pu-subcard-section">
                     <div class="pu-card-subtitle">全局表情包 (JSON)</div>
                     <textarea id="phone_ui_global_stickers" rows="3" class="text_pole"
                         placeholder='{"laugh":"https://...","cry":"https://..."}'></textarea>
@@ -206,7 +326,7 @@
             <div class="pu-card">
                 <div class="pu-card-header">
                     <span class="pu-card-title">主题库与预设</span>
-                    <small style="color:#888;">保存即可持久调用</small>
+                    <small class="pu-text-muted">保存即可持久调用</small>
                 </div>
                 <div style="margin-bottom: 8px;">
                     <select id="phone_ui_theme_select" class="text_pole" style="font-size: 12px; width: 100%; height: 32px; padding: 4px 8px;">
@@ -260,10 +380,43 @@
             </div>
 
             <hr class="pu-divider" />
-            <div style="color: #666; font-size: 11px; display: flex; justify-content: space-between;">
+            <div class="pu-footer-row" style="margin-top: 14px;">
                 <span>版本 2.0.0</span>
-                <span>待注入操作: <b id="phone_ui_pending_count" style="color: #aaa;">0</b></span>
+                <span>待注入操作: <b id="phone_ui_pending_count" class="pu-badge-count">0</b></span>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        function checkPhoneUiSettingsTheme() {
+            const el = document.getElementById('phone_ui_settings');
+            if (!el) return;
+            const target = el.closest('#extensions_settings, .inline-drawer, body') || document.body;
+            if (target) {
+                const comp = window.getComputedStyle(target);
+                const rgb = (comp.color || '').match(/\d+/g);
+                if (rgb && rgb.length >= 3) {
+                    const lum = 0.299 * parseInt(rgb[0], 10) + 0.587 * parseInt(rgb[1], 10) + 0.114 * parseInt(rgb[2], 10);
+                    // 黑色/深色字体（亮度<128）意味着背景必然是白色/浅色 -> 激活浅色自适应反色
+                    if (lum < 128) {
+                        el.classList.add('pu-light-theme');
+                        el.classList.remove('pu-dark-theme');
+                        return;
+                    }
+                }
+            }
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                el.classList.add('pu-light-theme');
+                el.classList.remove('pu-dark-theme');
+            } else {
+                el.classList.add('pu-dark-theme');
+                el.classList.remove('pu-light-theme');
+            }
+        }
+        checkPhoneUiSettingsTheme();
+        setTimeout(checkPhoneUiSettingsTheme, 150);
+        setTimeout(checkPhoneUiSettingsTheme, 600);
+    })();
+</script>

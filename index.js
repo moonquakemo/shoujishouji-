@@ -110,6 +110,36 @@
 
     // ========== 设置面板 UI 绑定 ==========
     function bindSettingsUI(settings) {
+        // 自适应明暗主题反色检测
+        function updateSettingsThemeMode() {
+            const $settings = $('#phone_ui_settings');
+            if (!$settings.length) return;
+            try {
+                const target = $settings.closest('#extensions_settings, .inline-drawer, body')[0] || document.body;
+                if (target) {
+                    const comp = window.getComputedStyle(target);
+                    const rgb = (comp.color || '').match(/\d+/g);
+                    if (rgb && rgb.length >= 3) {
+                        const lum = 0.299 * parseInt(rgb[0], 10) + 0.587 * parseInt(rgb[1], 10) + 0.114 * parseInt(rgb[2], 10);
+                        if (lum < 128) {
+                            $settings.addClass('pu-light-theme').removeClass('pu-dark-theme');
+                            return;
+                        }
+                    }
+                }
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                    $settings.addClass('pu-light-theme').removeClass('pu-dark-theme');
+                } else {
+                    $settings.addClass('pu-dark-theme').removeClass('pu-light-theme');
+                }
+            } catch (e) { }
+        }
+
+        updateSettingsThemeMode();
+        $('#phone_ui_settings .inline-drawer-toggle').on('click', () => {
+            setTimeout(updateSettingsThemeMode, 50);
+        });
+
         // --- 基础开关 ---
         const $enabled = $('#phone_ui_enabled');
         $enabled.prop('checked', settings.enabled);
