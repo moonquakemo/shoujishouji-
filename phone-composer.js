@@ -210,8 +210,8 @@ const PhoneComposer = (() => {
     function getSafeBounds(elWidth, elHeight) {
         const isMobile = window.innerWidth <= 768;
         const minLeft = 8;
-        const minTop = isMobile ? 55 : 8; // 避开移动端顶部栏
-        const bottomSafe = isMobile ? 120 : 30; // 避开移动端底部打字栏和虚拟键盘/安全区
+        const minTop = isMobile ? 50 : 8; // 避开移动端顶部栏
+        const bottomSafe = isMobile ? 35 : 20; // 避开移动端底部打字栏和虚拟键盘/安全区
         const maxLeft = Math.max(minLeft, window.innerWidth - elWidth - 8);
         const maxTop = Math.max(minTop, window.innerHeight - elHeight - bottomSafe);
         return { minLeft, maxLeft, minTop, maxTop };
@@ -222,29 +222,96 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 获取 SillyTavern 底部快捷栏 (Quick Bar / Form Sheld) 相对屏幕底部的安全停靠高度
+     * 方案 1：伴侣屏幕展开位置随悬浮按钮，向屏幕中心方向展开，并在安全视口内防溢出
      */
-    function getQuickBarBottomOffset() {
-        let bottomOffset = 85;
-        try {
-            const $qr = $('#quick_reply_context, #quickReplyContainer, .quick-reply-wrapper, #qr--bar, [id*="quick-reply"]:visible');
-            const $sheld = $('#form_sheld');
-            let targetEl = null;
+    function positionPanelNearTrigger($panel, $trigger) {
+        if (!$panel || !$panel.length || !$trigger || !$trigger.length) return;
 
-            if ($qr.length && $qr.is(':visible')) {
-                targetEl = $qr[0];
-            } else if ($sheld.length && $sheld.is(':visible')) {
-                targetEl = $sheld[0];
-            }
+        const isMobile = window.innerWidth <= 768;
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
 
-            if (targetEl) {
-                const rect = targetEl.getBoundingClientRect();
-                if (rect.top > 60 && rect.top < window.innerHeight) {
-                    bottomOffset = Math.round(window.innerHeight - rect.top + 8);
+        // 获取或预估面板尺寸 (防止 display:none 导致宽高为 0)
+        let pW = $panel.outerWidth();
+        let pH = $panel.outerHeight();
+        if (!pW || pW < 100) {
+            pW = isMobile ? Math.min(360, screenW - 20) : 360;
+        }
+        if (!pH || pH < 100) {
+            pH = isMobile ? Math.min(500, Math.round(screenH * 0.72)) : 520;
+        }
+
+        const tRect = $trigger[0].getBoundingClientRect();
+        const tCenterX = tRect.left + tRect.width / 2;
+        const tCenterY = tRect.top + tRect.height / 2;
+        const sCenterX = screenW / 2;
+        const sCenterY = screenH / 2;
+
+        // 安全视口边界
+        const safeLeft = 10;
+        const safeRight = 10;
+        const safeTop = isMobile ? 50 : 12; // 避开移动端顶部栏
+        const safeBottom = isMobile ? 25 : 15; // 避开移动端底部手势/安全区
+
+        let targetLeft = 0;
+        let targetTop = 0;
+        let originX = 'right';
+        let originY = 'bottom';
+
+        // 1. 水平方向判定 (向屏幕中心展开)
+        if (tCenterX >= sCenterX) {
+            // 悬浮按钮在屏幕右半侧 -> 向左展开 (对齐按钮右边缘)
+            originX = 'right';
+            targetLeft = tRect.right - pW;
+        } else {
+            // 悬浮按钮在屏幕左半侧 -> 向右展开 (对齐按钮左边缘)
+            originX = 'left';
+            targetLeft = tRect.left;
+        }
+
+        // 2. 垂直方向判定 (向屏幕中心展开)
+        if (tCenterY >= sCenterY) {
+            // 悬浮按钮在屏幕下半侧 -> 向上展开 (面板底部停靠在按钮上方)
+            originY = 'bottom';
+            targetTop = tRect.top - pH - 10;
+            // 若上方空间不够，尝试向下展开
+            if (targetTop < safeTop) {
+                if (tRect.bottom + 10 + pH <= screenH - safeBottom) {
+                    targetTop = tRect.bottom + 10;
+                    originY = 'top';
+                } else {
+                    targetTop = safeTop;
                 }
             }
-        } catch (e) { }
-        return Math.min(Math.max(bottomOffset, 75), 260);
+        } else {
+            // 悬浮按钮在屏幕上半侧 -> 向下展开 (面板顶部停靠在按钮下方)
+            originY = 'top';
+            targetTop = tRect.bottom + 10;
+            // 若下方空间不够，尝试向上展开
+            if (targetTop + pH > screenH - safeBottom) {
+                if (tRect.top - 10 - pH >= safeTop) {
+                    targetTop = tRect.top - 10 - pH;
+                    originY = 'bottom';
+                } else {
+                    targetTop = Math.max(safeTop, screenH - safeBottom - pH);
+                }
+            }
+        }
+
+        // 3. 安全夹紧保证绝不超屏
+        const maxLeft = Math.max(safeLeft, screenW - pW - safeRight);
+        const maxTop = Math.max(safeTop, screenH - pH - safeBottom);
+        targetLeft = Math.min(Math.max(safeLeft, targetLeft), maxLeft);
+        targetTop = Math.min(Math.max(safeTop, targetTop), maxTop);
+
+        $panel.css({
+            left: `${Math.round(targetLeft)}px`,
+            top: `${Math.round(targetTop)}px`,
+            right: 'auto',
+            bottom: 'auto',
+            margin: '0',
+            transformOrigin: `${originY} ${originX}`
+        });
     }
 
     /**
@@ -256,19 +323,7 @@ const PhoneComposer = (() => {
 
         $(window).on('resize.pu_draggables orientationchange.pu_draggables', function () {
             clampToViewport('#st_phone_composer_trigger');
-            if (window.innerWidth <= 768) {
-                if (isOpen) {
-                    const bOffset = getQuickBarBottomOffset();
-                    $('#st_phone_composer_panel').css({
-                        left: '10px',
-                        right: '10px',
-                        margin: '0 auto',
-                        bottom: `${bOffset}px`,
-                        top: 'auto',
-                        transform: 'none'
-                    });
-                }
-            } else {
+            if (isOpen) {
                 clampToViewport('#st_phone_composer_panel');
             }
         });
@@ -276,17 +331,13 @@ const PhoneComposer = (() => {
         // 挂载完成后立即做一次安全视口检查，确保在小屏或旋转屏幕下永远处于安全区
         setTimeout(() => {
             clampToViewport('#st_phone_composer_trigger');
-            if (window.innerWidth > 768) {
+            if (isOpen) {
                 clampToViewport('#st_phone_composer_panel');
             }
         }, 200);
     }
 
     function clampToViewport(selector) {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile && selector === '#st_phone_composer_panel') {
-            return; // 移动端伴侣面板由 getQuickBarBottomOffset 统一停靠
-        }
         const $el = $(selector);
         if (!$el.length || $el.css('display') === 'none') return;
         const rect = $el[0].getBoundingClientRect();
@@ -321,27 +372,21 @@ const PhoneComposer = (() => {
         const actualKey = getStorageKey(storageKey);
 
         try {
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile && elementSelector === '#st_phone_composer_panel') {
-                // 移动端方案 2：面板固定停靠在 quick bar 上，不读取和恢复历史拖拽坐标
-                localStorage.removeItem('st_phone_panel_pos_mobile');
-            } else {
-                const saved = localStorage.getItem(actualKey);
-                if (saved) {
-                    const pos = JSON.parse(saved);
-                    if (typeof pos.left === 'number' && typeof pos.top === 'number') {
-                        const elW = $el.outerWidth() || 48;
-                        const elH = $el.outerHeight() || 48;
-                        const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
-                        const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
-                        const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
-                        $el.css({
-                            left: `${Math.round(clampLeft)}px`,
-                            top: `${Math.round(clampTop)}px`,
-                            right: 'auto',
-                            bottom: 'auto'
-                        });
-                    }
+            const saved = localStorage.getItem(actualKey);
+            if (saved) {
+                const pos = JSON.parse(saved);
+                if (typeof pos.left === 'number' && typeof pos.top === 'number') {
+                    const elW = $el.outerWidth() || 48;
+                    const elH = $el.outerHeight() || 48;
+                    const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
+                    const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
+                    const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
+                    $el.css({
+                        left: `${Math.round(clampLeft)}px`,
+                        top: `${Math.round(clampTop)}px`,
+                        right: 'auto',
+                        bottom: 'auto'
+                    });
                 }
             }
         } catch (e) { }
@@ -370,11 +415,6 @@ const PhoneComposer = (() => {
 
         $handle.on('mousedown touchstart', function (e) {
             if ($(e.target).closest('button, input, select, textarea, .composer-clock-chip, .composer-header-actions').length) {
-                return;
-            }
-
-            // 移动端方案 2：面板固定停靠在 quick bar 上方，不启用面板拖动
-            if (elementSelector === '#st_phone_composer_panel' && window.innerWidth <= 768) {
                 return;
             }
 
@@ -470,39 +510,9 @@ const PhoneComposer = (() => {
             }
 
             const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                // 方案 2：移动端固定停靠在 quick bar / 底部打字区上方
-                const bOffset = getQuickBarBottomOffset();
-                $panel.css({
-                    left: '10px',
-                    right: '10px',
-                    margin: '0 auto',
-                    bottom: `${bOffset}px`,
-                    top: 'auto',
-                    transform: 'none'
-                });
-            } else {
-                // 桌面端：如果未单独拖动过面板，则在悬浮按钮周围展开
-                try {
-                    const savedPanelPos = localStorage.getItem('st_phone_panel_pos');
-                    if (!savedPanelPos && $trigger.length) {
-                        const tRect = $trigger[0].getBoundingClientRect();
-                        const pW = 360;
-                        const pH = 520;
-                        let pLeft = tRect.right - pW;
-                        let pTop = tRect.top - pH - 12;
-                        if (pLeft < 10) pLeft = 10;
-                        if (pTop < 10) pTop = tRect.bottom + 12;
-                        if (pTop + pH > window.innerHeight) pTop = Math.max(10, window.innerHeight - pH - 10);
-                        $panel.css({
-                            left: `${Math.round(pLeft)}px`,
-                            top: `${Math.round(pTop)}px`,
-                            right: 'auto',
-                            bottom: 'auto'
-                        });
-                    }
-                } catch (e) { }
-            }
+
+            // 方案 1：伴侣屏幕展开位置随悬浮按钮，向屏幕中心方向展开，并在安全视口内防溢出
+            positionPanelNearTrigger($panel, $trigger);
 
             if (pendingDrafts.length > 0) {
                 $('#composer_idle_canvas').hide();

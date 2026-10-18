@@ -1364,8 +1364,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: composerFadeUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  touch-action: none;
+  animation: composerExpandIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: pan-y;
   pointer-events: auto;
 }
 
@@ -1374,14 +1374,14 @@
   user-select: none;
 }
 
-@keyframes composerFadeUp {
+@keyframes composerExpandIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.97);
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -2057,30 +2057,13 @@
     font-size: 22px;
   }
 
-  /* 方案 2：移动端固定停靠在 Quick Bar / 底部打字区上方 */
+  /* 方案 1：移动端伴侣屏幕随悬浮按钮向屏幕中心展开，支持自由拖动 */
   .st-phone-composer-panel {
-    left: 10px !important;
-    right: 10px !important;
-    margin: 0 auto !important;
-    width: calc(100vw - 20px) !important;
-    max-width: 440px !important;
-    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-    max-height: calc(75vh - env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 20px !important;
-    transform: none !important;
-    animation: composerMobileFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    width: min(360px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+    max-height: calc(78vh - env(safe-area-inset-bottom, 0px));
+    border-radius: 22px;
     z-index: 100000 !important;
-  }
-
-  @keyframes composerMobileFade {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 }
 
