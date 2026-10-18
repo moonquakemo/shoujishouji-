@@ -197,38 +197,60 @@ const PhoneComposer = (() => {
     }
 
     /**
+     * 计算并获取拖拽安全边界（适配移动端与桌面端，确保绝不被酒馆顶部/底部栏遮挡）
+     */
+    function getSafeBounds(elWidth, elHeight) {
+        const isMobile = window.innerWidth <= 768;
+        const minLeft = 8;
+        const minTop = isMobile ? 55 : 8; // 避开移动端顶部栏
+        const bottomSafe = isMobile ? 120 : 30; // 避开移动端底部打字栏和虚拟键盘/安全区
+        const maxLeft = Math.max(minLeft, window.innerWidth - elWidth - 8);
+        const maxTop = Math.max(minTop, window.innerHeight - elHeight - bottomSafe);
+        return { minLeft, maxLeft, minTop, maxTop };
+    }
+
+    function getStorageKey(baseKey) {
+        return window.innerWidth <= 768 ? `${baseKey}_mobile` : baseKey;
+    }
+
+    /**
      * 初始化悬浮按钮和悬浮窗的拖拽功能
      */
     function initDraggables() {
         makeDraggable('#st_phone_composer_trigger', '#st_phone_composer_trigger', 'st_phone_trigger_pos');
         makeDraggable('#st_phone_composer_panel', '#st_phone_composer_panel .composer-header', 'st_phone_panel_pos');
 
-        $(window).on('resize.pu_draggables', function () {
+        $(window).on('resize.pu_draggables orientationchange.pu_draggables', function () {
             clampToViewport('#st_phone_composer_trigger');
             clampToViewport('#st_phone_composer_panel');
         });
+
+        // 挂载完成后立即做一次安全视口检查，确保在小屏或旋转屏幕下永远处于安全区
+        setTimeout(() => {
+            clampToViewport('#st_phone_composer_trigger');
+            clampToViewport('#st_phone_composer_panel');
+        }, 200);
     }
 
     function clampToViewport(selector) {
         const $el = $(selector);
         if (!$el.length || $el.css('display') === 'none') return;
         const rect = $el[0].getBoundingClientRect();
-        const maxLeft = Math.max(0, window.innerWidth - rect.width);
-        const maxTop = Math.max(0, window.innerHeight - rect.height);
+        const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(rect.width, rect.height);
 
         let curLeft = rect.left;
         let curTop = rect.top;
         let changed = false;
 
         if (curLeft > maxLeft) { curLeft = maxLeft; changed = true; }
-        if (curLeft < 0) { curLeft = 0; changed = true; }
+        if (curLeft < minLeft) { curLeft = minLeft; changed = true; }
         if (curTop > maxTop) { curTop = maxTop; changed = true; }
-        if (curTop < 0) { curTop = 0; changed = true; }
+        if (curTop < minTop) { curTop = minTop; changed = true; }
 
         if (changed) {
             $el.css({
-                left: `${curLeft}px`,
-                top: `${curTop}px`,
+                left: `${Math.round(curLeft)}px`,
+                top: `${Math.round(curTop)}px`,
                 right: 'auto',
                 bottom: 'auto'
             });
@@ -242,20 +264,21 @@ const PhoneComposer = (() => {
         const $handle = handleSelector ? $(handleSelector) : $el;
         if (!$handle.length) return;
 
+        const actualKey = getStorageKey(storageKey);
+
         try {
-            const saved = localStorage.getItem(storageKey);
+            const saved = localStorage.getItem(actualKey);
             if (saved) {
                 const pos = JSON.parse(saved);
                 if (typeof pos.left === 'number' && typeof pos.top === 'number') {
                     const elW = $el.outerWidth() || 48;
                     const elH = $el.outerHeight() || 48;
-                    const maxLeft = Math.max(0, window.innerWidth - elW);
-                    const maxTop = Math.max(0, window.innerHeight - elH);
-                    const clampLeft = Math.min(Math.max(0, pos.left), maxLeft);
-                    const clampTop = Math.min(Math.max(0, pos.top), maxTop);
+                    const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
+                    const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
+                    const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
                     $el.css({
-                        left: `${clampLeft}px`,
-                        top: `${clampTop}px`,
+                        left: `${Math.round(clampLeft)}px`,
+                        top: `${Math.round(clampTop)}px`,
                         right: 'auto',
                         bottom: 'auto'
                     });
@@ -274,6 +297,12 @@ const PhoneComposer = (() => {
             }
             if (e.touches && e.touches.length) {
                 return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            if (e.originalEvent && e.originalEvent.changedTouches && e.originalEvent.changedTouches.length) {
+                return { x: e.originalEvent.changedTouches[0].clientX, y: e.originalEvent.changedTouches[0].clientY };
+            }
+            if (e.changedTouches && e.changedTouches.length) {
+                return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
             }
             return { x: e.clientX, y: e.clientY };
         }
@@ -295,7 +324,7 @@ const PhoneComposer = (() => {
             hasMoved = false;
 
             $(document).on('mousemove.pu_drag touchmove.pu_drag', onMove);
-            $(document).on('mouseup.pu_drag touchend.pu_drag', onUp);
+            $(document).on('mouseup.pu_drag touchend.pu_drag touchcancel.pu_drag', onUp);
         });
 
         function onMove(e) {
@@ -310,21 +339,22 @@ const PhoneComposer = (() => {
             }
 
             if (hasMoved) {
-                e.preventDefault();
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
                 const elWidth = $el.outerWidth() || 48;
                 const elHeight = $el.outerHeight() || 48;
-                const maxLeft = Math.max(0, window.innerWidth - elWidth);
-                const maxTop = Math.max(0, window.innerHeight - elHeight);
+                const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elWidth, elHeight);
 
                 let curLeft = initLeft + dx;
                 let curTop = initTop + dy;
 
-                curLeft = Math.min(Math.max(0, curLeft), maxLeft);
-                curTop = Math.min(Math.max(0, curTop), maxTop);
+                curLeft = Math.min(Math.max(minLeft, curLeft), maxLeft);
+                curTop = Math.min(Math.max(minTop, curTop), maxTop);
 
                 $el.css({
-                    left: `${curLeft}px`,
-                    top: `${curTop}px`,
+                    left: `${Math.round(curLeft)}px`,
+                    top: `${Math.round(curTop)}px`,
                     right: 'auto',
                     bottom: 'auto'
                 });
@@ -340,7 +370,8 @@ const PhoneComposer = (() => {
             if (hasMoved) {
                 try {
                     const rect = el.getBoundingClientRect();
-                    localStorage.setItem(storageKey, JSON.stringify({
+                    const currentStorageKey = getStorageKey(storageKey);
+                    localStorage.setItem(currentStorageKey, JSON.stringify({
                         left: Math.round(rect.left),
                         top: Math.round(rect.top)
                     }));
@@ -370,22 +401,34 @@ const PhoneComposer = (() => {
 
             // 如果面板未被单独拖拽过，但按钮被拖拽过，则就近在按钮周围展开
             try {
-                const savedPanelPos = localStorage.getItem('st_phone_panel_pos');
-                if (!savedPanelPos && $trigger.length) {
-                    const tRect = $trigger[0].getBoundingClientRect();
-                    const pW = 360;
-                    const pH = 520;
-                    let pLeft = tRect.right - pW;
-                    let pTop = tRect.top - pH - 12;
-                    if (pLeft < 10) pLeft = 10;
-                    if (pTop < 10) pTop = tRect.bottom + 12;
-                    if (pTop + pH > window.innerHeight) pTop = Math.max(10, window.innerHeight - pH - 10);
-                    $panel.css({
-                        left: `${Math.round(pLeft)}px`,
-                        top: `${Math.round(pTop)}px`,
-                        right: 'auto',
-                        bottom: 'auto'
-                    });
+                const isMobile = window.innerWidth <= 768;
+                const panelKey = isMobile ? 'st_phone_panel_pos_mobile' : 'st_phone_panel_pos';
+                const savedPanelPos = localStorage.getItem(panelKey);
+                if (!savedPanelPos) {
+                    if (isMobile) {
+                        // 移动端默认使用 CSS 弹性居中，不写入固定坐标
+                        $panel.css({
+                            left: '',
+                            top: '',
+                            right: '',
+                            bottom: ''
+                        });
+                    } else if ($trigger.length) {
+                        const tRect = $trigger[0].getBoundingClientRect();
+                        const pW = 360;
+                        const pH = 520;
+                        let pLeft = tRect.right - pW;
+                        let pTop = tRect.top - pH - 12;
+                        if (pLeft < 10) pLeft = 10;
+                        if (pTop < 10) pTop = tRect.bottom + 12;
+                        if (pTop + pH > window.innerHeight) pTop = Math.max(10, window.innerHeight - pH - 10);
+                        $panel.css({
+                            left: `${Math.round(pLeft)}px`,
+                            top: `${Math.round(pTop)}px`,
+                            right: 'auto',
+                            bottom: 'auto'
+                        });
+                    }
                 }
             } catch (e) { }
 

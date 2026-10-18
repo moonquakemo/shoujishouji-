@@ -247,23 +247,24 @@
 
 .st-phone-search input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
+  background-color: var(--input-bg, #ffffff) !important;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: 20px !important;
   padding: 6px 14px;
-  color: #fff;
+  color: var(--input-text, #333333) !important;
   font-size: var(--font-size-sm);
   font-family: var(--font-family);
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
   transition: border-color 0.2s;
 }
 
 .st-phone-search input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--input-placeholder, #999999) !important;
 }
 
 .st-phone-search input:focus {
-  border-color: var(--accent-green);
+  border-color: var(--accent-green, #07c160) !important;
 }
 
 .st-phone-search .search-close {
@@ -1115,15 +1116,25 @@
 .phone-form-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid rgba(0,0,0,0.12);
-  border-radius: 8px;
+  background-color: var(--input-bg, #ffffff) !important;
+  color: var(--input-text, #333333) !important;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: var(--input-radius, 8px) !important;
   font-size: var(--font-size-sm);
   font-family: var(--font-family);
   margin-bottom: 8px;
   box-sizing: border-box;
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
-.phone-form-input:focus { border-color: var(--accent-green); }
+.phone-form-input::placeholder {
+  color: var(--input-placeholder, #999999) !important;
+}
+.phone-form-input:focus {
+  border-color: var(--accent-green, #07c160) !important;
+  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.18) !important;
+}
 .form-btns {
   display: flex;
   gap: 8px;
@@ -1267,12 +1278,23 @@
    悬浮唤醒胶囊、玻璃拟态卡片、大图表情网格
    ============================================ */
 
+/* 伴侣根容器：挂载在 body 上，高层级穿透，不遮挡其他点击 */
+#st_phone_composer_root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
 /* --- 悬浮唤醒胶囊 (圆形悬浮球，仅保留 📱，支持拖拽) --- */
 .st-phone-composer-trigger {
   position: fixed;
   bottom: 82px;
   right: 24px;
-  z-index: 2999;
+  z-index: 99999 !important;
   width: 48px;
   height: 48px;
   padding: 0;
@@ -1281,7 +1303,7 @@
   justify-content: center;
   background: var(--navbar-bg, #1a1a2e);
   color: var(--navbar-text, #ffffff);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 50%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
   cursor: grab;
@@ -1290,6 +1312,7 @@
   -webkit-backdrop-filter: blur(12px);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
   touch-action: none;
+  pointer-events: auto;
 }
 
 .st-phone-composer-trigger:hover {
@@ -1329,7 +1352,7 @@
   position: fixed;
   bottom: 135px;
   right: 24px;
-  z-index: 3000;
+  z-index: 100000 !important;
   width: 360px;
   max-width: calc(100vw - 32px);
   background: var(--phone-chat-bg, #f5f5f7);
@@ -1343,6 +1366,7 @@
   flex-direction: column;
   animation: composerFadeUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   touch-action: none;
+  pointer-events: auto;
 }
 
 .st-phone-composer-panel.dragging {
@@ -1504,12 +1528,12 @@
 }
 
 .quick-pill {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #f5f5f7;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
+  background: var(--input-bg, #f5f5f7);
   border-radius: 12px;
-  padding: 4px 9px;
+  padding: 5px 9px;
   font-size: 11px;
-  color: #333;
+  color: var(--input-text, #333);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1527,17 +1551,25 @@
 
 .clock-custom-input {
   flex: 1;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 11px;
-  color: #333;
-  outline: none;
-  background: #fff;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: var(--input-radius, 8px) !important;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-family);
+  color: var(--input-text, #333333) !important;
+  background-color: var(--input-bg, #ffffff) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.clock-custom-input::placeholder {
+  color: var(--input-placeholder, #999999) !important;
 }
 
 .clock-custom-input:focus {
-  border-color: var(--accent-green, #07c160);
+  outline: none !important;
+  border-color: var(--accent-green, #07c160) !important;
+  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.18) !important;
 }
 
 .clock-apply-btn {
@@ -1746,19 +1778,27 @@
 
 .composer-form-input {
   width: 100%;
-  padding: 7px 12px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  color: #222;
-  font-size: 12px;
+  padding: 8px 12px;
+  background-color: var(--input-bg, #ffffff) !important;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: var(--input-radius, 8px) !important;
+  color: var(--input-text, #333333) !important;
+  font-size: 13px;
+  font-family: var(--font-family);
   box-sizing: border-box;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.composer-form-input::placeholder {
+  color: var(--input-placeholder, #999999) !important;
 }
 
 .composer-form-input:focus {
-  outline: none;
-  border-color: var(--accent-green, #07c160);
-  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.15);
+  outline: none !important;
+  border-color: var(--accent-green, #07c160) !important;
+  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.18) !important;
 }
 
 .voice-presets {
@@ -1769,23 +1809,23 @@
 
 .preset-btn {
   flex: 1;
-  padding: 5px 0;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
-  color: #555;
+  padding: 6px 0;
+  background: var(--input-bg, #ffffff);
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
+  border-radius: var(--input-radius, 6px);
+  color: var(--input-text, #333);
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .preset-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #111;
+  filter: brightness(0.95);
+  border-color: var(--accent-green, #07c160);
 }
 
 .sec-input {
-  width: 52px;
+  width: 54px;
   text-align: center;
 }
 
@@ -1824,18 +1864,27 @@
 
 .composer-search-input {
   width: 100%;
-  padding: 6px 12px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
-  color: #333;
-  font-size: 11px;
+  padding: 8px 14px;
+  background-color: var(--input-bg, #ffffff) !important;
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
+  border-radius: 20px !important;
+  color: var(--input-text, #333333) !important;
+  font-size: 12px;
+  font-family: var(--font-family);
   box-sizing: border-box;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.composer-search-input::placeholder {
+  color: var(--input-placeholder, #999999) !important;
 }
 
 .composer-search-input:focus {
-  outline: none;
-  border-color: var(--accent-green, #07c160);
+  outline: none !important;
+  border-color: var(--accent-green, #07c160) !important;
+  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.18) !important;
 }
 
 .composer-sticker-grid {
@@ -1989,4 +2038,37 @@
 
 .composer-send-btn.direct:active {
   transform: scale(0.96);
+}
+
+/* ============================================
+   移动端响应式布局优化 (手机屏幕适配)
+   ============================================ */
+@media (max-width: 768px) {
+  .st-phone-composer-trigger {
+    /* 避开移动端底部打字区域 (ST 的 #form_sheld 及右下角发送/扩展按钮) */
+    bottom: calc(135px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 14px !important;
+    width: 46px;
+    height: 46px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .st-phone-composer-trigger .composer-trigger-icon {
+    font-size: 22px;
+  }
+
+  .st-phone-composer-panel {
+    width: calc(100vw - 20px) !important;
+    max-width: 420px !important;
+    bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(82vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    border-radius: 22px !important;
+  }
+
+  /* 移动端未被手动拖拽移动时，默认居中展示 */
+  .st-phone-composer-panel:not([style*="left"]) {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
 }
