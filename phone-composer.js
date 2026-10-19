@@ -56,22 +56,44 @@ const PhoneComposer = (() => {
             </div>
         </div>
 
-        <!-- 虚拟时钟微调弹窗 (一键 +30m / 第二天 / 一周后 / 自定义) -->
+        <!-- 虚拟时钟微调弹窗 (纯按钮点选 + 连续累加机制) -->
         <div class="composer-clock-popover" id="composer_clock_popover" style="display: none;">
             <div class="clock-popover-header">
-                <span class="popover-title">虚拟时空 (制造时间差)</span>
-                <button type="button" class="popover-reset-btn" id="composer_clock_sync_btn" title="重置为当前剧情最新时间"><i class="fa-solid fa-rotate-right"></i> 随剧情</button>
+                <div class="popover-title-group">
+                    <span class="popover-title">虚拟时空</span>
+                    <span class="popover-current-badge" id="popover_current_clock">14:00</span>
+                </div>
+                <div class="popover-header-actions">
+                    <button type="button" class="popover-reset-btn" id="composer_clock_sync_btn" title="重置为当前剧情最新时间"><i class="fa-solid fa-rotate-right"></i> 随剧情</button>
+                    <button type="button" class="popover-done-btn" id="composer_clock_done_btn" title="完成设置">完成</button>
+                </div>
             </div>
+
+            <!-- 时分微调 -->
+            <div class="clock-group-title">时分推移</div>
             <div class="clock-quick-pills">
                 <button type="button" class="quick-pill" data-adjust="+5m">+5分钟</button>
+                <button type="button" class="quick-pill" data-adjust="+15m">+15分钟</button>
                 <button type="button" class="quick-pill" data-adjust="+30m">+30分钟</button>
+                <button type="button" class="quick-pill" data-adjust="+1h">+1小时</button>
                 <button type="button" class="quick-pill" data-adjust="+2h">+2小时</button>
-                <button type="button" class="quick-pill" data-adjust="next-day">第二天</button>
-                <button type="button" class="quick-pill" data-adjust="next-week">一周后</button>
+                <button type="button" class="quick-pill" data-adjust="+4h">+4小时</button>
             </div>
-            <div class="clock-custom-row">
-                <input type="text" id="composer_clock_custom_input" class="clock-custom-input" placeholder="输入如: 10-26 14:00 / 晚上 20:30">
-                <button type="button" id="composer_clock_custom_apply" class="clock-apply-btn">确定</button>
+
+            <!-- 日历长周期 -->
+            <div class="clock-group-title">日历跨度</div>
+            <div class="clock-quick-pills">
+                <button type="button" class="quick-pill" data-adjust="next-day">第二天</button>
+                <button type="button" class="quick-pill" data-adjust="+2d">两天后</button>
+                <button type="button" class="quick-pill" data-adjust="+3d">三天后</button>
+                <button type="button" class="quick-pill" data-adjust="next-week">一周后</button>
+                <button type="button" class="quick-pill" data-adjust="+15d">半个月后</button>
+                <button type="button" class="quick-pill" data-adjust="+30d">一个月后</button>
+            </div>
+
+            <!-- 底部累加提示 -->
+            <div class="clock-popover-tip">
+                <i class="fa-solid fa-circle-info"></i> 点击按钮直接生效；连续点击会自动累加（如点两次“第二天”为后天，日历自动跨月）
             </div>
         </div>
 
@@ -153,21 +175,17 @@ const PhoneComposer = (() => {
             toggleClockPopover();
         });
 
-        $('.quick-pill').on('click', function () {
+        $(document).on('click', '#st_phone_composer_root .quick-pill', function () {
             const adj = $(this).data('adjust');
             adjustVirtualTime(adj);
-            toggleClockPopover(false);
         });
 
-        $('#composer_clock_custom_apply').on('click', function () {
-            const customVal = $('#composer_clock_custom_input').val();
-            adjustVirtualTime('custom', customVal);
+        $('#composer_clock_done_btn').on('click', function () {
             toggleClockPopover(false);
         });
 
         $('#composer_clock_sync_btn').on('click', function () {
             syncLatestTime();
-            toggleClockPopover(false);
         });
 
         // 3. 底栏图标按钮点击 (切换抽屉)
@@ -580,7 +598,7 @@ const PhoneComposer = (() => {
                         const m = b.messages[j];
                         if (m.time) {
                             if (!foundTimeStr) {
-                                foundTimeStr = m.time;
+                                foundTimeStr = String(m.time).trim();
                             }
                             if (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo) {
                                 const parsed = PhoneParser.parseTimeInfo(m.time);
@@ -607,7 +625,7 @@ const PhoneComposer = (() => {
                         const hm = humanMsgs[j];
                         if (hm.time) {
                             if (!foundTimeStr) {
-                                foundTimeStr = hm.time;
+                                foundTimeStr = String(hm.time).trim();
                             }
                             if (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo) {
                                 const parsed = PhoneParser.parseTimeInfo(hm.time);
@@ -705,18 +723,36 @@ const PhoneComposer = (() => {
 
         if (action === '+5m') {
             d.setMinutes(d.getMinutes() + 5);
+        } else if (action === '+15m') {
+            d.setMinutes(d.getMinutes() + 15);
         } else if (action === '+30m') {
             d.setMinutes(d.getMinutes() + 30);
+        } else if (action === '+1h') {
+            d.setHours(d.getHours() + 1);
         } else if (action === '+2h') {
             d.setHours(d.getHours() + 2);
+        } else if (action === '+4h') {
+            d.setHours(d.getHours() + 4);
         } else if (action === 'next-day') {
-            // 向后推 1 天，时间调整为早晨 09:00
             d.setDate(d.getDate() + 1);
             d.setHours(9, 0, 0, 0);
             virtualHasDate = true;
+        } else if (action === '+2d') {
+            d.setDate(d.getDate() + 2);
+            d.setHours(9, 0, 0, 0);
+            virtualHasDate = true;
+        } else if (action === '+3d') {
+            d.setDate(d.getDate() + 3);
+            d.setHours(9, 0, 0, 0);
+            virtualHasDate = true;
         } else if (action === 'next-week') {
-            // 向后推 7 天
             d.setDate(d.getDate() + 7);
+            virtualHasDate = true;
+        } else if (action === '+15d') {
+            d.setDate(d.getDate() + 15);
+            virtualHasDate = true;
+        } else if (action === '+30d') {
+            d.setDate(d.getDate() + 30);
             virtualHasDate = true;
         }
 
@@ -755,6 +791,7 @@ const PhoneComposer = (() => {
 
     function updateClockDisplay() {
         $('#composer_clock_val').text(currentVirtualTime);
+        $('#popover_current_clock').text(currentVirtualTime);
         $('#composer_clock_chip').toggleClass('customized', isTimeCustomized);
     }
 

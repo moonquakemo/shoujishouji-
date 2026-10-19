@@ -1496,13 +1496,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.clock-popover-header .popover-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .clock-popover-header .popover-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--input-text, #333);
+}
+
+.clock-popover-header .popover-current-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-green, #07c160);
+  background: rgba(7, 193, 96, 0.12);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.popover-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .clock-popover-header .popover-reset-btn {
@@ -1511,7 +1535,7 @@
   color: var(--accent-blue, #007aff);
   font-size: 11px;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
   transition: all 0.15s;
 }
@@ -1520,22 +1544,48 @@
   background: rgba(0, 122, 255, 0.16);
 }
 
+.clock-popover-header .popover-done-btn {
+  background: var(--accent-green, #07c160);
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.clock-popover-header .popover-done-btn:hover {
+  filter: brightness(1.08);
+}
+
+.clock-group-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #888;
+  margin-top: 6px;
+  margin-bottom: 5px;
+  letter-spacing: 0.5px;
+}
+
 .clock-quick-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 6px;
 }
 
 .quick-pill {
   border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
   background: var(--input-bg, #f5f5f7);
   border-radius: 12px;
-  padding: 5px 9px;
+  padding: 4px 8px;
   font-size: 11px;
   color: var(--input-text, #333);
   cursor: pointer;
-  transition: all 0.15s;
+  user-select: none;
+  transition: all 0.12s ease;
 }
 
 .quick-pill:hover {
@@ -1544,48 +1594,24 @@
   border-color: var(--accent-green, #07c160);
 }
 
-.clock-custom-row {
-  display: flex;
-  gap: 6px;
+.quick-pill:active {
+  transform: scale(0.95);
+  background: #06ad56;
 }
 
-.clock-custom-input {
-  flex: 1;
-  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12)) !important;
-  border-radius: var(--input-radius, 8px) !important;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-family: var(--font-family);
-  color: var(--input-text, #333333) !important;
-  background-color: var(--input-bg, #ffffff) !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.clock-custom-input::placeholder {
-  color: var(--input-placeholder, #999999) !important;
-}
-
-.clock-custom-input:focus {
-  outline: none !important;
-  border-color: var(--accent-green, #07c160) !important;
-  box-shadow: 0 0 0 2px rgba(7, 193, 96, 0.18) !important;
-}
-
-.clock-apply-btn {
-  background: var(--accent-green, #07c160);
-  color: #fff;
-  border: none;
+.clock-popover-tip {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: #777;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 6px 9px;
   border-radius: 8px;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
+  margin-top: 6px;
 }
 
-.clock-apply-btn:hover {
-  filter: brightness(1.08);
+.clock-popover-tip i {
+  color: var(--accent-blue, #007aff);
+  margin-right: 4px;
 }
 
 /* 屏幕展示区 (闲置画布 / 动态抽屉表单) */

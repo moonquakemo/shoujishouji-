@@ -273,30 +273,30 @@ const PhoneParser = (() => {
     }
     const str = String(raw).trim();
 
-    // 1. 相对叙事推移词 (如: 一周后 14:00, 第二天 09:30, 3天后 18:00)
-    const relMatch = str.match(/^((?:昨天|前天|次日|第二天|第三天|一周后|一个星期后|几天后|三天后|三天前|半个月后))\s*(\d{1,2}:\d{2})?$/i);
+    // 1. 相对叙事推移词 (如: 明天 14:00, 第二天 09:30, 一天后 09:00, 一周后 14:00, 3天后 18:00)
+    const relMatch = str.match(/^((?:明天|后天|大后天|昨天|前天|次日|第二天|第三天|一天后|两天后|三天后|三天前|1天后|2天后|3天后|几天后|一周后|一个星期后|1周后|下周|半个月后))\s*(\d{1,2}:\d{2})?$/i);
     if (relMatch) {
       const relDay = relMatch[1];
       const timeOfDay = relMatch[2] || '09:00';
       const [h, m] = timeOfDay.split(':').map(Number);
 
       const d = new Date(base.getTime());
-      if (relDay === '第二天' || relDay === '次日') {
+      if (['第二天', '次日', '明天', '一天后', '1天后'].includes(relDay)) {
         d.setDate(d.getDate() + 1);
-      } else if (relDay === '第三天') {
+      } else if (['第三天', '后天', '两天后', '2天后'].includes(relDay)) {
         d.setDate(d.getDate() + 2);
+      } else if (['大后天', '几天后', '三天后', '3天后'].includes(relDay)) {
+        d.setDate(d.getDate() + 3);
       } else if (relDay === '昨天') {
         d.setDate(d.getDate() - 1);
       } else if (relDay === '前天') {
         d.setDate(d.getDate() - 2);
-      } else if (relDay === '一周后' || relDay === '一个星期后') {
+      } else if (relDay === '三天前') {
+        d.setDate(d.getDate() - 3);
+      } else if (['一周后', '一个星期后', '1周后', '下周'].includes(relDay)) {
         d.setDate(d.getDate() + 7);
       } else if (relDay === '半个月后') {
         d.setDate(d.getDate() + 15);
-      } else if (relDay === '几天后' || relDay === '三天后') {
-        d.setDate(d.getDate() + 3);
-      } else if (relDay === '三天前') {
-        d.setDate(d.getDate() - 3);
       }
       d.setHours(h || 9, m || 0, 0, 0);
 
@@ -504,7 +504,7 @@ const PhoneParser = (() => {
 
     // 检测是否带有前置时间戳 (如: 【14:30 今晚去哪吃】 / 【10-26 14:00 好久不见】 / 【一周后 14:00 最近怎样】)
     let extractedTime = '';
-    const timePrefixRegex = /^(?:(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|(\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|((?:昨天|前天|次日|第二天|第三天|一周后|一个星期后|几天后|三天后|三天前|半个月后)(?:\s+\d{1,2}:\d{2})?)|(\d{1,2}:\d{2}))[\s|，,]+([\s\S]+)$/i;
+    const timePrefixRegex = /^(?:(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|(\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|((?:明天|后天|大后天|昨天|前天|次日|第二天|第三天|一天后|两天后|三天后|三天前|1天后|2天后|3天后|几天后|一周后|一个星期后|1周后|下周|半个月后)(?:\s+\d{1,2}:\d{2})?)|(\d{1,2}:\d{2}))[\s|，,]+([\s\S]+)$/i;
     const prefixMatch = text.match(timePrefixRegex);
     if (prefixMatch) {
       extractedTime = (prefixMatch[1] || prefixMatch[2] || prefixMatch[3] || prefixMatch[4] || '').trim();
