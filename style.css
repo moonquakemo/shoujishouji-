@@ -1476,20 +1476,20 @@
   line-height: 1;
 }
 
-/* 虚拟时空设置弹出层 */
+/* 时间魔法设置弹出层 */
 .composer-clock-popover {
-  position: absolute;
-  top: 48px;
-  left: 12px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.98);
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  background: var(--form-card-bg, #ffffff);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  z-index: 100;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--form-card-border, rgba(0, 0, 0, 0.08));
+  z-index: 10;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
 .clock-popover-header {

@@ -46,7 +46,7 @@ const PhoneComposer = (() => {
             <div class="composer-title-group">
                 <span class="composer-signal-dot"></span>
                 <span class="composer-nav-title">联络中</span>
-                <div class="composer-clock-chip" id="composer_clock_chip" title="点击调整虚拟时间（模拟时间差）">
+                <div class="composer-clock-chip" id="composer_clock_chip" title="点击使用时间魔法（制造时间差）">
                     <span class="clock-icon"><i class="fa-regular fa-clock"></i></span>
                     <span class="clock-time-val" id="composer_clock_val">14:00</span>
                 </div>
@@ -56,11 +56,11 @@ const PhoneComposer = (() => {
             </div>
         </div>
 
-        <!-- 虚拟时钟微调弹窗 (纯按钮点选 + 连续累加机制) -->
+        <!-- 时间魔法微调弹窗 (纯按钮点选 + 连续累加机制) -->
         <div class="composer-clock-popover" id="composer_clock_popover" style="display: none;">
             <div class="clock-popover-header">
                 <div class="popover-title-group">
-                    <span class="popover-title">虚拟时空</span>
+                    <span class="popover-title">✨ 时间魔法</span>
                     <span class="popover-current-badge" id="popover_current_clock">14:00</span>
                 </div>
                 <div class="popover-header-actions">
@@ -558,15 +558,26 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 时钟设置弹窗切换
+     * 时间魔法弹窗切换
      */
     function toggleClockPopover(forceState) {
         const $pop = $('#composer_clock_popover');
         const show = forceState !== undefined ? forceState : !$pop.is(':visible');
         if (show) {
-            $pop.stop(true, true).slideDown(150);
+            closeDrawer();
+            if (pendingDrafts.length === 0) {
+                $('#composer_idle_canvas').hide();
+            }
+            $pop.stop(true, true).slideDown(150, function () {
+                clampToViewport('#st_phone_composer_panel');
+            });
         } else {
-            $pop.stop(true, true).slideUp(120);
+            $pop.stop(true, true).slideUp(120, function () {
+                if (pendingDrafts.length === 0 && !currentDrawer) {
+                    $('#composer_idle_canvas').fadeIn(120);
+                }
+                clampToViewport('#st_phone_composer_panel');
+            });
         }
     }
 
@@ -835,6 +846,7 @@ const PhoneComposer = (() => {
      * 打开特定抽屉
      */
     function openDrawer(type) {
+        toggleClockPopover(false);
         currentDrawer = type;
         updateIconActiveStates();
 
