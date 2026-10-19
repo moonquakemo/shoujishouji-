@@ -132,10 +132,24 @@ const PhoneRenderer = (() => {
             ? PhoneParser.parseTimeInfo
             : (t) => ({ dateKey: t, displayDate: t, timeOfDay: t, minuteStamp: null, raw: t });
 
+        // 确定故事参考年份（优先取会话中出现的最新年份，兜底为当前自然年）
+        let referenceYear = new Date().getFullYear();
+        for (let i = rawMessages.length - 1; i >= 0; i--) {
+            const m = rawMessages[i];
+            if (m && m.time) {
+                const info = getTimeInfo(m.time);
+                if (info && info.hasYear && info.year) {
+                    referenceYear = info.year;
+                    break;
+                }
+            }
+        }
+
         const result = [];
         let lastDateKey = null;
         let lastMinuteStamp = null;
         let lastFullTime = '';
+        let lastDateObj = null;
 
         for (let i = 0; i < rawMessages.length; i++) {
             const msg = rawMessages[i];
@@ -144,10 +158,19 @@ const PhoneRenderer = (() => {
             // 如果原本就是显式的 time-sep (例如世界书输出的或短代码〖时间：...】)
             if (msg.type === 'time-sep') {
                 const rawT = (msg.time || msg.content || '').trim();
-                const info = getTimeInfo(rawT);
+                const info = getTimeInfo(rawT, lastDateObj || new Date(referenceYear, 0, 1));
                 if (info.dateKey) lastDateKey = info.dateKey;
                 if (info.minuteStamp !== null) lastMinuteStamp = info.minuteStamp;
+                if (info.dateObj) lastDateObj = info.dateObj;
                 lastFullTime = rawT;
+
+                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
+                    const formatted = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, true);
+                    if (formatted) {
+                        msg.time = formatted;
+                        msg.content = formatted;
+                    }
+                }
                 result.push(msg);
                 continue;
             }
@@ -161,15 +184,21 @@ const PhoneRenderer = (() => {
                 lastFullTime = timeStr;
             }
 
-            const info = getTimeInfo(timeStr);
+            const info = getTimeInfo(timeStr, lastDateObj || new Date(referenceYear, 0, 1));
+            if (info && info.dateObj) {
+                lastDateObj = info.dateObj;
+            }
+
             const isFirst = (lastDateKey === null && lastMinuteStamp === null);
             const isDateChanged = info.dateKey && lastDateKey && (info.dateKey !== lastDateKey);
             const isTimeGap = (info.minuteStamp !== null && lastMinuteStamp !== null && (info.minuteStamp - lastMinuteStamp > 5 || info.minuteStamp < lastMinuteStamp));
 
             if (isFirst || isDateChanged) {
-                // 跨天、跨周或整个对话第一条：展示带日期的完整药丸
+                // 跨天、跨周或整个对话第一条：展示带日期的微信原生胶囊 (当年隐年，跨年显年)
                 let pillText = '';
-                if (info.displayDate) {
+                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
+                    pillText = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, true);
+                } else if (info.displayDate) {
                     pillText = info.timeOfDay ? `${info.displayDate} ${info.timeOfDay}` : info.displayDate;
                 } else if (info.timeOfDay) {
                     pillText = info.timeOfDay;
@@ -187,7 +216,12 @@ const PhoneRenderer = (() => {
                 lastMinuteStamp = info.minuteStamp;
             } else if (isTimeGap) {
                 // 同一天内，间隔超过 5 分钟：展示纯时分药丸
-                const pillText = info.timeOfDay || timeStr;
+                let pillText = '';
+                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
+                    pillText = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, false);
+                } else {
+                    pillText = info.timeOfDay || timeStr;
+                }
                 if (pillText) {
                     result.push({
                         type: 'time-sep',
@@ -500,7 +534,7 @@ ${noticeHtml}`;
         return `<div class="st-phone-time-sep"><span>${escapeHtml(msg.time)}</span></div>`;
     }
 
-    return { render, renderMessage, renderAvatar, renderTimeSep, escapeHtml };
+    return { render, renderMessage, renderAvatar, renderTimeSep, clusterMessagesWithTimeSeparators, escapeHtml };
 })();
 
 if (typeof window !== 'undefined') {

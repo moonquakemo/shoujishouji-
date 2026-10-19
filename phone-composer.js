@@ -9,6 +9,9 @@ const PhoneComposer = (() => {
     let isOpen = false;
     let currentDrawer = null; // null | 'voice' | 'stickers' | 'more' | 'transfer' | 'image' | 'video' | 'location'
     let currentVirtualTime = '14:00';
+    let currentVirtualDate = new Date();
+    let virtualHasYear = false;
+    let virtualHasDate = false;
     let isTimeCustomized = false;
     let pendingDrafts = [];
 
@@ -550,97 +553,209 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 自动从聊天流拉取当前 char 最新消息的时间
+     * 自动从聊天流拉取当前剧情最新消息的时间
+     * 并扫描回溯历史，结合最近的日期/年份锚点，维护真实 Date 时钟
      */
     function syncLatestTime() {
         try {
-            const ctx = SillyTavern.getContext();
+            const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) ? SillyTavern.getContext() : {};
             const chat = ctx.chat || [];
+
+            let foundTimeStr = '';
+            let anchorYear = null;
+            let anchorMonth = null;
+            let anchorDay = null;
+
+            // 倒序遍历聊天记录，寻找最新时间戳与历史中最近明确的日期/年份锚点
             for (let i = chat.length - 1; i >= 0; i--) {
                 const msg = chat[i];
                 if (!msg || !msg.mes) continue;
+
                 // 1. 尝试从 [phone] 提取
                 const blocks = (typeof PhoneParser !== 'undefined' && PhoneParser.extractPhoneBlocks)
                     ? PhoneParser.extractPhoneBlocks(msg.mes)
                     : [];
                 for (const b of blocks) {
                     for (let j = b.messages.length - 1; j >= 0; j--) {
-                        if (b.messages[j].time) {
-                            return setVirtualTime(b.messages[j].time, false);
+                        const m = b.messages[j];
+                        if (m.time) {
+                            if (!foundTimeStr) {
+                                foundTimeStr = m.time;
+                            }
+                            if (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo) {
+                                const parsed = PhoneParser.parseTimeInfo(m.time);
+                                if (parsed.hasDate && anchorMonth === null) {
+                                    anchorMonth = parsed.month;
+                                    anchorDay = parsed.day;
+                                }
+                                if (parsed.hasYear && anchorYear === null) {
+                                    anchorYear = parsed.year;
+                                }
+                            }
+                            if (foundTimeStr && anchorYear !== null && anchorMonth !== null) break;
                         }
                     }
+                    if (foundTimeStr && anchorYear !== null && anchorMonth !== null) break;
                 }
+
                 // 2. 尝试从用户消息的 〖...〗 提取
                 if (msg.is_user) {
                     const humanMsgs = (typeof PhoneParser !== 'undefined' && PhoneParser.extractHumanBlocks)
                         ? PhoneParser.extractHumanBlocks(msg.mes, { isMe: true })
                         : [];
                     for (let j = humanMsgs.length - 1; j >= 0; j--) {
-                        if (humanMsgs[j].time) {
-                            return setVirtualTime(humanMsgs[j].time, false);
+                        const hm = humanMsgs[j];
+                        if (hm.time) {
+                            if (!foundTimeStr) {
+                                foundTimeStr = hm.time;
+                            }
+                            if (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo) {
+                                const parsed = PhoneParser.parseTimeInfo(hm.time);
+                                if (parsed.hasDate && anchorMonth === null) {
+                                    anchorMonth = parsed.month;
+                                    anchorDay = parsed.day;
+                                }
+                                if (parsed.hasYear && anchorYear === null) {
+                                    anchorYear = parsed.year;
+                                }
+                            }
+                            if (foundTimeStr && anchorYear !== null && anchorMonth !== null) break;
                         }
                     }
                 }
+                if (foundTimeStr && anchorYear !== null && anchorMonth !== null) break;
             }
-        } catch (e) { }
+
+            if (foundTimeStr) {
+                const now = new Date();
+                const baseYear = anchorYear || now.getFullYear();
+                const baseMonth = anchorMonth !== null ? (anchorMonth - 1) : now.getMonth();
+                const baseDay = anchorDay !== null ? anchorDay : now.getDate();
+                const baseDate = new Date(baseYear, baseMonth, baseDay, 12, 0, 0, 0);
+
+                const info = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
+                    ? PhoneParser.parseTimeInfo(foundTimeStr, baseDate)
+                    : null;
+
+                if (info && info.dateObj) {
+                    currentVirtualDate = new Date(info.dateObj.getTime());
+                    virtualHasYear = info.hasYear || (anchorYear !== null);
+                    virtualHasDate = info.hasDate;
+                    currentVirtualTime = foundTimeStr;
+                    isTimeCustomized = false;
+                    updateClockDisplay();
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('[PhoneComposer] syncLatestTime error:', e);
+        }
 
         // 兜底当前现实时间
         const now = new Date();
+        currentVirtualDate = new Date(now.getTime());
+        virtualHasYear = false;
+        virtualHasDate = false;
         const hh = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
-        setVirtualTime(`${hh}:${mm}`, false);
+        currentVirtualTime = `${hh}:${mm}`;
+        isTimeCustomized = false;
+        updateClockDisplay();
     }
 
     /**
-     * 调整虚拟时空
+     * 调整虚拟时空（底层纯原生 Date 真实日历算法，自动处理闰年、月末跨月、跨年与连续叠加）
      */
     function adjustVirtualTime(action, customVal) {
+        if (!currentVirtualDate || isNaN(currentVirtualDate.getTime())) {
+            currentVirtualDate = new Date();
+        }
+
         if (action === 'custom') {
             if (!customVal || !customVal.trim()) return;
-            setVirtualTime(customVal.trim(), true);
+            const str = customVal.trim();
+            const info = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
+                ? PhoneParser.parseTimeInfo(str, currentVirtualDate)
+                : null;
+
+            if (info && info.dateObj) {
+                currentVirtualDate = new Date(info.dateObj.getTime());
+                virtualHasYear = info.hasYear || virtualHasYear;
+                virtualHasDate = info.hasDate;
+                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatDateToCanonical) {
+                    currentVirtualTime = PhoneParser.formatDateToCanonical(currentVirtualDate, virtualHasYear, virtualHasDate);
+                } else {
+                    currentVirtualTime = str;
+                }
+            } else {
+                currentVirtualTime = str;
+            }
+            isTimeCustomized = true;
+            updateClockDisplay();
             return;
         }
 
-        const getTimeInfo = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
-            ? PhoneParser.parseTimeInfo
-            : (t) => ({ minuteStamp: 840, timeOfDay: '14:00', dateKey: null });
+        if (action === 'now') {
+            syncLatestTime();
+            return;
+        }
 
-        const info = getTimeInfo(currentVirtualTime);
-        let curMin = info.minuteStamp !== null ? info.minuteStamp : 14 * 60;
-        let datePart = info.dateKey || '';
+        const d = new Date(currentVirtualDate.getTime());
+        const startDay = d.getDate();
 
         if (action === '+5m') {
-            curMin += 5;
-            setVirtualTime(formatTimeFromMinutes(curMin, datePart), true);
+            d.setMinutes(d.getMinutes() + 5);
         } else if (action === '+30m') {
-            curMin += 30;
-            setVirtualTime(formatTimeFromMinutes(curMin, datePart), true);
+            d.setMinutes(d.getMinutes() + 30);
         } else if (action === '+2h') {
-            curMin += 120;
-            setVirtualTime(formatTimeFromMinutes(curMin, datePart), true);
+            d.setHours(d.getHours() + 2);
         } else if (action === 'next-day') {
-            setVirtualTime('第二天 09:00', true);
+            // 向后推 1 天，时间调整为早晨 09:00
+            d.setDate(d.getDate() + 1);
+            d.setHours(9, 0, 0, 0);
+            virtualHasDate = true;
         } else if (action === 'next-week') {
-            setVirtualTime('一周后 14:00', true);
-        } else if (action === 'now') {
-            syncLatestTime();
+            // 向后推 7 天
+            d.setDate(d.getDate() + 7);
+            virtualHasDate = true;
         }
-    }
 
-    function formatTimeFromMinutes(totalMinutes, datePrefix) {
-        let mins = totalMinutes % (24 * 60);
-        if (mins < 0) mins += 24 * 60;
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        return datePrefix && !datePrefix.includes(':') ? `${datePrefix} ${timeStr}` : timeStr;
+        // 跨日自动激活日期显示
+        if (d.getDate() !== startDay) {
+            virtualHasDate = true;
+        }
+
+        currentVirtualDate = d;
+        isTimeCustomized = true;
+
+        if (typeof PhoneParser !== 'undefined' && PhoneParser.formatDateToCanonical) {
+            currentVirtualTime = PhoneParser.formatDateToCanonical(currentVirtualDate, virtualHasYear, virtualHasDate);
+        } else {
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            currentVirtualTime = `${hh}:${mm}`;
+        }
+
+        updateClockDisplay();
     }
 
     function setVirtualTime(timeStr, isCustomized = false) {
         currentVirtualTime = timeStr || '14:00';
         isTimeCustomized = isCustomized;
+        const info = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
+            ? PhoneParser.parseTimeInfo(currentVirtualTime, currentVirtualDate)
+            : null;
+        if (info && info.dateObj) {
+            currentVirtualDate = new Date(info.dateObj.getTime());
+            virtualHasYear = info.hasYear || virtualHasYear;
+            virtualHasDate = info.hasDate;
+        }
+        updateClockDisplay();
+    }
+
+    function updateClockDisplay() {
         $('#composer_clock_val').text(currentVirtualTime);
-        $('#composer_clock_chip').toggleClass('customized', isCustomized);
+        $('#composer_clock_chip').toggleClass('customized', isTimeCustomized);
     }
 
     /**
@@ -1105,7 +1220,14 @@ const PhoneComposer = (() => {
 
         let html = '';
         if (parsedMsg.time) {
-            html += `<div class="st-phone-time-sep composer-time-pill"><span>${escapeHtml(parsedMsg.time)}</span></div>`;
+            let pillText = parsedMsg.time;
+            if (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo && PhoneParser.formatWeChatPill) {
+                const tInfo = PhoneParser.parseTimeInfo(parsedMsg.time, currentVirtualDate);
+                if (tInfo && tInfo.dateObj) {
+                    pillText = PhoneParser.formatWeChatPill(tInfo.dateObj, currentVirtualDate ? currentVirtualDate.getFullYear() : null, tInfo.hasDate);
+                }
+            }
+            html += `<div class="st-phone-time-sep composer-time-pill"><span>${escapeHtml(pillText || parsedMsg.time)}</span></div>`;
         }
 
         if (typeof PhoneRenderer !== 'undefined' && PhoneRenderer.renderMessage) {
@@ -1193,6 +1315,11 @@ const PhoneComposer = (() => {
         toggleComposer,
         updateTheme,
         syncLatestTime,
+        adjustVirtualTime,
+        setVirtualTime,
+        getVirtualTime: () => currentVirtualTime,
+        getVirtualDate: () => new Date(currentVirtualDate.getTime()),
+        isTimeCustomized: () => isTimeCustomized,
         clearDraft,
         updateContact: () => {},
         insertIntoSendTextarea,

@@ -54,7 +54,7 @@ const PhoneParser = (() => {
       return attrs;
     }
 
-    const pairs = trimmed.split('|');
+    const pairs = trimmed.split(/[|,，]/);
     for (const pair of pairs) {
       const eqIdx = pair.indexOf('=');
       if (eqIdx > 0) {
@@ -250,14 +250,26 @@ const PhoneParser = (() => {
   }
 
   /**
-   * 智能时间解析器
+   * 智能时间解析器与日历基准构建
    * 解析各种格式：2024-10-19 14:27, 10-19 14:27, 一周后 14:00, 第二天 09:30, 14:27 等
    * @param {string} raw - 原始时间字符串
-   * @returns {object} { dateKey, displayDate, timeOfDay, minuteStamp, raw }
+   * @param {Date|object} [fallbackBaseDate] - 继承参考日期
+   * @returns {object} { year, month, day, hour, minute, hasYear, hasDate, dateKey, displayDate, timeOfDay, minuteStamp, dateObj, raw }
    */
-  function parseTimeInfo(raw) {
+  function parseTimeInfo(raw, fallbackBaseDate) {
+    const base = (fallbackBaseDate instanceof Date && !isNaN(fallbackBaseDate.getTime()))
+      ? new Date(fallbackBaseDate.getTime())
+      : new Date();
+
     if (!raw) {
-      return { dateKey: null, displayDate: null, timeOfDay: '', minuteStamp: null, raw: '' };
+      return {
+        year: base.getFullYear(), month: base.getMonth() + 1, day: base.getDate(),
+        hour: base.getHours(), minute: base.getMinutes(),
+        hasYear: false, hasDate: false,
+        dateKey: null, displayDate: null, timeOfDay: '', minuteStamp: null,
+        dateObj: base,
+        raw: ''
+      };
     }
     const str = String(raw).trim();
 
@@ -267,11 +279,44 @@ const PhoneParser = (() => {
       const relDay = relMatch[1];
       const timeOfDay = relMatch[2] || '09:00';
       const [h, m] = timeOfDay.split(':').map(Number);
+
+      const d = new Date(base.getTime());
+      if (relDay === '第二天' || relDay === '次日') {
+        d.setDate(d.getDate() + 1);
+      } else if (relDay === '第三天') {
+        d.setDate(d.getDate() + 2);
+      } else if (relDay === '昨天') {
+        d.setDate(d.getDate() - 1);
+      } else if (relDay === '前天') {
+        d.setDate(d.getDate() - 2);
+      } else if (relDay === '一周后' || relDay === '一个星期后') {
+        d.setDate(d.getDate() + 7);
+      } else if (relDay === '半个月后') {
+        d.setDate(d.getDate() + 15);
+      } else if (relDay === '几天后' || relDay === '三天后') {
+        d.setDate(d.getDate() + 3);
+      } else if (relDay === '三天前') {
+        d.setDate(d.getDate() - 3);
+      }
+      d.setHours(h || 9, m || 0, 0, 0);
+
+      const Y = d.getFullYear();
+      const M = d.getMonth() + 1;
+      const D = d.getDate();
+
       return {
-        dateKey: relDay,
+        year: Y,
+        month: M,
+        day: D,
+        hour: h || 9,
+        minute: m || 0,
+        hasYear: false,
+        hasDate: true,
+        dateKey: `${Y}-${String(M).padStart(2, '0')}-${String(D).padStart(2, '0')}`,
         displayDate: relDay,
-        timeOfDay,
-        minuteStamp: (h || 0) * 60 + (m || 0),
+        timeOfDay: `${String(h || 9).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`,
+        minuteStamp: (h || 9) * 60 + (m || 0),
+        dateObj: d,
         raw: str,
       };
     }
@@ -279,16 +324,26 @@ const PhoneParser = (() => {
     // 2. 年-月-日 时:分 (如 2024-10-19 14:27, 2024年10月19日 14:27)
     const fullDateMatch = str.match(/^(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?\s+(\d{1,2}:\d{2})$/);
     if (fullDateMatch) {
-      const year = fullDateMatch[1];
-      const month = String(fullDateMatch[2]).padStart(2, '0');
-      const day = String(fullDateMatch[3]).padStart(2, '0');
+      const year = Number(fullDateMatch[1]);
+      const month = Number(fullDateMatch[2]);
+      const day = Number(fullDateMatch[3]);
       const timeOfDay = fullDateMatch[4];
       const [h, m] = timeOfDay.split(':').map(Number);
+      const d = new Date(year, month - 1, day, h, m, 0, 0);
+
       return {
-        dateKey: `${year}-${month}-${day}`,
-        displayDate: `${year}年${Number(month)}月${Number(day)}日`,
+        year,
+        month,
+        day,
+        hour: h,
+        minute: m,
+        hasYear: true,
+        hasDate: true,
+        dateKey: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        displayDate: `${year}年${month}月${day}日`,
         timeOfDay,
-        minuteStamp: (h || 0) * 60 + (m || 0),
+        minuteStamp: h * 60 + m,
+        dateObj: d,
         raw: str,
       };
     }
@@ -296,15 +351,26 @@ const PhoneParser = (() => {
     // 3. 月-日 时:分 (如 10-19 14:27, 10月19日 14:27)
     const monthDayMatch = str.match(/^(\d{1,2})[-/月](\d{1,2})日?\s+(\d{1,2}:\d{2})$/);
     if (monthDayMatch) {
-      const month = String(monthDayMatch[1]).padStart(2, '0');
-      const day = String(monthDayMatch[2]).padStart(2, '0');
+      const year = base.getFullYear();
+      const month = Number(monthDayMatch[1]);
+      const day = Number(monthDayMatch[2]);
       const timeOfDay = monthDayMatch[3];
       const [h, m] = timeOfDay.split(':').map(Number);
+      const d = new Date(year, month - 1, day, h, m, 0, 0);
+
       return {
-        dateKey: `${month}-${day}`,
-        displayDate: `${Number(month)}月${Number(day)}日`,
+        year,
+        month,
+        day,
+        hour: h,
+        minute: m,
+        hasYear: false,
+        hasDate: true,
+        dateKey: `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        displayDate: `${month}月${day}日`,
         timeOfDay,
-        minuteStamp: (h || 0) * 60 + (m || 0),
+        minuteStamp: h * 60 + m,
+        dateObj: d,
         raw: str,
       };
     }
@@ -315,23 +381,95 @@ const PhoneParser = (() => {
       const h = Number(timeMatch[1]);
       const m = Number(timeMatch[2]);
       const timeOfDay = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
+
       return {
+        year: base.getFullYear(),
+        month: base.getMonth() + 1,
+        day: base.getDate(),
+        hour: h,
+        minute: m,
+        hasYear: false,
+        hasDate: false,
         dateKey: null, // 继承前序日期
         displayDate: null,
         timeOfDay,
         minuteStamp: h * 60 + m,
+        dateObj: d,
         raw: str,
       };
     }
 
     // 兜底其它文本
     return {
+      year: base.getFullYear(),
+      month: base.getMonth() + 1,
+      day: base.getDate(),
+      hour: base.getHours(),
+      minute: base.getMinutes(),
+      hasYear: false,
+      hasDate: false,
       dateKey: str,
       displayDate: str,
       timeOfDay: '',
       minuteStamp: null,
+      dateObj: base,
       raw: str,
     };
+  }
+
+  /**
+   * 将 Date 格式化为标准传输/写入 Token 字符串
+   * @param {Date} date - JS Date 实例
+   * @param {boolean} hasYear - 是否带年份 (如 2024-10-19 14:00)
+   * @param {boolean} hasDate - 是否带日期 (如 false 则仅输出 14:00)
+   * @returns {string}
+   */
+  function formatDateToCanonical(date, hasYear = false, hasDate = true) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '14:00';
+    const Y = date.getFullYear();
+    const M = String(date.getMonth() + 1).padStart(2, '0');
+    const D = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+
+    if (!hasDate) {
+      return `${hh}:${mm}`;
+    }
+    if (hasYear) {
+      return `${Y}-${M}-${D} ${hh}:${mm}`;
+    }
+    return `${M}-${D} ${hh}:${mm}`;
+  }
+
+  /**
+   * 微信级智能时间胶囊渲染格式化器
+   * 规则：当年隐年，跨年显年，同日纯时分
+   * @param {Date} date - 消息时间
+   * @param {number} referenceYear - 故事最新年份 (如 2024)
+   * @param {boolean} isDateChanged - 是否跨天/首次展示
+   * @returns {string} 微信胶囊文字 (如 "10月19日 14:00" 或 "2024年10月19日 14:00" 或 "14:00")
+   */
+  function formatWeChatPill(date, referenceYear, isDateChanged) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+    const Y = date.getFullYear();
+    const M = date.getMonth() + 1;
+    const D = date.getDate();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+
+    if (!isDateChanged) {
+      // 同一天内超过 5 分钟：仅显示纯时分
+      return `${hh}:${mm}`;
+    }
+
+    // 跨天情况：
+    // 若消息年份 < 故事最新基准年份 (跨年旧消息)，完整显示年份
+    if (referenceYear && Y < referenceYear) {
+      return `${Y}年${M}月${D}日 ${hh}:${mm}`;
+    }
+    // 否则在当前自然年内，优雅隐藏年份
+    return `${M}月${D}日 ${hh}:${mm}`;
   }
 
   /**
@@ -563,6 +701,8 @@ const PhoneParser = (() => {
     formatDuration,
     hasPhoneContent,
     parseTimeInfo,
+    formatDateToCanonical,
+    formatWeChatPill,
   };
 })();
 
