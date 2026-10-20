@@ -76,16 +76,19 @@ const PhoneComposer = (() => {
             </div>
 
             <!-- 最近联络人列表 (从剧情中提取) -->
-            <div class="clock-group-title">最近联络人</div>
+            <div class="clock-group-title">已存联络人 (点击切换)</div>
             <div class="clock-quick-pills" id="composer_recent_contacts_pills">
                 <!-- 动态填充 -->
             </div>
 
             <!-- 自定义联系人 -->
-            <div class="clock-group-title" style="margin-top: 10px;">指定联系人 (输入姓名/备注)</div>
+            <div class="clock-group-title" style="margin-top: 10px;">添加联系人 (自动存入当前角色卡)</div>
             <div class="clock-anchor-row">
-                <input type="text" class="clock-anchor-input" id="composer_contact_custom_input" placeholder="输入角色名或备注...">
-                <button type="button" class="clock-anchor-btn" id="composer_contact_set_btn">设定</button>
+                <input type="text" class="clock-anchor-input" id="composer_contact_custom_input" placeholder="输入姓名或备注 (如: 班长 / 妈妈)...">
+                <button type="button" class="clock-anchor-btn" id="composer_contact_set_btn">设定并存卡</button>
+            </div>
+            <div class="clock-popover-tip" style="margin-top: 6px;">
+                <i class="fa-solid fa-circle-check"></i> 添加的联系人会自动保存在当前角色卡中，像专属表情包一样跟随角色卡。
             </div>
         </div>
 
@@ -230,9 +233,11 @@ const PhoneComposer = (() => {
         $('#composer_contact_set_btn').on('click', function () {
             const customVal = $('#composer_contact_custom_input').val()?.trim();
             if (customVal) {
+                saveCustomContact(customVal);
                 isContactManuallyCustomized = true;
                 updateContact(customVal, true);
                 $('#composer_contact_custom_input').val('');
+                renderContactPopover();
                 toggleContactPopover(false);
             }
         });
@@ -244,12 +249,28 @@ const PhoneComposer = (() => {
             }
         });
 
-        $(document).on('click', '#composer_recent_contacts_pills .quick-pill', function () {
+        $(document).on('click', '#composer_recent_contacts_pills .contact-pill', function (e) {
+            if ($(e.target).closest('.contact-pill-del').length) return;
             const c = $(this).attr('data-contact');
             if (c) {
                 isContactManuallyCustomized = true;
                 updateContact(c, true);
                 toggleContactPopover(false);
+            }
+        });
+
+        $(document).on('click', '#composer_recent_contacts_pills .contact-pill-del', function (e) {
+            e.stopPropagation();
+            const toDel = $(this).attr('data-del');
+            if (toDel) {
+                removeCustomContact(toDel);
+                renderContactPopover();
+                if (currentContact === toDel) {
+                    updateContact('', true);
+                }
+                if (typeof toastr !== 'undefined') {
+                    toastr.info(`已从当前角色卡移除联系人: ${toDel}`, '小手机伴侣');
+                }
             }
         });
 
@@ -668,24 +689,46 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 获取所有可用的联络人 (剧情已有角色、群聊、上下文联系人)
+     * 获取当前角色卡专属可用的联络人 (仅当前卡主角色、角色卡内已存联系人、当前会话中的联系人，绝不扫描全酒馆角色库)
      */
     function getAvailableContacts() {
         const list = [];
         try {
             if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
                 const ctx = SillyTavern.getContext();
-                if (ctx.name2 && !list.includes(ctx.name2)) {
-                    list.push(ctx.name2);
+                const charName = ctx.name2 || '';
+
+                // 1. 当前主角色名
+                if (charName && !list.includes(charName)) {
+                    list.push(charName);
                 }
-                if (ctx.characters && Array.isArray(ctx.characters)) {
-                    for (const c of ctx.characters) {
-                        const n = c?.name;
-                        if (n && !list.includes(n)) list.push(n);
+
+                // 2. 从当前角色卡内已持久化保存的联系人 (extension data: phone_contacts)
+                try {
+                    const charData = ctx.characters?.[ctx.characterId];
+                    const cardContacts = charData?.data?.extensions?.phone_contacts;
+                    if (Array.isArray(cardContacts)) {
+                        for (const c of cardContacts) {
+                            if (c && typeof c === 'string' && !list.includes(c)) {
+                                list.push(c);
+                            }
+                        }
+                    }
+                } catch (e) { }
+
+                // 3. 从扩展设置中当前角色保存的联系人 (settings.char_contacts[charName])
+                const settings = ctx.extensionSettings?.['phone_ui'];
+                if (settings?.char_contacts?.[charName] && Array.isArray(settings.char_contacts[charName])) {
+                    for (const c of settings.char_contacts[charName]) {
+                        if (c && typeof c === 'string' && !list.includes(c)) {
+                            list.push(c);
+                        }
                     }
                 }
+
+                // 4. 当前这场聊天中曾经出现过的手机联系人 (仅扫当前 chat，不扫其他卡)
                 if (ctx.chat && Array.isArray(ctx.chat)) {
-                    const maxScan = Math.max(0, ctx.chat.length - 60);
+                    const maxScan = Math.max(0, ctx.chat.length - 40);
                     for (let i = ctx.chat.length - 1; i >= maxScan; i--) {
                         const m = ctx.chat[i];
                         if (!m || !m.mes) continue;
@@ -704,6 +747,78 @@ const PhoneComposer = (() => {
             console.warn('[PhoneComposer] getAvailableContacts error:', e);
         }
         return list;
+    }
+
+    /**
+     * 将自定义联系人持久化存入当前角色设置与角色卡
+     */
+    function saveCustomContact(contactName) {
+        if (!contactName) return;
+        const name = String(contactName).trim();
+        if (!name) return;
+
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                const charName = ctx.name2 || '';
+                const settings = ctx.extensionSettings?.['phone_ui'];
+
+                // 1. 存入扩展设置 (char_contacts[charName])
+                if (settings && charName) {
+                    if (!settings.char_contacts) settings.char_contacts = {};
+                    if (!settings.char_contacts[charName]) settings.char_contacts[charName] = [];
+                    if (!settings.char_contacts[charName].includes(name)) {
+                        settings.char_contacts[charName].push(name);
+                    }
+                    if (ctx.saveSettingsDebounced) ctx.saveSettingsDebounced();
+                }
+
+                // 2. 写入角色卡 extension 字段 (phone_contacts，导出卡时自带)
+                if (ctx.characterId && ctx.writeExtensionField && charName) {
+                    const charData = ctx.characters?.[ctx.characterId];
+                    let currentCardContacts = charData?.data?.extensions?.phone_contacts || [];
+                    if (!Array.isArray(currentCardContacts)) currentCardContacts = [];
+                    if (!currentCardContacts.includes(name)) {
+                        currentCardContacts.push(name);
+                        ctx.writeExtensionField(ctx.characterId, 'phone_contacts', currentCardContacts);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[PhoneComposer] saveCustomContact error:', e);
+        }
+    }
+
+    /**
+     * 从当前角色设置与角色卡中移除联系人
+     */
+    function removeCustomContact(contactName) {
+        if (!contactName) return;
+        const name = String(contactName).trim();
+
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                const charName = ctx.name2 || '';
+                const settings = ctx.extensionSettings?.['phone_ui'];
+
+                if (settings?.char_contacts?.[charName]) {
+                    settings.char_contacts[charName] = settings.char_contacts[charName].filter(c => c !== name);
+                    if (ctx.saveSettingsDebounced) ctx.saveSettingsDebounced();
+                }
+
+                if (ctx.characterId && ctx.writeExtensionField && charName) {
+                    const charData = ctx.characters?.[ctx.characterId];
+                    let currentCardContacts = charData?.data?.extensions?.phone_contacts || [];
+                    if (Array.isArray(currentCardContacts)) {
+                        currentCardContacts = currentCardContacts.filter(c => c !== name);
+                        ctx.writeExtensionField(ctx.characterId, 'phone_contacts', currentCardContacts);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[PhoneComposer] removeCustomContact error:', e);
+        }
     }
 
     /**
@@ -740,19 +855,35 @@ const PhoneComposer = (() => {
         const $pills = $('#composer_recent_contacts_pills');
         $pills.empty();
         const contacts = getAvailableContacts();
+
+        let ctxCharName = '';
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                ctxCharName = SillyTavern.getContext().name2 || '';
+            }
+        } catch (e) { }
+
         if (contacts.length === 0) {
-            $pills.html('<span style="font-size:11px;color:#999;padding:4px 0;">暂无最近联络人记录</span>');
+            $pills.html('<span style="font-size:11px;color:#999;padding:4px 0;">暂无联络人记录，请在下方添加</span>');
             return;
         }
+
         for (const c of contacts) {
             const isCur = c === currentContact;
-            const $btn = $('<button type="button" class="quick-pill"></button>')
-                .text(c)
-                .attr('data-contact', c);
+            const isMainChar = c === ctxCharName;
+
+            const $pill = $(`
+                <div class="quick-pill contact-pill ${isCur ? 'active' : ''}" data-contact="${escapeAttr(c)}">
+                    <span class="contact-pill-name">${escapeHtml(c)}${isMainChar ? ' (当前卡)' : ''}</span>
+                    ${!isMainChar ? `<span class="contact-pill-del" data-del="${escapeAttr(c)}" title="从本卡移除此联系人">×</span>` : ''}
+                </div>
+            `);
+
             if (isCur) {
-                $btn.addClass('active').css({ 'background': 'var(--accent-green, #07c160)', 'color': '#fff' });
+                $pill.css({ 'background': 'var(--accent-green, #07c160)', 'color': '#fff', 'border-color': 'var(--accent-green, #07c160)' });
             }
-            $pills.append($btn);
+
+            $pills.append($pill);
         }
     }
 

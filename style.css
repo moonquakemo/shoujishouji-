@@ -1718,6 +1718,29 @@
   background: #06ad56;
 }
 
+.quick-pill.contact-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+}
+
+.contact-pill .contact-pill-del {
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 50%;
+  opacity: 0.55;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+
+.contact-pill .contact-pill-del:hover {
+  opacity: 1;
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.2);
+}
+
 .clock-popover-tip {
   font-size: 10.5px;
   line-height: 1.35;
