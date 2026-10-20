@@ -293,9 +293,32 @@ const PhoneRenderer = (() => {
     }
 
     /**
+     * 解析并规范化消息的上下文与视角（支持 NPC POV 左右气泡与持机人反转）
+     */
+    function resolveMessageContext(msg, contact) {
+        if (!msg) return;
+        if (msg.pov) {
+            const p = msg.pov.trim();
+            const pLower = p.toLowerCase();
+            const isUser = (pLower === '我' || pLower === 'user' || pLower === 'me' || pLower === '{{user}}');
+            if (!isUser) {
+                const from = msg.from || contact;
+                if (from === p || from === '我' || from === 'Me') {
+                    msg.isMe = true;
+                    msg._npcPovMe = true;
+                } else {
+                    msg.isMe = false;
+                    msg._npcPovMe = false;
+                }
+            }
+        }
+    }
+
+    /**
      * 渲染单条消息
      */
     function renderMessage(msg, contact, actions, phoneId, index) {
+        resolveMessageContext(msg, contact);
         switch (msg.type) {
             case 'msg': return renderTextMsg(msg, contact, phoneId);
             case 'voice': return renderVoiceMsg(msg, contact, phoneId);
@@ -313,7 +336,7 @@ const PhoneRenderer = (() => {
     function renderTextMsg(msg, contact, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
 
         let quoteHtml = '';
         if (msg.quote) {
@@ -345,7 +368,7 @@ const PhoneRenderer = (() => {
     function renderVoiceMsg(msg, contact, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         return `
@@ -369,7 +392,7 @@ const PhoneRenderer = (() => {
     function renderStickerMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         // 表情包解析：key → URL（角色专属 → 全局 → 回退）
@@ -399,7 +422,7 @@ const PhoneRenderer = (() => {
     function renderTransferMsg(msg, contact, actions, phoneId) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
         const transferId = msg.id;
 
@@ -455,7 +478,7 @@ ${noticeHtml}`;
     function renderLocationMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
 
         return `
@@ -494,16 +517,16 @@ ${noticeHtml}`;
     function renderImageMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
         const desc = msg.content || '';
 
         let inner;
         const formattedSrc = formatUrl(msg.src);
         if (formattedSrc) {
-            inner = `<img class="phone-media-img" src="${escapeHtml(formattedSrc)}" alt="${escapeHtml(desc)}" onerror="this.outerHTML='<div class=phone-media-desc>\ud83d\uddbc '+this.alt+'</div>'">`;
+            inner = `<img class="phone-media-img" src="${escapeHtml(formattedSrc)}" alt="${escapeHtml(desc)}" onerror="this.outerHTML='<div class=phone-media-desc>🖼️ '+this.alt+'</div>'">`;
         } else {
-            inner = `<div class="phone-media-desc">\ud83d\uddbc ${escapeHtml(desc || '\u56fe\u7247')}</div>`;
+            inner = `<div class="phone-media-desc">🖼️ ${escapeHtml(desc || '图片')}</div>`;
         }
 
         return `
@@ -519,17 +542,17 @@ ${noticeHtml}`;
     function renderVideoMsg(msg, contact) {
         const side = msg.isMe ? 'msg-me' : 'msg-other';
         const from = msg.from || contact;
-        const avatarName = msg.isMe ? 'Me' : from;
+        const avatarName = (msg.isMe && !msg._npcPovMe) ? 'Me' : from;
         const timeHtml = msg.time ? `<div class="st-phone-msg-time">${escapeHtml(msg.time)}</div>` : '';
-        const desc = msg.content || '\u89c6\u9891';
+        const desc = msg.content || '视频';
 
         return `
 <div class="st-phone-msg-row ${side}" data-searchable>
   ${renderAvatar(avatarName, msg.isMe, from)}
   <div>
     <div class="st-phone-media st-phone-video">
-      <div class="phone-media-desc">\ud83c\udfac ${escapeHtml(desc)}</div>
-      <div class="phone-video-play">\u25b6</div>
+      <div class="phone-media-desc">🎬 ${escapeHtml(desc)}</div>
+      <div class="phone-video-play">▶</div>
     </div>
     ${timeHtml}
   </div>

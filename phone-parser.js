@@ -39,54 +39,76 @@ const PhoneParser = (() => {
 
   /**
    * 解析 key=value|key2=value2 格式的属性
-   * 兼容简写: [phone:小红] 或 [phone:小红|http://avatar.jpg]
+   * 兼容: [phone:小红 pov=小蓝] / [phone:小红, pov=小蓝] / [phone:小红|avatar.jpg] / [phone:contact=小红|pov=小蓝]
    */
   function parseAttributes(attrString) {
     const attrs = {};
     if (!attrString) return attrs;
-    const trimmed = attrString.trim();
+    let trimmed = attrString.trim();
 
-    // 如果完全不含 =，支持 [phone:联系人] 或 [phone:联系人|头像链接]
-    if (!trimmed.includes('=')) {
+    // 1. 优先提取 pov / 视角 属性 (支持: pov=小蓝, POV:小蓝, 视角=小蓝)
+    const povMatch = trimmed.match(/(?:^|[\s|,，|])(?:pov|POV|视角)\s*[:=]\s*([^\s|,，|\]]+)/i);
+    if (povMatch) {
+      attrs.pov = povMatch[1].trim();
+      trimmed = trimmed.replace(povMatch[0], ' ').trim();
+    }
+
+    // 2. 提取 avatar / 头像 属性
+    const avatarMatch = trimmed.match(/(?:^|[\s|,，|])(?:avatar|头像)\s*[:=]\s*([^\s|,，|\]]+)/i);
+    if (avatarMatch) {
+      attrs.avatar = avatarMatch[1].trim();
+      trimmed = trimmed.replace(avatarMatch[0], ' ').trim();
+    }
+
+    // 3. 提取 contact / 联系人 属性
+    const contactMatch = trimmed.match(/(?:^|[\s|,，|])(?:contact|联系人)\s*[:=]\s*([^\s|,，|\]]+)/i);
+    if (contactMatch) {
+      attrs.contact = contactMatch[1].trim();
+      trimmed = trimmed.replace(contactMatch[0], ' ').trim();
+    }
+
+    // 4. 处理剩余内容 (如果 contact 尚未确定)
+    if (!attrs.contact && trimmed) {
       const parts = trimmed.split('|');
       attrs.contact = parts[0].trim();
-      if (parts[1]) attrs.avatar = parts[1].trim();
-      return attrs;
-    }
-
-    const pairs = trimmed.split(/[|,，]/);
-    for (const pair of pairs) {
-      const eqIdx = pair.indexOf('=');
-      if (eqIdx > 0) {
-        const key = pair.substring(0, eqIdx).trim();
-        const value = pair.substring(eqIdx + 1).trim();
-        attrs[key] = value;
-      } else if (!attrs.contact) {
-        // 第一段没有 = 时，默认为 contact 名
-        attrs.contact = pair.trim();
+      if (parts[1] && !attrs.avatar) {
+        attrs.avatar = parts[1].trim();
       }
     }
+
     return attrs;
   }
 
   /**
    * 从原始文本中提取所有 [phone] 块
+   * 支持 [phone:小红 pov=小蓝] 与并列短标记 [phone:小红][POV:小蓝]
    * @param {string} text 
-   * @returns {Array<{contact: string, avatar: string, messages: Array}>}
+   * @returns {Array<{contact: string, pov: string, avatar: string, messages: Array}>}
    */
   function extractPhoneBlocks(text) {
     if (!text) return [];
     const blocks = [];
-    const phoneRegex = /(?:\[|&#91;)phone(?::([^\]&#]*))?(?:\]|&#93;)([\s\S]*?)(?:\[|&#91;)\/phone(?:\]|&#93;)/gi;
+    const phoneRegex = /(?:\[|&#91;)phone(?::([^\]&#]*))?(?:\]|&#93;)(?:\s*(?:\[|&#91;)(?:pov|POV|视角)[:=]([^\]&#]+)(?:\]|&#93;))?([\s\S]*?)(?:\[|&#91;)\/phone(?:\]|&#93;)/gi;
     let match;
 
     while ((match = phoneRegex.exec(text)) !== null) {
       const attrs = parseAttributes(match[1] || '');
-      const innerText = match[2] || '';
+      if (match[2] && !attrs.pov) {
+        attrs.pov = match[2].trim();
+      }
+      const innerText = match[3] || '';
       const messages = parseMessages(innerText, attrs.contact || '未知');
+
+      // 将 block 的 pov 注入到该 block 内的每条 message
+      if (attrs.pov) {
+        for (const m of messages) {
+          m.pov = attrs.pov;
+        }
+      }
 
       blocks.push({
         contact: attrs.contact || '未知',
+        pov: attrs.pov || '',
         avatar: attrs.avatar || '',
         messages,
         raw: match[0],
@@ -497,8 +519,6 @@ const PhoneParser = (() => {
       return null;
     }
 
-    const from = isMe ? 'Me' : contact;
-
     // 0. 时间分割线: 〖时间：2024-10-19 14:27】 / 【时间: 一周后 14:00】 / 【时间: 次日 09:30】
     const explicitTimeMatch = text.match(/^(?:时间|时间线)[：:\s]+([\s\S]+)$/i);
     if (explicitTimeMatch) {
@@ -510,14 +530,54 @@ const PhoneParser = (() => {
       };
     }
 
-    // 检测是否带有前置时间戳 (如: 【14:30 今晚去哪吃】 / 【10-26 14:00 好久不见】 / 【一周后 14:00 最近怎样】)
     let extractedTime = '';
+    let extractedContact = '';
     const timePrefixRegex = /^(?:(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|(\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|((?:明天|后天|大后天|昨天|前天|次日|第二天|第三天|一天后|两天后|三天后|三天前|1天后|2天后|3天后|几天后|一周后|一个星期后|1周后|下周|半个月后)(?:\s+\d{1,2}:\d{2})?)|(\d{1,2}:\d{2}))[\s|，,]+([\s\S]+)$/i;
-    const prefixMatch = text.match(timePrefixRegex);
-    if (prefixMatch) {
-      extractedTime = (prefixMatch[1] || prefixMatch[2] || prefixMatch[3] || prefixMatch[4] || '').trim();
-      text = (prefixMatch[5] || '').trim();
+
+    // 提取联系人前缀与时间戳（支持任意前后顺序，如: 〖@小红 14:00 吃啥〗 或 〖14:00 @小红 吃啥〗）
+    for (let pass = 0; pass < 2; pass++) {
+      if (!extractedContact) {
+        // 1. 紧随冒号，单字名：@小红: 消息 / 给小红：消息
+        const directColonMatch = text.match(/^(?:@|给|发给|对|to[:：\s]?|To[:：\s]?)\s*([^\s:：，,]+)[:：][\s，,]*(.*)$/i);
+        if (directColonMatch) {
+          extractedContact = directColonMatch[1].trim();
+          text = (directColonMatch[2] || '').trim();
+          continue;
+        }
+        // 2. 带空格的多词名字+明确冒号：@Alice Cooper: hello (排除以小时数字结尾或冒号前是指令词)
+        const multiWordColonMatch = text.match(/^(?:@|给|发给|对|to\s+|To\s+)([^:：\n]+?)[:：][\s，,]*(.*)$/i);
+        if (multiWordColonMatch) {
+          const candidate = multiWordColonMatch[1].trim();
+          if (!/\b\d{1,2}$/.test(candidate) && !/(?:^|\s)(?:表情|表情包|转账|语音|图片|视频|位置|撤回|时间|时间线)$/i.test(candidate)) {
+            extractedContact = candidate;
+            text = (multiWordColonMatch[2] || '').trim();
+            continue;
+          }
+        }
+        // 3. 空格分隔的单一联系人：@小红 消息 / @小红 14:00 消息 / @小红 转账：520元
+        const spaceMatch = text.match(/^(?:@|给|发给|对|to\s+|To\s+)([^\s:：，,]+)[\s，,]+([\s\S]*)$/i);
+        if (spaceMatch) {
+          if (!/^(?:表情|表情包|转账|语音|图片|视频|位置|撤回|时间|时间线)$/i.test(spaceMatch[1])) {
+            extractedContact = spaceMatch[1].trim();
+            text = (spaceMatch[2] || '').trim();
+            continue;
+          }
+        }
+      }
+
+      if (!extractedTime) {
+        const prefixMatch = text.match(timePrefixRegex);
+        if (prefixMatch) {
+          extractedTime = (prefixMatch[1] || prefixMatch[2] || prefixMatch[3] || prefixMatch[4] || '').trim();
+          text = (prefixMatch[5] || '').trim();
+          continue;
+        }
+      }
     }
+
+    if (!text) return null;
+
+    const from = isMe ? 'Me' : (extractedContact || contact);
 
     let parsedMsg = null;
 
@@ -663,11 +723,19 @@ const PhoneParser = (() => {
       parsedMsg.time = extractedTime;
     }
 
+    // 目标联系人绑定
+    parsedMsg.targetContact = extractedContact || (contact && contact !== '未知' ? contact : null);
+    parsedMsg.hasExplicitContact = !!extractedContact;
+    if (extractedContact) {
+      parsedMsg.contact = extractedContact;
+    }
+
     return parsedMsg;
   }
 
   /**
    * 提取文本中的所有自然语言短标记 〖...〗
+   * 支持通过前置会话头 [@联系人] 或 【@联系人】 统一绑定下属短标记的目标对象
    * @param {string} text 
    * @param {object} options - { isMe, contact }
    * @returns {Array} 消息列表
@@ -675,18 +743,47 @@ const PhoneParser = (() => {
   function extractHumanBlocks(text, options = {}) {
     if (!text) return [];
     const isMe = options.isMe !== undefined ? options.isMe : true;
-    const contact = options.contact || '未知';
+    const defaultContact = options.contact || '未知';
     const messages = [];
 
-    // 匹配 〖...〗 形式的所有文本块 (空心方头括号，与普通【】彻底隔离)
+    // 1. 查找所有会话前缀标记: [@联系人] 或 【@联系人】
+    const headerRegex = /(?:^|\n)\s*(?:\[|【)@([^\s:：，,\]】]+)(?:\]|】)/g;
+    const headers = [];
+    let hMatch;
+    while ((hMatch = headerRegex.exec(text)) !== null) {
+      headers.push({
+        contact: hMatch[1].trim(),
+        index: hMatch.index,
+      });
+    }
+
+    // 2. 匹配 〖...〗 形式的所有文本块 (空心方头括号，与普通【】彻底隔离)
     const bracketRegex = /〖([\s\S]*?)〗/g;
     let match;
 
     while ((match = bracketRegex.exec(text)) !== null) {
       const raw = match[1].trim();
       if (!raw) continue;
-      const msg = parseSingleHumanToken(raw, isMe, contact);
-      if (msg) messages.push(msg);
+
+      // 找到在当前 token 之前且离当前 token 最近的 header 绑定
+      let currentHeaderContact = null;
+      for (let i = headers.length - 1; i >= 0; i--) {
+        if (headers[i].index < match.index) {
+          currentHeaderContact = headers[i].contact;
+          break;
+        }
+      }
+
+      const effectiveContact = currentHeaderContact || defaultContact;
+      const msg = parseSingleHumanToken(raw, isMe, effectiveContact);
+      if (msg) {
+        if (currentHeaderContact && !msg.hasExplicitContact) {
+          msg.targetContact = currentHeaderContact;
+          msg.contact = currentHeaderContact;
+          msg.hasExplicitContact = true;
+        }
+        messages.push(msg);
+      }
     }
 
     return messages;

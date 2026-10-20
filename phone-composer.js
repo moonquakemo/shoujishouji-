@@ -13,6 +13,8 @@ const PhoneComposer = (() => {
     let virtualHasYear = false;
     let virtualHasDate = false;
     let isTimeCustomized = false;
+    let currentContact = '';
+    let isContactManuallyCustomized = false;
     let pendingDrafts = [];
 
     // SVG 图标库 (与 PhoneRenderer 保持 1:1 原生一致)
@@ -41,11 +43,15 @@ const PhoneComposer = (() => {
 
     <!-- 手机输入伴侣主面板 (拟真半截手机UI，顶部支持拖拽) -->
     <div id="st_phone_composer_panel" class="st-phone-composer-panel" style="display: none;">
-        <!-- 顶部导航栏 (含虚拟电子钟，按住可任意拖动悬浮窗) -->
+        <!-- 顶部导航栏 (含虚拟电子钟与联系人，按住可任意拖动悬浮窗) -->
         <div class="composer-header st-phone-navbar" title="按住可拖拽悬浮窗">
             <div class="composer-title-group">
                 <span class="composer-signal-dot"></span>
-                <span class="composer-nav-title">联络中</span>
+                <div class="composer-contact-chip" id="composer_contact_chip" title="点击切换联络对象">
+                    <span class="composer-contact-icon"><i class="fa-regular fa-user"></i></span>
+                    <span class="composer-contact-name" id="composer_contact_val">联络中</span>
+                    <span class="composer-contact-arrow">▾</span>
+                </div>
                 <div class="composer-clock-chip" id="composer_clock_chip" title="点击使用时间魔法（制造时间差）">
                     <span class="clock-icon"><i class="fa-regular fa-clock"></i></span>
                     <span class="clock-time-val" id="composer_clock_val">14:00</span>
@@ -53,6 +59,33 @@ const PhoneComposer = (() => {
             </div>
             <div class="composer-header-actions">
                 <button type="button" class="composer-close-btn" id="composer_close_btn" title="收起">✕</button>
+            </div>
+        </div>
+
+        <!-- 联系人选择与设定弹窗 -->
+        <div class="composer-contact-popover" id="composer_contact_popover" style="display: none;">
+            <div class="clock-popover-header">
+                <div class="popover-title-group">
+                    <span class="popover-title">👤 联络对象</span>
+                    <span class="popover-current-badge" id="popover_current_contact">联络中</span>
+                </div>
+                <div class="popover-header-actions">
+                    <button type="button" class="popover-reset-btn" id="composer_contact_sync_btn" title="对齐当前主角色"><i class="fa-solid fa-rotate-right"></i> 当前角色</button>
+                    <button type="button" class="popover-done-btn" id="composer_contact_done_btn" title="完成设置">完成</button>
+                </div>
+            </div>
+
+            <!-- 最近联络人列表 (从剧情中提取) -->
+            <div class="clock-group-title">最近联络人</div>
+            <div class="clock-quick-pills" id="composer_recent_contacts_pills">
+                <!-- 动态填充 -->
+            </div>
+
+            <!-- 自定义联系人 -->
+            <div class="clock-group-title" style="margin-top: 10px;">指定联系人 (输入姓名/备注)</div>
+            <div class="clock-anchor-row">
+                <input type="text" class="clock-anchor-input" id="composer_contact_custom_input" placeholder="输入角色名或备注...">
+                <button type="button" class="clock-anchor-btn" id="composer_contact_set_btn">设定</button>
             </div>
         </div>
 
@@ -145,6 +178,7 @@ const PhoneComposer = (() => {
         bindEvents();
         updateTheme();
         syncLatestTime();
+        updateContact();
         initDraggables();
     }
 
@@ -177,13 +211,55 @@ const PhoneComposer = (() => {
             clearDraft(true);
         });
 
-        // 2. 虚拟时钟弹窗与调整
+        // 2. 联系人弹窗与切换
+        $('#composer_contact_chip').on('click', function (e) {
+            e.stopPropagation();
+            toggleContactPopover();
+        });
+
+        $('#composer_contact_done_btn').on('click', function () {
+            toggleContactPopover(false);
+        });
+
+        $('#composer_contact_sync_btn').on('click', function () {
+            isContactManuallyCustomized = false;
+            updateContact('', true);
+            toggleContactPopover(false);
+        });
+
+        $('#composer_contact_set_btn').on('click', function () {
+            const customVal = $('#composer_contact_custom_input').val()?.trim();
+            if (customVal) {
+                isContactManuallyCustomized = true;
+                updateContact(customVal, true);
+                $('#composer_contact_custom_input').val('');
+                toggleContactPopover(false);
+            }
+        });
+
+        $('#composer_contact_custom_input').on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $('#composer_contact_set_btn').click();
+            }
+        });
+
+        $(document).on('click', '#composer_recent_contacts_pills .quick-pill', function () {
+            const c = $(this).attr('data-contact');
+            if (c) {
+                isContactManuallyCustomized = true;
+                updateContact(c, true);
+                toggleContactPopover(false);
+            }
+        });
+
+        // 3. 虚拟时钟弹窗与调整
         $('#composer_clock_chip').on('click', function (e) {
             e.stopPropagation();
             toggleClockPopover();
         });
 
-        $(document).on('click', '#st_phone_composer_root .quick-pill', function () {
+        $(document).on('click', '#st_phone_composer_root #composer_clock_popover .quick-pill', function () {
             const adj = $(this).data('adjust');
             adjustVirtualTime(adj);
         });
@@ -559,6 +635,9 @@ const PhoneComposer = (() => {
             if (!isTimeCustomized) {
                 syncLatestTime();
             }
+            if (!isContactManuallyCustomized) {
+                updateContact();
+            }
 
             const isMobile = window.innerWidth <= 768;
 
@@ -584,6 +663,122 @@ const PhoneComposer = (() => {
             $trigger.removeClass('active');
             closeDrawer();
             toggleClockPopover(false);
+            toggleContactPopover(false);
+        }
+    }
+
+    /**
+     * 获取所有可用的联络人 (剧情已有角色、群聊、上下文联系人)
+     */
+    function getAvailableContacts() {
+        const list = [];
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                if (ctx.name2 && !list.includes(ctx.name2)) {
+                    list.push(ctx.name2);
+                }
+                if (ctx.characters && Array.isArray(ctx.characters)) {
+                    for (const c of ctx.characters) {
+                        const n = c?.name;
+                        if (n && !list.includes(n)) list.push(n);
+                    }
+                }
+                if (ctx.chat && Array.isArray(ctx.chat)) {
+                    const maxScan = Math.max(0, ctx.chat.length - 60);
+                    for (let i = ctx.chat.length - 1; i >= maxScan; i--) {
+                        const m = ctx.chat[i];
+                        if (!m || !m.mes) continue;
+                        if (typeof PhoneParser !== 'undefined' && PhoneParser.extractPhoneBlocks) {
+                            const blocks = PhoneParser.extractPhoneBlocks(m.mes);
+                            for (const b of blocks) {
+                                if (b.contact && b.contact !== '未知' && !list.includes(b.contact)) {
+                                    list.push(b.contact);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[PhoneComposer] getAvailableContacts error:', e);
+        }
+        return list;
+    }
+
+    /**
+     * 更新当前选中的联络人
+     */
+    function updateContact(contactName, notify = false) {
+        if (contactName !== undefined && contactName !== null && contactName !== '') {
+            currentContact = String(contactName).trim();
+        } else if (!isContactManuallyCustomized) {
+            // 自动跟随酒馆当前聊天对象
+            try {
+                if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                    const ctx = SillyTavern.getContext();
+                    if (ctx && ctx.name2) {
+                        currentContact = ctx.name2;
+                    }
+                }
+            } catch (e) { }
+        }
+
+        const displayVal = currentContact || '选择联系人';
+        $('#composer_contact_val').text(displayVal);
+        $('#popover_current_contact').text(displayVal);
+
+        if (notify && typeof toastr !== 'undefined') {
+            toastr.info(`当前联络对象: ${displayVal}`, '小手机伴侣', { timeOut: 1200 });
+        }
+    }
+
+    /**
+     * 渲染联系人抽屉/弹窗的药丸列表
+     */
+    function renderContactPopover() {
+        const $pills = $('#composer_recent_contacts_pills');
+        $pills.empty();
+        const contacts = getAvailableContacts();
+        if (contacts.length === 0) {
+            $pills.html('<span style="font-size:11px;color:#999;padding:4px 0;">暂无最近联络人记录</span>');
+            return;
+        }
+        for (const c of contacts) {
+            const isCur = c === currentContact;
+            const $btn = $('<button type="button" class="quick-pill"></button>')
+                .text(c)
+                .attr('data-contact', c);
+            if (isCur) {
+                $btn.addClass('active').css({ 'background': 'var(--accent-green, #07c160)', 'color': '#fff' });
+            }
+            $pills.append($btn);
+        }
+    }
+
+    /**
+     * 联系人弹窗开关
+     */
+    function toggleContactPopover(forceState) {
+        const $pop = $('#composer_contact_popover');
+        const show = forceState !== undefined ? forceState : !$pop.is(':visible');
+        if (show) {
+            closeDrawer();
+            toggleClockPopover(false);
+            if (pendingDrafts.length === 0) {
+                $('#composer_idle_canvas').hide();
+            }
+            renderContactPopover();
+            $pop.stop(true, true).slideDown(150, function () {
+                clampToViewport('#st_phone_composer_panel');
+            });
+        } else {
+            $pop.stop(true, true).slideUp(120, function () {
+                if (pendingDrafts.length === 0 && !currentDrawer && !$('#composer_clock_popover').is(':visible')) {
+                    $('#composer_idle_canvas').fadeIn(120);
+                }
+                clampToViewport('#st_phone_composer_panel');
+            });
         }
     }
 
@@ -595,6 +790,7 @@ const PhoneComposer = (() => {
         const show = forceState !== undefined ? forceState : !$pop.is(':visible');
         if (show) {
             closeDrawer();
+            toggleContactPopover(false);
             if (pendingDrafts.length === 0) {
                 $('#composer_idle_canvas').hide();
             }
@@ -606,7 +802,7 @@ const PhoneComposer = (() => {
             });
         } else {
             $pop.stop(true, true).slideUp(120, function () {
-                if (pendingDrafts.length === 0 && !currentDrawer) {
+                if (pendingDrafts.length === 0 && !currentDrawer && !$('#composer_contact_popover').is(':visible')) {
                     $('#composer_idle_canvas').fadeIn(120);
                 }
                 clampToViewport('#st_phone_composer_panel');
@@ -919,6 +1115,7 @@ const PhoneComposer = (() => {
      */
     function openDrawer(type) {
         toggleClockPopover(false);
+        toggleContactPopover(false);
         currentDrawer = type;
         updateIconActiveStates();
 
@@ -1296,28 +1493,54 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 派发 Token：将短标记插入酒馆输入框 (若手动调整过时间，自动附加前置时间以制造时间差)
+     * 派发 Token：将短标记插入酒馆输入框 (支持通过绑定 [@联系人] 会话头与制造时间差)
      * @param {string} rawToken - 构造好的短标记（如 〖表情：流泪〗）
      */
     function dispatchToken(rawToken) {
         if (!rawToken) return;
 
-        let tokenToSend = rawToken;
+        let inner = rawToken.trim();
+        if (inner.startsWith('〖') && inner.endsWith('〗')) {
+            inner = inner.slice(1, -1).trim();
+        }
+
+        // 1. 检查是否在 token 内部已显式手打了 @联系人
+        let hasExplicitContact = false;
+        if (typeof PhoneParser !== 'undefined' && PhoneParser.parseSingleHumanToken) {
+            const testParse = PhoneParser.parseSingleHumanToken(inner, true, currentContact || '未知');
+            hasExplicitContact = !!(testParse && testParse.hasExplicitContact);
+        } else {
+            hasExplicitContact = /^(?:@|给|发给|对|to[:：\s]?|To[:：\s]?)/i.test(inner);
+        }
+
+        // 2. 注入时间差 (若用户微调过时钟)
         if (isTimeCustomized && currentVirtualTime) {
-            // 前置注入时间差
-            if (rawToken.startsWith('〖') && rawToken.endsWith('〗')) {
-                const inner = rawToken.slice(1, -1);
-                tokenToSend = `〖${currentVirtualTime} ${inner}〗`;
-            } else {
-                tokenToSend = `〖${currentVirtualTime} ${rawToken}〗`;
-            }
-            // 消耗单次时间差，恢复跟随模式
+            inner = `${currentVirtualTime} ${inner}`;
             isTimeCustomized = false;
             $('#composer_clock_chip').removeClass('customized');
         }
 
-        insertIntoSendTextarea(tokenToSend);
-        addPendingBubble(tokenToSend);
+        const tokenToSend = `〖${inner}〗`;
+
+        // 3. 会话头绑定机制：
+        // 若当前选定了联系人，且 token 内部未单独 @，在输入框前置绑定 [@联系人]
+        let headerToPrepend = '';
+        if (!hasExplicitContact && currentContact) {
+            const textarea = document.getElementById('send_textarea');
+            const curVal = textarea ? textarea.value : '';
+            const headerTag = `[@${currentContact}]`;
+
+            // 检查当前输入框中是否已以此联系人会话头结尾/处于该联系人作用域
+            const lastDraft = pendingDrafts.length > 0 ? pendingDrafts[pendingDrafts.length - 1] : null;
+            const isSameContactAsLast = lastDraft && lastDraft.contact === currentContact;
+
+            if (!isSameContactAsLast || !curVal.includes(headerTag)) {
+                headerToPrepend = headerTag;
+            }
+        }
+
+        insertIntoSendTextarea(tokenToSend, headerToPrepend);
+        addPendingBubble(tokenToSend, headerToPrepend, currentContact);
 
         if (typeof toastr !== 'undefined') {
             toastr.success(`已插入: ${tokenToSend}`, '小手机伴侣', { timeOut: 1500 });
@@ -1327,7 +1550,7 @@ const PhoneComposer = (() => {
     /**
      * 实时拟真上屏：把发送的消息渲染进伴侣小手机屏幕
      */
-    function addPendingBubble(tokenToSend) {
+    function addPendingBubble(tokenToSend, headerTag = '', contact = '') {
         if (!tokenToSend) return;
 
         let inner = tokenToSend;
@@ -1336,7 +1559,7 @@ const PhoneComposer = (() => {
         }
 
         const parsedMsg = (typeof PhoneParser !== 'undefined' && PhoneParser.parseSingleHumanToken)
-            ? PhoneParser.parseSingleHumanToken(inner, true, 'Me')
+            ? PhoneParser.parseSingleHumanToken(inner, true, contact || currentContact || 'Me')
             : { type: 'msg', isMe: true, from: 'Me', content: inner };
 
         let html = '';
@@ -1357,7 +1580,7 @@ const PhoneComposer = (() => {
             html += `<div class="st-phone-msg-row msg-me"><div><div class="st-phone-bubble">${escapeHtml(parsedMsg.content || inner)}</div></div></div>`;
         }
 
-        pendingDrafts.push({ token: tokenToSend, msg: parsedMsg });
+        pendingDrafts.push({ token: tokenToSend, header: headerTag, contact: contact || currentContact, msg: parsedMsg });
 
         const $stream = $('#composer_chat_stream');
         const $msgContainer = $('#composer_stream_messages');
@@ -1385,6 +1608,9 @@ const PhoneComposer = (() => {
                 let val = textarea.value;
                 for (const item of pendingDrafts) {
                     val = val.replace(item.token, '');
+                    if (item.header) {
+                        val = val.replace(item.header, '');
+                    }
                 }
                 val = val.split('\n').filter((l, i, arr) => l.trim() || (i > 0 && arr[i - 1].trim())).join('\n').trim();
                 textarea.value = val;
@@ -1399,7 +1625,7 @@ const PhoneComposer = (() => {
         $('#composer_stream_messages').empty();
         $('#composer_chat_stream').hide();
 
-        if (!currentDrawer) {
+        if (!currentDrawer && !$('#composer_clock_popover').is(':visible') && !$('#composer_contact_popover').is(':visible')) {
             $('#composer_idle_canvas').fadeIn(150);
         }
     }
@@ -1407,15 +1633,20 @@ const PhoneComposer = (() => {
     /**
      * 插入到酒馆的 #send_textarea
      */
-    function insertIntoSendTextarea(textToInsert) {
+    function insertIntoSendTextarea(textToInsert, headerToPrepend = '') {
         const textarea = document.getElementById('send_textarea');
         if (!textarea) return;
 
+        let fullInsert = textToInsert;
+        if (headerToPrepend) {
+            fullInsert = `${headerToPrepend}\n${textToInsert}`;
+        }
+
         const curVal = textarea.value;
         if (!curVal.trim()) {
-            textarea.value = textToInsert;
+            textarea.value = fullInsert;
         } else {
-            textarea.value = curVal.trimEnd() + '\n' + textToInsert;
+            textarea.value = curVal.trimEnd() + '\n' + fullInsert;
         }
 
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1442,7 +1673,8 @@ const PhoneComposer = (() => {
         getVirtualDate: () => new Date(currentVirtualDate.getTime()),
         isTimeCustomized: () => isTimeCustomized,
         clearDraft,
-        updateContact: () => {},
+        updateContact: (c) => updateContact(c, false),
+        getContact: () => currentContact,
         insertIntoSendTextarea,
     };
 })();

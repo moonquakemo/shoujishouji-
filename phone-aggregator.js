@@ -7,13 +7,28 @@
 const PhoneAggregator = (() => {
 
     /**
+     * 判断 POV 是否属于用户自己
+     */
+    function isUserPov(pov) {
+        if (!pov) return true;
+        const p = pov.trim().toLowerCase();
+        if (p === '我' || p === 'user' || p === 'me' || p === '{{user}}') return true;
+        try {
+            const ctx = SillyTavern.getContext();
+            if (ctx && ctx.name1 && ctx.name1.toLowerCase() === p) return true;
+        } catch (e) { }
+        return false;
+    }
+
+    /**
      * 聚合从 chat[0] 到 chat[upToIndex] 中所有同一 contact 的手机消息
      * @param {Array} chatArray - SillyTavern 的 chat 数组
      * @param {number} upToIndex - 聚合到哪一层（含）
      * @param {string} targetContact - 目标联系人名（如果为空则聚合所有）
+     * @param {string} [targetPov] - 目标 POV（默认为空，代表仅聚合玩家自己的主手机；若指定则聚合对应 NPC 视角）
      * @returns {object} { contact, messages, actions }
      */
-    function aggregate(chatArray, upToIndex, targetContact) {
+    function aggregate(chatArray, upToIndex, targetContact, targetPov = null) {
         const allMessages = [];
         let contact = targetContact || '';
         let actions = {};
@@ -38,8 +53,17 @@ const PhoneAggregator = (() => {
             const blocks = PhoneParser.extractPhoneBlocks(msg.mes);
             if (blocks.length > 0) {
                 for (const block of blocks) {
-                    // 如果指定了 targetContact，只聚合匹配的（'未知' 也宽松接受）
-                    if (targetContact && block.contact !== targetContact && block.contact !== '未知') continue;
+                    // 如果指定了 targetContact，严格只聚合匹配同一联系人的手机块
+                    if (targetContact && block.contact !== targetContact) continue;
+
+                    // POV 视角严格隔离：
+                    // a) 如果显式指定了 targetPov，必须精准匹配该 POV
+                    // b) 如果未指定 targetPov (玩家查看自己的手机)，严格排除所有非用户 POV 的 NPC 手机块 (如 pov=小蓝)
+                    if (targetPov) {
+                        if (block.pov !== targetPov) continue;
+                    } else {
+                        if (block.pov && !isUserPov(block.pov)) continue;
+                    }
 
                     // 取第一个有效 contact 作为联系人名
                     if (!contact && block.contact && block.contact !== '未知') {
@@ -59,6 +83,9 @@ const PhoneAggregator = (() => {
                     }
                 }
             } else if (isUser) {
+                // 若正在聚合某个特定 NPC 的手机视角 (targetPov 为 NPC)，跳过用户的普通手机短代码
+                if (targetPov && !isUserPov(targetPov)) continue;
+
                 // 2. 仅当是用户消息且没有 [phone] 块时，才提取自然语言短括号 〖...〗
                 // 绝不提取 AI 消息中的 〖...〗，彻底避免与状态栏、好感度、内心独白等括号冲突
                 const humanMsgs = PhoneParser.extractHumanBlocks(msg.mes, {
@@ -66,12 +93,55 @@ const PhoneAggregator = (() => {
                     contact: contact || 'Me',
                 });
                 if (humanMsgs.length > 0) {
-                    allMessages.push(...humanMsgs);
+                    for (const hm of humanMsgs) {
+                        // 目标联系人精确过滤：
+                        // a) 若短标记显式指定了 @联系人，严格比对 targetContact
+                        if (hm.hasExplicitContact && targetContact) {
+                            if (hm.targetContact !== targetContact) continue;
+                        } else if (targetContact) {
+                            // b) 若未显式指定 @联系人，通过上下文（后序/前序 AI 手机回复）进行归属推断兜底
+                            const inferred = findNearbyPhoneContact(chatArray, i);
+                            if (inferred && inferred !== targetContact) continue;
+                        }
+                        allMessages.push(hm);
+                    }
                 }
             }
         }
 
         return { contact: contact || '手机聊天', messages: allMessages, actions };
+    }
+
+    /**
+     * 辅助推断未显式指定 @联系人 的用户短标记归属
+     * 优先查看紧随其后（本轮）是哪个 AI 角色用手机进行了回复，兜底查看前序最近的手机联系人
+     */
+    function findNearbyPhoneContact(chatArray, userMsgIndex) {
+        // 1. 优先向后查看：本轮是哪个 AI 角色用手机回复了消息（最多向后查 6 条，跳过用户连发）
+        const maxScan = Math.min(chatArray.length, userMsgIndex + 6);
+        for (let k = userMsgIndex + 1; k < maxScan; k++) {
+            const m = chatArray[k];
+            if (!m || !m.mes || m.is_user) continue;
+            const blocks = PhoneParser.extractPhoneBlocks(m.mes);
+            if (blocks.length > 0) {
+                for (const b of blocks) {
+                    if (b.contact && b.contact !== '未知') return b.contact;
+                }
+            }
+        }
+        // 2. 兜底向前查看：此前最近一次是在和谁手机聊天
+        const minScan = Math.max(0, userMsgIndex - 6);
+        for (let k = userMsgIndex - 1; k >= minScan; k--) {
+            const m = chatArray[k];
+            if (!m || !m.mes || m.is_user) continue;
+            const blocks = PhoneParser.extractPhoneBlocks(m.mes);
+            if (blocks.length > 0) {
+                for (let b = blocks.length - 1; b >= 0; b--) {
+                    if (blocks[b].contact && blocks[b].contact !== '未知') return blocks[b].contact;
+                }
+            }
+        }
+        return null;
     }
 
     /**

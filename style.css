@@ -1440,6 +1440,61 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* 顶部联系人胶囊 */
+.composer-contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.18s;
+  user-select: none;
+  max-width: 120px;
+}
+
+.composer-contact-chip:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.composer-contact-chip .composer-contact-icon {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.composer-contact-chip .composer-contact-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-contact-chip .composer-contact-arrow {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+/* 联系人设置弹出层 */
+.composer-contact-popover {
+  position: relative;
+  margin: 10px 12px 8px 12px;
+  background: var(--form-card-bg, #ffffff);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--form-card-border, rgba(0, 0, 0, 0.08));
+  z-index: 10;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
 /* 顶部虚拟时钟胶囊 */
 .composer-clock-chip {
   display: inline-flex;
