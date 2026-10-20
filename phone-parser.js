@@ -262,11 +262,19 @@ const PhoneParser = (() => {
       : new Date();
 
     if (!raw) {
+      const Y = base.getFullYear();
+      const M = base.getMonth() + 1;
+      const D = base.getDate();
+      const h = base.getHours();
+      const m = base.getMinutes();
       return {
-        year: base.getFullYear(), month: base.getMonth() + 1, day: base.getDate(),
-        hour: base.getHours(), minute: base.getMinutes(),
+        year: Y, month: M, day: D,
+        hour: h, minute: m,
         hasYear: false, hasDate: false,
-        dateKey: null, displayDate: null, timeOfDay: '', minuteStamp: null,
+        dateKey: `${Y}-${String(M).padStart(2, '0')}-${String(D).padStart(2, '0')}`,
+        displayDate: null,
+        timeOfDay: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+        minuteStamp: h * 60 + m,
         dateObj: base,
         raw: ''
       };
@@ -321,13 +329,13 @@ const PhoneParser = (() => {
       };
     }
 
-    // 2. 年-月-日 时:分 (如 2024-10-19 14:27, 2024年10月19日 14:27)
-    const fullDateMatch = str.match(/^(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?\s+(\d{1,2}:\d{2})$/);
+    // 2. 年-月-日 (时:分 可选，如 2024-10-19 14:27 或 2024-10-19)
+    const fullDateMatch = str.match(/^(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?(?:\s+(\d{1,2}:\d{2}))?$/);
     if (fullDateMatch) {
       const year = Number(fullDateMatch[1]);
       const month = Number(fullDateMatch[2]);
       const day = Number(fullDateMatch[3]);
-      const timeOfDay = fullDateMatch[4];
+      const timeOfDay = fullDateMatch[4] || `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`;
       const [h, m] = timeOfDay.split(':').map(Number);
       const d = new Date(year, month - 1, day, h, m, 0, 0);
 
@@ -348,13 +356,13 @@ const PhoneParser = (() => {
       };
     }
 
-    // 3. 月-日 时:分 (如 10-19 14:27, 10月19日 14:27)
-    const monthDayMatch = str.match(/^(\d{1,2})[-/月](\d{1,2})日?\s+(\d{1,2}:\d{2})$/);
+    // 3. 月-日 (时:分 可选，如 10-19 14:27 或 10-19)
+    const monthDayMatch = str.match(/^(\d{1,2})[-/月](\d{1,2})日?(?:\s+(\d{1,2}:\d{2}))?$/);
     if (monthDayMatch) {
       const year = base.getFullYear();
       const month = Number(monthDayMatch[1]);
       const day = Number(monthDayMatch[2]);
-      const timeOfDay = monthDayMatch[3];
+      const timeOfDay = monthDayMatch[3] || `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`;
       const [h, m] = timeOfDay.split(':').map(Number);
       const d = new Date(year, month - 1, day, h, m, 0, 0);
 

@@ -1569,6 +1569,70 @@
   letter-spacing: 0.5px;
 }
 
+.clock-anchor-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.clock-anchor-input {
+  flex: 1;
+  background: var(--input-bg, #f5f5f7);
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--input-text, #333);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.clock-anchor-input:focus {
+  border-color: var(--accent-green, #07c160);
+}
+
+.clock-anchor-btn {
+  background: var(--accent-green, #07c160);
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.clock-anchor-btn:hover {
+  filter: brightness(1.08);
+}
+
+.clock-anchor-btn:active {
+  transform: scale(0.96);
+}
+
+.clock-anchor-now-btn {
+  background: rgba(0, 122, 255, 0.08);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  color: var(--accent-blue, #007aff);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.clock-anchor-now-btn:hover {
+  background: rgba(0, 122, 255, 0.16);
+}
+
+.clock-anchor-now-btn:active {
+  transform: scale(0.96);
+}
+
 .clock-quick-pills {
   display: flex;
   flex-wrap: wrap;

@@ -132,17 +132,23 @@ const PhoneRenderer = (() => {
             ? PhoneParser.parseTimeInfo
             : (t) => ({ dateKey: t, displayDate: t, timeOfDay: t, minuteStamp: null, raw: t });
 
-        // 确定故事参考年份（优先取会话中出现的最新年份，兜底为当前自然年）
+        // 确定故事参考年份与首个已知日期锚点（若前序消息缺失日期，向前继承首个明确日期，彻底杜绝1月1日）
         let referenceYear = new Date().getFullYear();
-        for (let i = rawMessages.length - 1; i >= 0; i--) {
+        let initialBaseDate = null;
+        for (let i = 0; i < rawMessages.length; i++) {
             const m = rawMessages[i];
             if (m && m.time) {
                 const info = getTimeInfo(m.time);
                 if (info && info.hasYear && info.year) {
                     referenceYear = info.year;
-                    break;
+                }
+                if (info && info.hasDate && info.dateObj && !initialBaseDate) {
+                    initialBaseDate = new Date(info.dateObj.getTime());
                 }
             }
+        }
+        if (!initialBaseDate) {
+            initialBaseDate = new Date();
         }
 
         const result = [];
@@ -158,7 +164,7 @@ const PhoneRenderer = (() => {
             // 如果原本就是显式的 time-sep (例如世界书输出的或短代码〖时间：...】)
             if (msg.type === 'time-sep') {
                 const rawT = (msg.time || msg.content || '').trim();
-                const info = getTimeInfo(rawT, lastDateObj || new Date(referenceYear, 0, 1));
+                const info = getTimeInfo(rawT, lastDateObj || initialBaseDate);
                 if (info.dateKey) lastDateKey = info.dateKey;
                 if (info.minuteStamp !== null) lastMinuteStamp = info.minuteStamp;
                 if (info.dateObj) lastDateObj = info.dateObj;
@@ -184,7 +190,7 @@ const PhoneRenderer = (() => {
                 lastFullTime = timeStr;
             }
 
-            const info = getTimeInfo(timeStr, lastDateObj || new Date(referenceYear, 0, 1));
+            const info = getTimeInfo(timeStr, lastDateObj || initialBaseDate);
             if (info && info.dateObj) {
                 lastDateObj = info.dateObj;
             }
@@ -212,7 +218,7 @@ const PhoneRenderer = (() => {
                         content: pillText,
                     });
                 }
-                lastDateKey = info.dateKey || 'today';
+                lastDateKey = info.dateKey || (info.dateObj ? `${info.dateObj.getFullYear()}-${String(info.dateObj.getMonth() + 1).padStart(2, '0')}-${String(info.dateObj.getDate()).padStart(2, '0')}` : 'today');
                 lastMinuteStamp = info.minuteStamp;
             } else if (isTimeGap) {
                 // 同一天内，间隔超过 5 分钟：展示纯时分药丸
@@ -539,4 +545,7 @@ ${noticeHtml}`;
 
 if (typeof window !== 'undefined') {
     window.PhoneRenderer = PhoneRenderer;
+}
+if (typeof globalThis !== 'undefined') {
+    globalThis.PhoneRenderer = PhoneRenderer;
 }

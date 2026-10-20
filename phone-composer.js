@@ -69,6 +69,14 @@ const PhoneComposer = (() => {
                 </div>
             </div>
 
+            <!-- 时间锚点 (自定义剧情基准) -->
+            <div class="clock-group-title">定时间锚点 (自定义剧情起点)</div>
+            <div class="clock-anchor-row">
+                <input type="text" class="clock-anchor-input" id="composer_anchor_input" placeholder="如: 2024-10-19 14:00 或 10-19">
+                <button type="button" class="clock-anchor-btn" id="composer_anchor_set_btn" title="设定为当前剧情时间锚点">定锚</button>
+                <button type="button" class="clock-anchor-now-btn" id="composer_anchor_today_btn" title="对齐现实今天">今天</button>
+            </div>
+
             <!-- 时分微调 -->
             <div class="clock-group-title">时分推移</div>
             <div class="clock-quick-pills">
@@ -186,6 +194,28 @@ const PhoneComposer = (() => {
 
         $('#composer_clock_sync_btn').on('click', function () {
             syncLatestTime();
+        });
+
+        // 定时间锚点：手动设定与对齐现实今天
+        $('#composer_anchor_set_btn').on('click', function () {
+            applyCustomAnchorTime();
+        });
+        $('#composer_anchor_input').on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyCustomAnchorTime();
+            }
+        });
+        $('#composer_anchor_today_btn').on('click', function () {
+            const now = new Date();
+            const Y = now.getFullYear();
+            const M = String(now.getMonth() + 1).padStart(2, '0');
+            const D = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const str = `${Y}-${M}-${D} ${hh}:${mm}`;
+            $('#composer_anchor_input').val(str);
+            applyCustomAnchorTime(str);
         });
 
         // 3. 底栏图标按钮点击 (切换抽屉)
@@ -568,6 +598,9 @@ const PhoneComposer = (() => {
             if (pendingDrafts.length === 0) {
                 $('#composer_idle_canvas').hide();
             }
+            if (isTimeCustomized && currentVirtualTime) {
+                $('#composer_anchor_input').val(currentVirtualTime);
+            }
             $pop.stop(true, true).slideDown(150, function () {
                 clampToViewport('#st_phone_composer_panel');
             });
@@ -578,6 +611,43 @@ const PhoneComposer = (() => {
                 }
                 clampToViewport('#st_phone_composer_panel');
             });
+        }
+    }
+
+    /**
+     * 设定自定义时间锚点（作为当前剧情起点）
+     */
+    function applyCustomAnchorTime(explicitStr) {
+        const raw = explicitStr || $('#composer_anchor_input').val()?.trim();
+        if (!raw) {
+            if (typeof toastr !== 'undefined') toastr.warning('请输入时间，如: 2024-10-19 14:00', '时间魔法');
+            return;
+        }
+
+        const info = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
+            ? PhoneParser.parseTimeInfo(raw, new Date())
+            : null;
+
+        if (!info || !info.dateObj || isNaN(info.dateObj.getTime())) {
+            if (typeof toastr !== 'undefined') toastr.error('时间格式无法识别，请使用如: 2024-10-19 14:00', '时间魔法');
+            return;
+        }
+
+        currentVirtualDate = new Date(info.dateObj.getTime());
+        virtualHasYear = info.hasYear || (info.year !== new Date().getFullYear());
+        virtualHasDate = true;
+
+        if (typeof PhoneParser !== 'undefined' && PhoneParser.formatDateToCanonical) {
+            currentVirtualTime = PhoneParser.formatDateToCanonical(currentVirtualDate, virtualHasYear, virtualHasDate);
+        } else {
+            currentVirtualTime = raw;
+        }
+
+        isTimeCustomized = true;
+        updateClockDisplay();
+
+        if (typeof toastr !== 'undefined') {
+            toastr.success(`已设定时间锚点: ${currentVirtualTime}`, '✨ 时间魔法');
         }
     }
 
@@ -672,6 +742,7 @@ const PhoneComposer = (() => {
                     virtualHasDate = info.hasDate;
                     currentVirtualTime = foundTimeStr;
                     isTimeCustomized = false;
+                    $('#composer_anchor_input').val('');
                     updateClockDisplay();
                     return;
                 }
@@ -689,6 +760,7 @@ const PhoneComposer = (() => {
         const mm = String(now.getMinutes()).padStart(2, '0');
         currentVirtualTime = `${hh}:${mm}`;
         isTimeCustomized = false;
+        $('#composer_anchor_input').val('');
         updateClockDisplay();
     }
 
