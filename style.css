@@ -1493,6 +1493,17 @@
   z-index: 10;
   max-height: calc(100vh - 180px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.composer-contact-popover::-webkit-scrollbar {
+  width: 4px;
+}
+
+.composer-contact-popover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
 }
 
 /* 顶部虚拟时钟胶囊 */
@@ -1725,6 +1736,13 @@
   padding: 3px 8px;
 }
 
+.contact-pill .contact-pill-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .contact-pill .contact-pill-del {
   font-size: 13px;
   line-height: 1;
@@ -1739,6 +1757,33 @@
   opacity: 1;
   color: #ff3b30;
   background: rgba(255, 59, 48, 0.2);
+}
+
+/* 联络人药丸独立滚动区域 (防止卡片内人数过多挤爆面板) */
+#composer_recent_contacts_pills {
+  max-height: 125px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  margin-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+#composer_recent_contacts_pills::-webkit-scrollbar {
+  width: 4px;
+}
+
+#composer_recent_contacts_pills::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#composer_recent_contacts_pills::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+}
+
+#composer_recent_contacts_pills::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
 }
 
 .clock-popover-tip {

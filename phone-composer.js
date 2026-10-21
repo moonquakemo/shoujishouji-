@@ -873,7 +873,7 @@ const PhoneComposer = (() => {
             const isMainChar = c === ctxCharName;
 
             const $pill = $(`
-                <div class="quick-pill contact-pill ${isCur ? 'active' : ''}" data-contact="${escapeAttr(c)}">
+                <div class="quick-pill contact-pill ${isCur ? 'active' : ''}" data-contact="${escapeAttr(c)}" title="${escapeAttr(c)}">
                     <span class="contact-pill-name">${escapeHtml(c)}${isMainChar ? ' (当前卡)' : ''}</span>
                     ${!isMainChar ? `<span class="contact-pill-del" data-del="${escapeAttr(c)}" title="从本卡移除此联系人">×</span>` : ''}
                 </div>
