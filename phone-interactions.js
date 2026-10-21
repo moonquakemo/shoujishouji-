@@ -107,8 +107,8 @@ const PhoneInteractions = (() => {
     function getAllStickers() { return { ...globalStickers, ...currentCharStickers }; }
     function getStickerAliases() { return STICKER_ALIASES; }
 
-    // ========== 配置（头像/背景）==========
-    let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '', charAvatarMap: {} };
+    // ========== 配置（头像/背景/时间聚合）==========
+    let phoneConfig = { charAvatar: '', userAvatar: '', chatBackground: '', charAvatarMap: {}, sessionGapMinutes: 20 };
     function setConfig(cfg) { phoneConfig = { ...phoneConfig, ...cfg }; }
     function getConfig() { return phoneConfig; }
 

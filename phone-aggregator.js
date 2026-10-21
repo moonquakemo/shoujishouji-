@@ -79,6 +79,9 @@ const PhoneAggregator = (() => {
                                 continue;
                             }
                         }
+                        if (!m.time && msg.send_date) {
+                            m.sendDate = msg.send_date;
+                        }
                         allMessages.push(m);
                     }
                 }
@@ -102,6 +105,9 @@ const PhoneAggregator = (() => {
                             // b) 若未显式指定 @联系人，通过上下文（后序/前序 AI 手机回复）进行归属推断兜底
                             const inferred = findNearbyPhoneContact(chatArray, i);
                             if (inferred && inferred !== targetContact) continue;
+                        }
+                        if (!hm.time && msg.send_date) {
+                            hm.sendDate = msg.send_date;
                         }
                         allMessages.push(hm);
                     }
@@ -172,5 +178,6 @@ if (typeof window !== 'undefined') {
 if (typeof globalThis !== 'undefined') {
     globalThis.PhoneAggregator = PhoneAggregator;
 }
-
-
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PhoneAggregator;
+}

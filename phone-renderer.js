@@ -24,9 +24,18 @@ const PhoneRenderer = (() => {
     };
 
     function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        if (!text) return '';
+        if (typeof document !== 'undefined' && document.createElement) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     function formatUrl(url) {
@@ -104,7 +113,7 @@ const PhoneRenderer = (() => {
         const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
         const bgStyle = cfg.chatBackground ? `background-image:url('${escapeHtml(cfg.chatBackground)}');background-size:cover;` : '';
 
-        const processedMessages = clusterMessagesWithTimeSeparators(messages);
+        const processedMessages = clusterMessagesWithTimeSeparators(messages, cfg);
 
         return `
 <div class="st-phone" data-phone-id="${id}">
@@ -121,39 +130,66 @@ const PhoneRenderer = (() => {
     }
 
     /**
-     * 智能时间聚类处理 (仿真微信 5 分钟与跨天/跨周药丸插入)
+     * 智能时间聚类处理 (仿真微信会话集与大跨段整合，解决连续输入产生药丸千层饼的问题)
      * @param {Array} rawMessages 
+     * @param {object} [options] - 配置 { sessionGapMinutes: 20 }
      * @returns {Array}
      */
-    function clusterMessagesWithTimeSeparators(rawMessages) {
+    function clusterMessagesWithTimeSeparators(rawMessages, options = {}) {
         if (!rawMessages || !rawMessages.length) return [];
 
-        const getTimeInfo = (typeof PhoneParser !== 'undefined' && PhoneParser.parseTimeInfo)
-            ? PhoneParser.parseTimeInfo
+        const parser = (typeof PhoneParser !== 'undefined')
+            ? PhoneParser
+            : (typeof globalThis !== 'undefined' && globalThis.PhoneParser)
+                ? globalThis.PhoneParser
+                : (typeof window !== 'undefined' && window.PhoneParser)
+                    ? window.PhoneParser
+                    : null;
+
+        const getTimeInfo = (parser && parser.parseTimeInfo)
+            ? parser.parseTimeInfo
             : (t) => ({ dateKey: t, displayDate: t, timeOfDay: t, minuteStamp: null, raw: t });
 
-        // 确定故事参考年份与首个已知日期锚点（若前序消息缺失日期，向前继承首个明确日期，彻底杜绝1月1日）
+        // 读取配置中的大跨段阈值 (默认 20 分钟：连续对话集合内药丸自动吞并吸收，超 20 分钟视为下一场对话)
+        const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
+        const sessionGapMinutes = Number(options.sessionGapMinutes || cfg.sessionGapMinutes || 20);
+
+        // 确定故事参考年份、首个日期锚点与最新日期锚点（链式基准推导，杜绝跨年与 fallback 污染）
         let referenceYear = new Date().getFullYear();
         let initialBaseDate = null;
+        let latestDateObj = null;
+        let hasAnyExplicitTime = false;
+        let curBase = null;
+
         for (let i = 0; i < rawMessages.length; i++) {
             const m = rawMessages[i];
             if (m && m.time) {
-                const info = getTimeInfo(m.time);
-                if (info && info.hasYear && info.year) {
-                    referenceYear = info.year;
-                }
-                if (info && info.hasDate && info.dateObj && !initialBaseDate) {
-                    initialBaseDate = new Date(info.dateObj.getTime());
+                hasAnyExplicitTime = true;
+                const info = getTimeInfo(m.time, curBase);
+                if (info && info.dateObj) {
+                    curBase = info.dateObj;
+                    if (info.hasYear && info.year) {
+                        referenceYear = info.year;
+                    }
+                    if (info.hasDate && !initialBaseDate) {
+                        initialBaseDate = new Date(info.dateObj.getTime());
+                    }
+                    if (!latestDateObj || info.dateObj.getTime() > latestDateObj.getTime()) {
+                        latestDateObj = new Date(info.dateObj.getTime());
+                    }
                 }
             }
         }
         if (!initialBaseDate) {
             initialBaseDate = new Date();
         }
+        if (!latestDateObj) {
+            latestDateObj = initialBaseDate;
+        }
 
         const result = [];
         let lastDateKey = null;
-        let lastMinuteStamp = null;
+        let lastSessionTimeMs = null;
         let lastFullTime = '';
         let lastDateObj = null;
 
@@ -161,17 +197,19 @@ const PhoneRenderer = (() => {
             const msg = rawMessages[i];
             if (!msg) continue;
 
-            // 如果原本就是显式的 time-sep (例如世界书输出的或短代码〖时间：...】)
+            // 1. 如果原本就是显式的 time-sep (例如世界书输出的或短代码〖时间：...〗)
             if (msg.type === 'time-sep') {
                 const rawT = (msg.time || msg.content || '').trim();
                 const info = getTimeInfo(rawT, lastDateObj || initialBaseDate);
-                if (info.dateKey) lastDateKey = info.dateKey;
-                if (info.minuteStamp !== null) lastMinuteStamp = info.minuteStamp;
-                if (info.dateObj) lastDateObj = info.dateObj;
+                if (info.dateObj) {
+                    lastDateObj = info.dateObj;
+                    lastSessionTimeMs = info.dateObj.getTime();
+                }
+                lastDateKey = info.dateKey || (info.dateObj ? `${info.dateObj.getFullYear()}-${String(info.dateObj.getMonth() + 1).padStart(2, '0')}-${String(info.dateObj.getDate()).padStart(2, '0')}` : lastDateKey || 'today');
                 lastFullTime = rawT;
 
-                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
-                    const formatted = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, true);
+                if (parser && parser.formatWeChatPill && info.dateObj) {
+                    const formatted = parser.formatWeChatPill(info.dateObj, referenceYear, true, { referenceDate: latestDateObj, hasExplicitDate: info.hasDate });
                     if (formatted) {
                         msg.time = formatted;
                         msg.content = formatted;
@@ -181,8 +219,24 @@ const PhoneRenderer = (() => {
                 continue;
             }
 
-            // 提取消息的时间 (若未标注，继承上一条已知时间)
+            // 2. 提取或继承消息的时间 (若未标注且非剧情时间，尝试从酒馆消息实际发送时间 sendDate 兜底；否则继承上一条已知时间)
             let timeStr = (msg.time || '').trim();
+            if (!timeStr && !hasAnyExplicitTime && msg.sendDate) {
+                try {
+                    const normDateStr = String(msg.sendDate).replace(/([0-9])([ap]m)/i, '$1 $2');
+                    const parsedD = new Date(normDateStr);
+                    if (!isNaN(parsedD.getTime())) {
+                        const Y = parsedD.getFullYear();
+                        const M = parsedD.getMonth() + 1;
+                        const D = parsedD.getDate();
+                        const hh = String(parsedD.getHours()).padStart(2, '0');
+                        const mm = String(parsedD.getMinutes()).padStart(2, '0');
+                        timeStr = `${Y}-${String(M).padStart(2, '0')}-${String(D).padStart(2, '0')} ${hh}:${mm}`;
+                        msg.time = `${hh}:${mm}`;
+                    }
+                } catch (e) { }
+            }
+
             if (!timeStr) {
                 timeStr = lastFullTime || '';
                 msg.time = timeStr;
@@ -195,15 +249,24 @@ const PhoneRenderer = (() => {
                 lastDateObj = info.dateObj;
             }
 
-            const isFirst = (lastDateKey === null && lastMinuteStamp === null);
-            const isDateChanged = info.dateKey && lastDateKey && (info.dateKey !== lastDateKey);
-            const isTimeGap = (info.minuteStamp !== null && lastMinuteStamp !== null && (info.minuteStamp - lastMinuteStamp > 5 || info.minuteStamp < lastMinuteStamp));
+            const curTimeMs = (info && info.dateObj) ? info.dateObj.getTime() : null;
+            const curDateKey = info.dateKey || (info.dateObj ? `${info.dateObj.getFullYear()}-${String(info.dateObj.getMonth() + 1).padStart(2, '0')}-${String(info.dateObj.getDate()).padStart(2, '0')}` : 'today');
+
+            const isFirst = (lastDateKey === null && lastSessionTimeMs === null);
+            const isDateChanged = Boolean(curDateKey && lastDateKey && (curDateKey !== lastDateKey));
+
+            // 微信大跨段判定：只有时间差超过阈值（如 20 分钟），才判定为进入下一轮新对话
+            const isMajorGap = Boolean(
+                curTimeMs !== null && 
+                lastSessionTimeMs !== null && 
+                (curTimeMs - lastSessionTimeMs >= sessionGapMinutes * 60 * 1000 || curTimeMs < lastSessionTimeMs)
+            );
 
             if (isFirst || isDateChanged) {
-                // 跨天、跨周或整个对话第一条：展示带日期的微信原生胶囊 (当年隐年，跨年显年)
+                // 跨天、跨周或整个对话第一条：展示带日期的微信原生胶囊 (当年隐年，跨年显年，支持昨天)
                 let pillText = '';
-                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
-                    pillText = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, true);
+                if (parser && parser.formatWeChatPill && info.dateObj) {
+                    pillText = parser.formatWeChatPill(info.dateObj, referenceYear, true, { referenceDate: latestDateObj, hasExplicitDate: info.hasDate });
                 } else if (info.displayDate) {
                     pillText = info.timeOfDay ? `${info.displayDate} ${info.timeOfDay}` : info.displayDate;
                 } else if (info.timeOfDay) {
@@ -218,13 +281,13 @@ const PhoneRenderer = (() => {
                         content: pillText,
                     });
                 }
-                lastDateKey = info.dateKey || (info.dateObj ? `${info.dateObj.getFullYear()}-${String(info.dateObj.getMonth() + 1).padStart(2, '0')}-${String(info.dateObj.getDate()).padStart(2, '0')}` : 'today');
-                lastMinuteStamp = info.minuteStamp;
-            } else if (isTimeGap) {
-                // 同一天内，间隔超过 5 分钟：展示纯时分药丸
+                lastDateKey = curDateKey;
+                lastSessionTimeMs = curTimeMs;
+            } else if (isMajorGap) {
+                // 同一天内的下一个大跨段：插入该时段药丸 (如 "晚上 19:30")
                 let pillText = '';
-                if (typeof PhoneParser !== 'undefined' && PhoneParser.formatWeChatPill && info.dateObj) {
-                    pillText = PhoneParser.formatWeChatPill(info.dateObj, referenceYear, false);
+                if (parser && parser.formatWeChatPill && info.dateObj) {
+                    pillText = parser.formatWeChatPill(info.dateObj, referenceYear, false, { referenceDate: latestDateObj });
                 } else {
                     pillText = info.timeOfDay || timeStr;
                 }
@@ -235,9 +298,13 @@ const PhoneRenderer = (() => {
                         content: pillText,
                     });
                 }
-                lastMinuteStamp = info.minuteStamp;
-            } else if (lastMinuteStamp === null && info.minuteStamp !== null) {
-                lastMinuteStamp = info.minuteStamp;
+                lastSessionTimeMs = curTimeMs;
+            } else {
+                // 属于同一连续对话集（连续输入）：
+                // 药丸自然吞并/隐藏！保持气泡连续流淌！
+                if (curTimeMs !== null) {
+                    lastSessionTimeMs = curTimeMs;
+                }
             }
 
             result.push(msg);
@@ -571,4 +638,7 @@ if (typeof window !== 'undefined') {
 }
 if (typeof globalThis !== 'undefined') {
     globalThis.PhoneRenderer = PhoneRenderer;
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PhoneRenderer;
 }

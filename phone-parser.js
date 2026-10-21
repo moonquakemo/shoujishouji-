@@ -40,39 +40,93 @@ const PhoneParser = (() => {
   /**
    * 解析 key=value|key2=value2 格式的属性
    * 兼容: [phone:小红 pov=小蓝] / [phone:小红, pov=小蓝] / [phone:小红|avatar.jpg] / [phone:contact=小红|pov=小蓝]
+   * 以及消息属性: [msg:from=me|time=14:20] / [msg:time=14:20] / [voice:from=小红|duration=5|time=14:22] 等
    */
   function parseAttributes(attrString) {
     const attrs = {};
     if (!attrString) return attrs;
     let trimmed = attrString.trim();
+    if (!trimmed) return attrs;
 
-    // 1. 优先提取 pov / 视角 属性 (支持: pov=小蓝, POV:小蓝, 视角=小蓝)
+    // 1. 如果完全不包含 '=' 和 ':'，说明是纯位置参数 (如: [phone:小红] 或 [phone:小红|avatar.jpg])
+    const hasKeyVal = /[=]|(?:^|[\s|,，|])(?:pov|POV|视角|avatar|头像|contact|联系人|from|发送者|time|时间|duration|时长|amount|金额|note|备注|quote|引用|quoteFrom|引用人|lang|语言|trans|翻译|id|status|name|地点|addr|地址|src|key)\s*[:=]/i.test(trimmed);
+
+    if (!hasKeyVal) {
+      const parts = trimmed.split('|');
+      attrs.contact = parts[0].trim();
+      if (parts[1]) attrs.avatar = parts[1].trim();
+      attrs[''] = trimmed;
+      return attrs;
+    }
+
+    function setAttr(rawKey, rawVal) {
+      if (!rawKey || !rawVal) return;
+      let k = rawKey.trim();
+      if (k === '时间') k = 'time';
+      else if (k === '发送者') k = 'from';
+      else if (k === '视角') k = 'pov';
+      else if (k === '联系人') k = 'contact';
+      else if (k === '头像') k = 'avatar';
+      else if (k === '时长') k = 'duration';
+      else if (k === '金额') k = 'amount';
+      else if (k === '备注') k = 'note';
+      else if (k === '引用') k = 'quote';
+      else if (k === '引用人') k = 'quoteFrom';
+      else if (k === '语言') k = 'lang';
+      else if (k === '翻译') k = 'trans';
+      else if (k === '地点') k = 'name';
+      else if (k === '地址') k = 'addr';
+      attrs[k] = rawVal.trim();
+    }
+
+    // 2. 优先提取 pov / 视角 (支持: pov=小蓝, POV:小蓝, 视角=小蓝)
     const povMatch = trimmed.match(/(?:^|[\s|,，|])(?:pov|POV|视角)\s*[:=]\s*([^\s|,，|\]]+)/i);
     if (povMatch) {
       attrs.pov = povMatch[1].trim();
       trimmed = trimmed.replace(povMatch[0], ' ').trim();
     }
 
-    // 2. 提取 avatar / 头像 属性
-    const avatarMatch = trimmed.match(/(?:^|[\s|,，|])(?:avatar|头像)\s*[:=]\s*([^\s|,，|\]]+)/i);
-    if (avatarMatch) {
-      attrs.avatar = avatarMatch[1].trim();
-      trimmed = trimmed.replace(avatarMatch[0], ' ').trim();
-    }
+    // 3. 通用属性提取
+    const chunks = trimmed.split(/[|,，]/);
+    for (const chunk of chunks) {
+      const c = chunk.trim();
+      if (!c) continue;
 
-    // 3. 提取 contact / 联系人 属性
-    const contactMatch = trimmed.match(/(?:^|[\s|,，|])(?:contact|联系人)\s*[:=]\s*([^\s|,，|\]]+)/i);
-    if (contactMatch) {
-      attrs.contact = contactMatch[1].trim();
-      trimmed = trimmed.replace(contactMatch[0], ' ').trim();
-    }
+      // 如果 chunk 内部含有多个 key=val (如 'from=me time=14:20')，按空格加下一个 key= 切分
+      const subPairs = c.split(/\s+(?=[a-zA-Z\u4e00-\u9fa5]+\s*[:=])/);
+      for (const sub of subPairs) {
+        const s = sub.trim();
+        if (!s) continue;
 
-    // 4. 处理剩余内容 (如果 contact 尚未确定)
-    if (!attrs.contact && trimmed) {
-      const parts = trimmed.split('|');
-      attrs.contact = parts[0].trim();
-      if (parts[1] && !attrs.avatar) {
-        attrs.avatar = parts[1].trim();
+        const eqIdx = s.indexOf('=');
+        if (eqIdx > 0) {
+          const k = s.substring(0, eqIdx).trim();
+          const v = s.substring(eqIdx + 1).trim();
+          setAttr(k, v);
+          continue;
+        }
+
+        // 冒号分隔 (如 contact:小红 或 时长:3秒)，但排除纯数字时间 (如 14:00)
+        const colonIdx = s.indexOf(':');
+        if (colonIdx > 0 && !/^\d+$/.test(s.substring(0, colonIdx).trim())) {
+          const k = s.substring(0, colonIdx).trim();
+          const v = s.substring(colonIdx + 1).trim();
+          setAttr(k, v);
+          continue;
+        }
+
+        // 纯时间格式 (如 14:00 或 2024-10-19 14:00)
+        if (!attrs.time && /^(?:\d{4}[-/年.]\d{1,2}[-/月.]\d{1,2}日?\s+)?\d{1,2}:\d{2}/.test(s)) {
+          attrs.time = s;
+          continue;
+        }
+
+        // 无键文本，位置赋予 contact 或 avatar
+        if (!attrs.contact) {
+          attrs.contact = s;
+        } else if (!attrs.avatar) {
+          attrs.avatar = s;
+        }
       }
     }
 
@@ -198,7 +252,7 @@ const PhoneParser = (() => {
         } else if (type === 'video') {
           msg.isMe = isUserFrom(attrs.from);
         } else if (type === 'time-sep') {
-          msg.time = attrs[''] || match[2] || '';
+          msg.time = attrs[''] || attrs.time || match[2] || '';
           if (!msg.time && match[2]) msg.time = match[2].trim();
         }
 
@@ -231,40 +285,65 @@ const PhoneParser = (() => {
       }
 
       const sender = line.substring(0, colonIdx).trim();
-      const body = line.substring(colonIdx + 1).trim();
-      const isMe = /^(我|User|me|{{user}})$/i.test(sender);
-      const from = isMe ? 'Me' : (sender || defaultContact);
+      let body = line.substring(colonIdx + 1).trim();
+
+      // 提取 sender 中的时间 (如: "我 (14:20)" 或 "小红 14:20")
+      let lineTime = '';
+      let cleanSender = sender;
+      const senderTimeMatch = sender.match(/(?:[(（](\d{1,2}:\d{2})[)）]|\s+(\d{1,2}:\d{2}))$/);
+      if (senderTimeMatch) {
+        lineTime = senderTimeMatch[1] || senderTimeMatch[2];
+        cleanSender = sender.replace(senderTimeMatch[0], '').trim();
+      }
+
+      // 提取 body 前缀中的时间 (如: "14:20 在干嘛")
+      if (!lineTime) {
+        const bodyTimeMatch = body.match(/^(\d{1,2}:\d{2})[\s|，,]+([\s\S]+)$/);
+        if (bodyTimeMatch) {
+          lineTime = bodyTimeMatch[1];
+          body = bodyTimeMatch[2].trim();
+        }
+      }
+
+      const isMe = /^(我|User|me|{{user}})$/i.test(cleanSender);
+      const from = isMe ? 'Me' : (cleanSender || defaultContact);
 
       // 检查 body 是否含有行内类型指令: [image], [video], [voice], [transfer], [location], [recall], [sticker]
       const inlineMatch = body.match(/^\[(image|video|voice|transfer|location|recall|sticker)\]\s*(.*)$/i);
+      let parsedLineMsg = null;
       if (inlineMatch) {
         const subType = inlineMatch[1].toLowerCase();
         const subPayload = inlineMatch[2].trim();
 
         if (subType === 'image') {
           const parts = subPayload.split('|');
-          messages.push({ type: 'image', isMe, from, src: parts[0]?.trim() || '', content: parts[1]?.trim() || '' });
+          parsedLineMsg = { type: 'image', isMe, from, src: parts[0]?.trim() || '', content: parts[1]?.trim() || '' };
         } else if (subType === 'video') {
           const parts = subPayload.split('|');
-          messages.push({ type: 'video', isMe, from, src: parts[0]?.trim() || '', content: parts[1]?.trim() || '' });
+          parsedLineMsg = { type: 'video', isMe, from, src: parts[0]?.trim() || '', content: parts[1]?.trim() || '' };
         } else if (subType === 'voice') {
-          messages.push({ type: 'voice', isMe, from, duration: formatDuration(subPayload || '3'), content: '语音消息' });
+          parsedLineMsg = { type: 'voice', isMe, from, duration: formatDuration(subPayload || '3'), content: '语音消息' };
         } else if (subType === 'transfer') {
           const parts = subPayload.split('|');
           const amt = parts[0]?.replace(/[^\d.]/g, '') || '0';
           const note = parts[1]?.trim() || '';
-          messages.push({ type: 'transfer', isMe, from, amount: amt, note, id: `t_${Date.now()}_${Math.random().toString(36).substr(2, 5)}` });
+          parsedLineMsg = { type: 'transfer', isMe, from, amount: amt, note, id: `t_${Date.now()}_${Math.random().toString(36).substr(2, 5)}` };
         } else if (subType === 'location') {
           const parts = subPayload.split('|');
-          messages.push({ type: 'location', isMe, from, name: parts[0]?.trim() || '未知地点', addr: parts[1]?.trim() || '' });
+          parsedLineMsg = { type: 'location', isMe, from, name: parts[0]?.trim() || '未知地点', addr: parts[1]?.trim() || '' };
         } else if (subType === 'recall') {
-          messages.push({ type: 'recall', isMe, from, content: subPayload || '(对方撤回了一条消息)' });
+          parsedLineMsg = { type: 'recall', isMe, from, content: subPayload || '(对方撤回了一条消息)' };
         } else if (subType === 'sticker') {
-          messages.push({ type: 'sticker', isMe, from, src: subPayload, content: subPayload });
+          parsedLineMsg = { type: 'sticker', isMe, from, src: subPayload, content: subPayload };
         }
       } else {
         // 普通文本
-        messages.push({ type: 'msg', isMe, from, content: body });
+        parsedLineMsg = { type: 'msg', isMe, from, content: body };
+      }
+
+      if (parsedLineMsg) {
+        if (lineTime) parsedLineMsg.time = lineTime;
+        messages.push(parsedLineMsg);
       }
     }
 
@@ -351,14 +430,18 @@ const PhoneParser = (() => {
       };
     }
 
-    // 2. 年-月-日 (时:分 可选，如 2024-10-19 14:27 或 2024-10-19)
-    const fullDateMatch = str.match(/^(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})日?(?:\s+(\d{1,2}:\d{2}))?$/);
+    // 2. 年-月-日 (时:分 可选，如 2024-10-19 14:27 或 2024.10.19 14:27 或 2024-10-19)
+    const fullDateMatch = str.match(/^(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})日?(?:\s+(?:(上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?(\d{1,2}):(\d{2})(?::\d{2})?)?$/);
     if (fullDateMatch) {
       const year = Number(fullDateMatch[1]);
       const month = Number(fullDateMatch[2]);
       const day = Number(fullDateMatch[3]);
-      const timeOfDay = fullDateMatch[4] || `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`;
-      const [h, m] = timeOfDay.split(':').map(Number);
+      const period = fullDateMatch[4] || '';
+      let h = fullDateMatch[5] !== undefined ? Number(fullDateMatch[5]) : base.getHours();
+      let m = fullDateMatch[6] !== undefined ? Number(fullDateMatch[6]) : base.getMinutes();
+      if ((period === '下午' || period === '晚上') && h < 12) h += 12;
+      if ((period === '上午' || period === '凌晨') && h === 12) h = 0;
+      const timeOfDay = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       const d = new Date(year, month - 1, day, h, m, 0, 0);
 
       return {
@@ -378,14 +461,18 @@ const PhoneParser = (() => {
       };
     }
 
-    // 3. 月-日 (时:分 可选，如 10-19 14:27 或 10-19)
-    const monthDayMatch = str.match(/^(\d{1,2})[-/月](\d{1,2})日?(?:\s+(\d{1,2}:\d{2}))?$/);
+    // 3. 月-日 (时:分 可选，如 10-19 14:27 或 10.19 14:27 或 10-19)
+    const monthDayMatch = str.match(/^(\d{1,2})[-/月.](\d{1,2})日?(?:\s+(?:(上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?(\d{1,2}):(\d{2})(?::\d{2})?)?$/);
     if (monthDayMatch) {
       const year = base.getFullYear();
       const month = Number(monthDayMatch[1]);
       const day = Number(monthDayMatch[2]);
-      const timeOfDay = monthDayMatch[3] || `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`;
-      const [h, m] = timeOfDay.split(':').map(Number);
+      const period = monthDayMatch[3] || '';
+      let h = monthDayMatch[4] !== undefined ? Number(monthDayMatch[4]) : base.getHours();
+      let m = monthDayMatch[5] !== undefined ? Number(monthDayMatch[5]) : base.getMinutes();
+      if ((period === '下午' || period === '晚上') && h < 12) h += 12;
+      if ((period === '上午' || period === '凌晨') && h === 12) h = 0;
+      const timeOfDay = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       const d = new Date(year, month - 1, day, h, m, 0, 0);
 
       return {
@@ -405,11 +492,14 @@ const PhoneParser = (() => {
       };
     }
 
-    // 4. 纯时分 (如 14:27, 9:05)
-    const timeMatch = str.match(/^(\d{1,2}):(\d{2})$/);
+    // 4. 纯时分 (如 14:27, 下午 2:27, 9:05)
+    const timeMatch = str.match(/^(?:(上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?(\d{1,2}):(\d{2})(?::\d{2})?$/);
     if (timeMatch) {
-      const h = Number(timeMatch[1]);
-      const m = Number(timeMatch[2]);
+      const period = timeMatch[1] || '';
+      let h = Number(timeMatch[2]);
+      const m = Number(timeMatch[3]);
+      if ((period === '下午' || period === '晚上') && h < 12) h += 12;
+      if ((period === '上午' || period === '凌晨') && h === 12) h = 0;
       const timeOfDay = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
 
@@ -474,32 +564,62 @@ const PhoneParser = (() => {
 
   /**
    * 微信级智能时间胶囊渲染格式化器
-   * 规则：当年隐年，跨年显年，同日纯时分
+   * 规则：当年隐年，跨年显年，中文生活时段修饰 (凌晨/早上/上午/中午/下午/晚上)，支持昨天相对日期
    * @param {Date} date - 消息时间
    * @param {number} referenceYear - 故事最新年份 (如 2024)
    * @param {boolean} isDateChanged - 是否跨天/首次展示
-   * @returns {string} 微信胶囊文字 (如 "10月19日 14:00" 或 "2024年10月19日 14:00" 或 "14:00")
+   * @param {object} [options] - 可选配置 { usePeriod: true, referenceDate: Date, hasExplicitDate: boolean }
+   * @returns {string} 微信胶囊文字 (如 "10月19日 下午 14:00" 或 "昨天 晚上 20:30" 或 "下午 14:00")
    */
-  function formatWeChatPill(date, referenceYear, isDateChanged) {
+  function formatWeChatPill(date, referenceYear, isDateChanged, options = {}) {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
     const Y = date.getFullYear();
     const M = date.getMonth() + 1;
     const D = date.getDate();
-    const hh = String(date.getHours()).padStart(2, '0');
+    const h = date.getHours();
+    const hh = String(h).padStart(2, '0');
     const mm = String(date.getMinutes()).padStart(2, '0');
 
+    // 微信中式生活时段修饰 (凌晨/早上/上午/中午/下午/晚上)
+    let period = '';
+    if (options.usePeriod !== false) {
+      if (h >= 0 && h < 6) period = '凌晨 ';
+      else if (h >= 6 && h < 9) period = '早上 ';
+      else if (h >= 9 && h < 12) period = '上午 ';
+      else if (h >= 12 && h < 14) period = '中午 ';
+      else if (h >= 14 && h < 18) period = '下午 ';
+      else period = '晚上 ';
+    }
+
     if (!isDateChanged) {
-      // 同一天内超过 5 分钟：仅显示纯时分
-      return `${hh}:${mm}`;
+      // 同一天内大跨段：显示时段 + 纯时分
+      return `${period}${hh}:${mm}`;
     }
 
     // 跨天情况：
     // 若消息年份 < 故事最新基准年份 (跨年旧消息)，完整显示年份
     if (referenceYear && Y < referenceYear) {
-      return `${Y}年${M}月${D}日 ${hh}:${mm}`;
+      return `${Y}年${M}月${D}日 ${period}${hh}:${mm}`;
     }
+
+    // 检查是否为“昨天”或当日首条
+    if (options.referenceDate && options.referenceDate instanceof Date) {
+      const refY = options.referenceDate.getFullYear();
+      const refM = options.referenceDate.getMonth();
+      const refD = options.referenceDate.getDate();
+      const curMidnight = new Date(Y, M - 1, D).getTime();
+      const refMidnight = new Date(refY, refM, refD).getTime();
+      const dayDiff = Math.round((refMidnight - curMidnight) / (24 * 3600 * 1000));
+      if (dayDiff === 1) {
+        return `昨天 ${period}${hh}:${mm}`;
+      }
+      if (dayDiff === 0 && !options.hasExplicitDate) {
+        return `${period}${hh}:${mm}`;
+      }
+    }
+
     // 否则在当前自然年内，优雅隐藏年份
-    return `${M}月${D}日 ${hh}:${mm}`;
+    return `${M}月${D}日 ${period}${hh}:${mm}`;
   }
 
   /**
@@ -532,7 +652,7 @@ const PhoneParser = (() => {
 
     let extractedTime = '';
     let extractedContact = '';
-    const timePrefixRegex = /^(?:(\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|(\d{1,2}[-/月]\d{1,2}日?\s+\d{1,2}:\d{2})|((?:明天|后天|大后天|昨天|前天|次日|第二天|第三天|一天后|两天后|三天后|三天前|1天后|2天后|3天后|几天后|一周后|一个星期后|1周后|下周|半个月后)(?:\s+\d{1,2}:\d{2})?)|(\d{1,2}:\d{2}))[\s|，,]+([\s\S]+)$/i;
+    const timePrefixRegex = /^(?:(\d{4}[-/年.]\d{1,2}[-/月.]\d{1,2}日?\s+(?:(?:上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?\d{1,2}:\d{2})|(\d{1,2}[-/月.]\d{1,2}日?\s+(?:(?:上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?\d{1,2}:\d{2})|((?:明天|后天|大后天|昨天|前天|次日|第二天|第三天|一天后|两天后|三天后|三天前|1天后|2天后|3天后|几天后|一周后|一个星期后|1周后|下周|半个月后)(?:\s+(?:(?:上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?\d{1,2}:\d{2})?)|((?:(?:上午|下午|晚上|中午|凌晨|清晨|半夜)\s*)?\d{1,2}:\d{2}))[\s|，,]+([\s\S]+)$/i;
 
     // 提取联系人前缀与时间戳（支持任意前后顺序，如: 〖@小红 14:00 吃啥〗 或 〖14:00 @小红 吃啥〗）
     for (let pass = 0; pass < 2; pass++) {
@@ -818,4 +938,8 @@ if (typeof window !== 'undefined') {
 if (typeof globalThis !== 'undefined') {
   globalThis.PhoneParser = PhoneParser;
 }
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = PhoneParser;
+}
+
 
