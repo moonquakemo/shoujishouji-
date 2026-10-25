@@ -866,22 +866,73 @@ const PhoneParser = (() => {
       }
     }
 
-    // 10. 弹幕: 【弹幕：...】
+    // 10. 弹幕: 【弹幕：内容】 / 【弹幕：观众名字：内容】
     if (!parsedMsg) {
-      const danmuMatch = text.match(/^弹幕[：:\s]+([\s\S]+)$/i);
+      const danmuMatch = text.match(/^弹幕[：:\s]+(?:([^:：\n]+)[：:\s]+)?([\s\S]+)$/i);
       if (danmuMatch) {
-        const danmuContent = danmuMatch[1].trim();
+        const danmuSender = (danmuMatch[1] && danmuMatch[2]) ? danmuMatch[1].trim() : (isMe ? '你' : from || '观众');
+        const danmuContent = ((danmuMatch[1] && danmuMatch[2]) ? danmuMatch[2] : (danmuMatch[1] || danmuMatch[2])).trim();
         parsedMsg = {
           type: 'live_danmu',
           isMe,
-          from,
+          from: danmuSender,
           content: danmuContent,
         };
         try {
           if (typeof PhoneComposer !== 'undefined' && PhoneComposer.appendLiveDanmu) {
-            PhoneComposer.appendLiveDanmu({ sender: from, text: danmuContent, isMe });
+            PhoneComposer.appendLiveDanmu({ sender: danmuSender, text: danmuContent, isMe });
           }
         } catch (e) { }
+      }
+    }
+
+    // 11. SC / 醒目留言: 【SC：内容】 / 【SC：观众名|金额|留言内容】
+    if (!parsedMsg) {
+      const scMatch = text.match(/^(?:SC|醒目留言)[：:\s]+([\s\S]+)$/i);
+      if (scMatch) {
+        const rawPayload = scMatch[1].trim();
+        let scSender = isMe ? '你' : (from || '热心观众');
+        let scPrice = '￥520';
+        let scContent = rawPayload;
+        if (rawPayload.includes('|')) {
+          const parts = rawPayload.split('|');
+          if (parts.length === 2) {
+            scSender = parts[0].trim();
+            scContent = parts[1].trim();
+          } else if (parts.length >= 3) {
+            scSender = parts[0].trim();
+            scPrice = parts[1].trim();
+            scContent = parts.slice(2).join('|').trim();
+          }
+        }
+        parsedMsg = {
+          type: 'live_sc',
+          isMe,
+          from: scSender,
+          price: scPrice,
+          content: scContent,
+        };
+        try {
+          if (typeof PhoneComposer !== 'undefined' && PhoneComposer.showLiveSc) {
+            PhoneComposer.showLiveSc(scSender, scContent, scPrice);
+          }
+        } catch (e) { }
+      }
+    }
+
+    // 12. 打赏礼物: 【打赏：主播名 礼物名】 / 【打赏：礼物名】
+    if (!parsedMsg) {
+      const giftMatch = text.match(/^打赏[：:\s]+(?:([^\s]+)\s+)?([\s\S]+)$/i);
+      if (giftMatch) {
+        const giftStreamer = giftMatch[1]?.trim() || contact || '主播';
+        const giftName = giftMatch[2]?.trim();
+        parsedMsg = {
+          type: 'live_gift',
+          isMe,
+          from,
+          streamer: giftStreamer,
+          content: giftName,
+        };
       }
     }
 
