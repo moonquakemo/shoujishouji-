@@ -280,7 +280,7 @@ const PhoneComposer = (() => {
                         <i class="fa-regular fa-user"></i>
                     </button>
                     <div class="live-danmu-input-pill">
-                        <input type="text" class="live-input-field" id="live_danmu_input" placeholder="发条弹幕互动一下..." autocomplete="off">
+                        <input type="text" class="live-input-field" id="live_danmu_input" placeholder="发条弹幕..." autocomplete="off">
                         <button type="button" class="live-danmu-send-btn" id="live_danmu_send_btn" title="发弹幕">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>

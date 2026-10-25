@@ -786,10 +786,13 @@ ${noticeHtml}`;
                 <i class="fa-regular fa-user"></i>
             </button>
             <div class="live-danmu-input-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="点击打开小手机伴侣互动" style="cursor: pointer;">
-                <span style="font-size: 11px; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-paper-plane" style="font-size: 10px;"></i> 点击右侧悬浮伴侣发送弹幕/心动礼物...
+                <span style="font-size: 11px; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <i class="fa-solid fa-paper-plane" style="font-size: 10px; flex-shrink: 0;"></i> 发弹幕/心动礼物...
                 </span>
             </div>
+            <button type="button" class="live-action-circle-btn live-gift-btn" onclick="if(window.PhoneComposer) { PhoneComposer.toggleComposer(true); const $tab = $('#home_app_live'); if ($tab.length) $tab.click(); $('#live_gift_btn').click(); }" title="赠送心动礼物">
+                <i class="fa-solid fa-gift"></i>
+            </button>
         </div>
     </div>
     <div class="st-phone-bottom-safe"></div>
