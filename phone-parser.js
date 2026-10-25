@@ -175,6 +175,175 @@ const PhoneParser = (() => {
   }
 
   /**
+   * 从原始文本中提取所有 [live] 直播间容器块
+   * 格式: [live:主播名 bio=签名 viewers=1.2w status=live] ... [/live]
+   * @param {string} text
+   * @returns {Array<{streamer: string, bio: string, viewers: string, isLive: boolean, scene: string, sc: object, danmu: Array, gift: object, raw: string}>}
+   */
+  function extractLiveBlocks(text) {
+    if (!text) return [];
+    const blocks = [];
+    const liveRegex = /(?:\[|&#91;)live(?::([^\]&#]*))?(?:\]|&#93;)([\s\S]*?)(?:\[|&#91;)\/live(?:\]|&#93;)/gi;
+    let match;
+
+    while ((match = liveRegex.exec(text)) !== null) {
+      const rawAttrs = match[1] || '';
+      const innerText = match[2] || '';
+      const attrs = parseAttributes(rawAttrs);
+
+      const streamer = attrs.contact || attrs.streamer || attrs.name || '主播';
+      const bio = attrs.bio || attrs.note || '';
+      const viewers = attrs.viewers || '';
+      const isLive = attrs.status ? (attrs.status !== 'offline' && attrs.status !== '未开播') : true;
+
+      // 解析内部子元素
+      const parsedData = parseLiveInnerContent(innerText, streamer);
+
+      blocks.push({
+        streamer,
+        bio: bio || parsedData.bio || '',
+        viewers: viewers || parsedData.viewers || '',
+        isLive: parsedData.isLive !== undefined ? parsedData.isLive : isLive,
+        scene: parsedData.scene || '',
+        sc: parsedData.sc || null,
+        danmu: parsedData.danmu || [],
+        gift: parsedData.gift || null,
+        raw: match[0],
+        startIndex: match.index,
+        endIndex: match.index + match[0].length,
+      });
+    }
+
+    return blocks;
+  }
+
+  /**
+   * 解析 [live]...[/live] 内部的子标签与自然内容
+   */
+  function parseLiveInnerContent(innerText, streamerName) {
+    const res = {
+      bio: '',
+      scene: '',
+      sc: null,
+      danmu: [],
+      gift: null,
+    };
+    if (!innerText) return res;
+
+    // 1. 匹配 [scene]...[/scene] 或 [screen]...[/screen] 或 [画面]...[/画面]
+    const sceneMatch = innerText.match(/\[(?:scene|screen|画面|直播画面)[^\]]*\]([\s\S]*?)\[\/(?:scene|screen|画面|直播画面)\]/i);
+    if (sceneMatch) {
+      res.scene = sceneMatch[1].trim();
+    }
+
+    // 2. 匹配 [bio]...[/bio] 或 [签名]...[/签名]
+    const bioMatch = innerText.match(/\[(?:bio|签名|直播签名)[^\]]*\]([\s\S]*?)\[\/(?:bio|签名|直播签名)\]/i);
+    if (bioMatch) {
+      res.bio = bioMatch[1].trim();
+    }
+
+    // 3. 匹配 [sc:观众名 price=520]...[/sc] 或 [sc]...[/sc]
+    const scRegex = /\[(?:sc|醒目留言)(?::([^\]]*))?\]([\s\S]*?)\[\/(?:sc|醒目留言)\]/gi;
+    let scMatch;
+    while ((scMatch = scRegex.exec(innerText)) !== null) {
+      const scAttrs = parseAttributes(scMatch[1] || '');
+      const scContent = scMatch[2].trim();
+      res.sc = {
+        sender: scAttrs.contact || scAttrs.from || scAttrs.sender || '热心观众',
+        price: scAttrs.price || scAttrs.amount || '￥520',
+        content: scContent,
+      };
+    }
+
+    // 4. 匹配 [danmu:观众名]内容[/danmu] 或 [danmu]观众名: 内容[/danmu]
+    const danmuRegex = /\[(?:danmu|弹幕)(?::([^\]]*))?\]([\s\S]*?)\[\/(?:danmu|弹幕)\]/gi;
+    let dmMatch;
+    while ((dmMatch = danmuRegex.exec(innerText)) !== null) {
+      const dmAttrs = parseAttributes(dmMatch[1] || '');
+      const rawText = dmMatch[2].trim();
+      let sender = dmAttrs.contact || dmAttrs.from || '';
+      let text = rawText;
+      if (!sender && rawText.includes(':')) {
+        const p = rawText.split(':');
+        sender = p[0].trim();
+        text = p.slice(1).join(':').trim();
+      } else if (!sender && rawText.includes('：')) {
+        const p = rawText.split('：');
+        sender = p[0].trim();
+        text = p.slice(1).join('：').trim();
+      }
+      res.danmu.push({
+        sender: sender || '观众',
+        text,
+        isMe: isUserFrom(sender),
+      });
+    }
+
+    // 5. 匹配 [gift:送礼人 gift=礼物名]...[/gift] 或自闭合
+    const giftMatch = innerText.match(/\[(?:gift|礼物|打赏)(?::([^\]]*))?\](?:([\s\S]*?)\[\/(?:gift|礼物|打赏)\])?/i);
+    if (giftMatch) {
+      const giftAttrs = parseAttributes(giftMatch[1] || '');
+      const giftName = giftAttrs.gift || giftAttrs.name || (giftMatch[2] ? giftMatch[2].trim() : '心动礼物');
+      const giftUser = giftAttrs.from || giftAttrs.contact || '你';
+      res.gift = {
+        user: giftUser,
+        name: giftName,
+      };
+    }
+
+    // 6. 兼容内部使用自然括号 〖直播画面：...〗、〖直播签名：...〗、〖弹幕：...〗、〖SC：...〗
+    const bracketRegex = /〖([\s\S]*?)〗/g;
+    let bMatch;
+    while ((bMatch = bracketRegex.exec(innerText)) !== null) {
+      const raw = bMatch[1].trim();
+      if (!raw) continue;
+      if (/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        if (!res.scene) {
+          res.scene = raw.replace(/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+/i, '').trim();
+        }
+      } else if (/^(?:直播签名|直播间签名|直播简介)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        if (!res.bio) {
+          res.bio = raw.replace(/^(?:直播签名|直播间签名|直播简介)[：:\s]+/i, '').trim();
+        }
+      } else if (/^(?:弹幕)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        const content = raw.replace(/^(?:弹幕)[：:\s]+/i, '').trim();
+        let s = '观众';
+        let t = content;
+        if (content.includes(':')) {
+          const parts = content.split(':');
+          s = parts[0].trim();
+          t = parts.slice(1).join(':').trim();
+        } else if (content.includes('：')) {
+          const parts = content.split('：');
+          s = parts[0].trim();
+          t = parts.slice(1).join('：').trim();
+        }
+        res.danmu.push({ sender: s, text: t, isMe: isUserFrom(s) });
+      } else if (/^(?:SC|醒目留言)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        const content = raw.replace(/^(?:SC|醒目留言)[：:\s]+/i, '').trim();
+        res.sc = { sender: '热心观众', price: '￥520', content };
+      }
+    }
+
+    // 7. 若未明确标注 [scene]，容器内部未被消费的文本默认作为画面/主播动作
+    if (!res.scene) {
+      const stripped = innerText
+        .replace(/\[(?:scene|screen|画面|直播画面)[^\]]*\][\s\S]*?\[\/(?:scene|screen|画面|直播画面)\]/gi, '')
+        .replace(/\[(?:bio|签名)[^\]]*\][\s\S]*?\[\/(?:bio|签名)\]/gi, '')
+        .replace(/\[(?:sc|醒目留言)[^\]]*\][\s\S]*?\[\/(?:sc|醒目留言)\]/gi, '')
+        .replace(/\[(?:danmu|弹幕)[^\]]*\][\s\S]*?\[\/(?:danmu|弹幕)\]/gi, '')
+        .replace(/\[(?:gift|礼物|打赏)[^\]]*\]/gi, '')
+        .replace(/〖[\s\S]*?〗/g, '')
+        .trim();
+      if (stripped) {
+        res.scene = stripped;
+      }
+    }
+
+    return res;
+  }
+
+  /**
    * 解析 phone 块内的所有消息
    * 兼容：
    * 1. 结构化标记 [msg:from=me]内容[/msg]
@@ -1018,15 +1187,16 @@ const PhoneParser = (() => {
   }
 
   /**
-   * 判断一段文本中是否包含任何手机内容（[phone] 或 〖...〗）
+   * 判断一段文本中是否包含任何手机内容（[phone]、[live] 或 〖...〗）
    */
   function hasPhoneContent(text) {
     if (!text) return false;
-    return /(?:\[|&#91;)phone/i.test(text) || /〖[\s\S]+?〗/.test(text);
+    return /(?:\[|&#91;)(?:phone|live)/i.test(text) || /〖[\s\S]+?〗/.test(text);
   }
 
   return {
     extractPhoneBlocks,
+    extractLiveBlocks,
     extractHumanBlocks,
     parseAttributes,
     parseMessages,

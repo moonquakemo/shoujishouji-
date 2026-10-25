@@ -1012,11 +1012,12 @@
         // 预防报错：确认大脑已上线
         if (typeof PhoneParser === 'undefined') return;
 
-        // 检查有没有 [phone] 块
+        // 检查有没有 [phone] 块与 [live] 直播块
         const blocks = PhoneParser.extractPhoneBlocks(chatMsg.mes);
-        if (!blocks.length) return;
+        const liveBlocks = PhoneParser.extractLiveBlocks ? PhoneParser.extractLiveBlocks(chatMsg.mes) : [];
+        if (!blocks.length && !liveBlocks.length) return;
 
-        console.log(`[Phone UI] 成功在第 ${msgIndex} 条消息抓取到手机记录！`, blocks);
+        console.log(`[Phone UI] 成功在第 ${msgIndex} 条消息抓取到手机/直播记录！`, { blocks, liveBlocks });
 
         const mesEl = document.querySelector(`.mes[mesid="${msgIndex}"]`);
         if (!mesEl) return;
@@ -1025,39 +1026,73 @@
 
         let currentHtml = mesTextEl.innerHTML;
 
-        // 兼容酒馆把 [ ] 转义成了 &#91; 或包裹了 <br> 的情况
-        const phoneRegexHtml = /(?:\[|&#91;)phone(?::[^\]]*)?(?:\]|&#93;)[\s\S]*?(?:\[|&#91;)\/phone(?:\]|&#93;)/gi;
-        currentHtml = currentHtml.replace(phoneRegexHtml, '<div class="st-phone-hidden" style="display:none;">[手机记录已渲染]</div>');
+        // 1. 兼容隐藏 [phone] 原始标签
+        if (blocks.length > 0) {
+            const phoneRegexHtml = /(?:\[|&#91;)phone(?::[^\]]*)?(?:\]|&#93;)[\s\S]*?(?:\[|&#91;)\/phone(?:\]|&#93;)/gi;
+            currentHtml = currentHtml.replace(phoneRegexHtml, '<div class="st-phone-hidden" style="display:none;">[手机记录已渲染]</div>');
+        }
+
+        // 2. 兼容隐藏 [live] 原始标签
+        if (liveBlocks.length > 0) {
+            const liveRegexHtml = /(?:\[|&#91;)live(?::[^\]]*)?(?:\]|&#93;)[\s\S]*?(?:\[|&#91;)\/live(?:\]|&#93;)/gi;
+            currentHtml = currentHtml.replace(liveRegexHtml, '<div class="st-phone-hidden" style="display:none;">[直播间已渲染]</div>');
+        }
 
         let injectedPhonesHtml = '';
 
-        // 不管聚合开不开，都从 chatMetadata 读取已有的交互状态
-        let savedActions = {};
-        try {
-            savedActions = ctx.chatMetadata.phone_actions || {};
-        } catch (e) { }
+        // 3. 渲染 [phone] 即时通讯界面
+        if (blocks.length > 0) {
+            let savedActions = {};
+            try {
+                savedActions = ctx.chatMetadata.phone_actions || {};
+            } catch (e) { }
 
-        // 按联系人去重合并：AI 经常输出多个同 contact 的 [phone] 块，合并成一个
-        const mergedBlocks = new Map();
-        for (const block of blocks) {
-            const key = block.contact;
-            if (mergedBlocks.has(key)) {
-                mergedBlocks.get(key).messages.push(...block.messages);
-            } else {
-                mergedBlocks.set(key, { contact: block.contact, messages: [...block.messages] });
+            // 按联系人去重合并
+            const mergedBlocks = new Map();
+            for (const block of blocks) {
+                const key = block.contact;
+                if (mergedBlocks.has(key)) {
+                    mergedBlocks.get(key).messages.push(...block.messages);
+                } else {
+                    mergedBlocks.set(key, { contact: block.contact, messages: [...block.messages] });
+                }
+            }
+
+            for (const [contactName, merged] of mergedBlocks) {
+                let phoneData;
+                if (settings && settings.aggregate) {
+                    phoneData = PhoneAggregator.aggregate(ctx.chat, msgIndex, contactName);
+                } else {
+                    phoneData = { contact: contactName, messages: merged.messages, actions: savedActions };
+                }
+
+                const phoneId = `p_${msgIndex}_${contactName.replace(/\s/g, '_')}`;
+                injectedPhonesHtml += PhoneRenderer.render(phoneData, phoneId);
             }
         }
 
-        for (const [contactName, merged] of mergedBlocks) {
-            let phoneData;
-            if (settings && settings.aggregate) {
-                phoneData = PhoneAggregator.aggregate(ctx.chat, msgIndex, contactName);
-            } else {
-                phoneData = { contact: contactName, messages: merged.messages, actions: savedActions };
-            }
+        // 4. 渲染 [live] 沉浸式互动直播间界面 (复用手机伴侣完全一致的精致UI)
+        if (liveBlocks.length > 0 && typeof PhoneRenderer !== 'undefined' && PhoneRenderer.renderLive) {
+            for (let i = 0; i < liveBlocks.length; i++) {
+                const liveData = liveBlocks[i];
+                const liveId = `live_${msgIndex}_${i}`;
+                injectedPhonesHtml += PhoneRenderer.renderLive(liveData, liveId);
 
-            const phoneId = `p_${msgIndex}_${contactName.replace(/\s/g, '_')}`;
-            injectedPhonesHtml += PhoneRenderer.render(phoneData, phoneId);
+                // 自动同步签名与开播状态至小手机伴侣，实现正文与伴侣两端实时对齐
+                if (typeof PhoneComposer !== 'undefined') {
+                    if (liveData.bio) {
+                        PhoneComposer.saveCharacterLiveBio(liveData.streamer, liveData.bio);
+                    }
+                    PhoneComposer.updateLiveState({
+                        isLive: liveData.isLive,
+                        scene: liveData.scene,
+                        bio: liveData.bio,
+                        viewers: liveData.viewers,
+                        streamer: liveData.streamer,
+                        sc: liveData.sc,
+                    });
+                }
+            }
         }
 
         mesTextEl.innerHTML = currentHtml + injectedPhonesHtml;

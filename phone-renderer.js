@@ -630,7 +630,135 @@ ${noticeHtml}`;
         return `<div class="st-phone-time-sep"><span>${escapeHtml(msg.time)}</span></div>`;
     }
 
-    return { render, renderMessage, renderAvatar, renderTimeSep, clusterMessagesWithTimeSeparators, escapeHtml };
+    /**
+     * 渲染正文内的 RLive 沉浸式互动直播间
+     * 复用手机伴侣完全一致的视图结构与 CSS 样式
+     */
+    function renderLive(liveData, liveId) {
+        const id = liveId || `live_${Date.now()}`;
+        const streamer = liveData.streamer || '主播';
+        const isLive = liveData.isLive !== false;
+        const statusText = isLive ? 'LIVE' : '未开播';
+        const statusClass = isLive ? '' : 'offline';
+        const timerText = isLive ? '00:00' : '未开播';
+        const viewers = liveData.viewers || (isLive ? '1.2w' : '--');
+        const bio = liveData.bio || (typeof PhoneComposer !== 'undefined' ? PhoneComposer.getCharacterLiveBio(streamer) : '');
+        const scene = liveData.scene || (isLive ? '主播正在直播中...' : '主播未开播');
+        const sc = liveData.sc;
+        const danmuList = liveData.danmu || [];
+        const gift = liveData.gift;
+
+        // 头像匹配
+        const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
+        const avatarMap = cfg.charAvatarMap || {};
+        const avatarUrl = avatarMap[streamer] || cfg.charAvatar || tryMatchSTAvatar(streamer) || '';
+        const avatarLetter = escapeHtml(streamer.charAt(0) || '主');
+        const avatarStyle = avatarUrl ? `background-image:url('${escapeHtml(avatarUrl)}');background-size:cover;background-position:center;` : '';
+
+        const bioHtml = bio ? `
+            <div class="live-stream-desc-container">
+                <div class="live-stream-desc">${escapeHtml(bio)} · </div>
+            </div>
+        ` : '';
+
+        const scHtml = sc ? `
+            <div class="live-sc-container" style="display: block;">
+                <div class="live-sc-card">
+                    <div class="sc-card-header">
+                        <div class="sc-badge-group">
+                            <span class="sc-price-pill">SC ${escapeHtml(sc.price || '￥520')}</span>
+                            <span class="sc-sender-name">${escapeHtml(sc.sender || '')}</span>
+                        </div>
+                        <span class="sc-status-pill"><i class="fa-regular fa-clock"></i> 置顶中</span>
+                    </div>
+                    <div class="sc-card-content">${escapeHtml(sc.content || '')}</div>
+                </div>
+            </div>
+        ` : '';
+
+        const giftHtml = gift ? `
+            <div class="live-gift-banner" style="display: flex;">
+                <span class="gift-banner-icon">🎁</span>
+                <div class="gift-banner-text">
+                    <div class="gift-banner-user">${escapeHtml(gift.user || '你')} 送出了</div>
+                    <div class="gift-banner-name">${escapeHtml(gift.name || '心意礼物')}</div>
+                </div>
+            </div>
+        ` : '';
+
+        const danmuItemsHtml = danmuList.map(d => {
+            const isMe = d.isMe;
+            const meClass = isMe ? 'danmu-me' : '';
+            const meSenderClass = isMe ? 'danmu-me-sender' : '';
+            const sender = d.sender || (isMe ? '你' : '观众');
+            return `
+                <div class="danmu-item ${meClass}">
+                    <span class="danmu-sender ${meSenderClass}">${escapeHtml(sender)}:</span>
+                    <span class="danmu-text">${escapeHtml(d.text || d.content || '')}</span>
+                </div>
+            `;
+        }).join('');
+
+        return `
+<div class="st-phone st-phone-live-wrapper" data-live-id="${id}">
+    ${renderStatusBar()}
+    <div class="composer-view-live st-phone-msg-live" style="display: flex;">
+        <div class="live-stream-header">
+            <div class="live-streamer-info">
+                <div class="live-streamer-avatar" style="${avatarStyle}">
+                    ${avatarUrl ? '' : `<span class="live-streamer-avatar-text">${avatarLetter}</span>`}
+                </div>
+                <div class="live-streamer-meta">
+                    <div class="live-streamer-name-row">
+                        <span class="live-streamer-name">${escapeHtml(streamer)}</span>
+                        <span class="live-stream-live-pill ${statusClass}">${statusText}</span>
+                    </div>
+                    ${bioHtml}
+                </div>
+            </div>
+            <div class="live-header-actions">
+                <div class="live-viewers-pill" title="当前在线观看人数">
+                    <i class="fa-solid fa-fire"></i> <span>${escapeHtml(viewers)}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-stage-container">
+            <div class="live-ambient-glow"></div>
+            <div class="live-stage-canvas">
+                <div class="live-narration-card">
+                    <div class="live-narration-header">
+                        <span class="narration-tag"><i class="fa-solid fa-video"></i> 直播画面</span>
+                        <span class="live-timer ${statusClass}">${escapeHtml(timerText)}</span>
+                    </div>
+                    <div class="live-narration-body">
+                        ${escapeHtml(scene)}
+                    </div>
+                </div>
+            </div>
+
+            ${scHtml}
+
+            <div class="live-danmu-stream">
+                ${danmuItemsHtml}
+            </div>
+
+            ${giftHtml}
+        </div>
+
+        <div class="live-bottom-bar st-live-msg-bottom">
+            <div class="live-danmu-input-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="点击打开小手机伴侣互动" style="cursor: pointer;">
+                <span style="font-size: 11px; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-paper-plane" style="font-size: 10px;"></i> 点击右侧悬浮伴侣发送弹幕/心动礼物...
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="st-phone-bottom-safe"></div>
+</div>`;
+    }
+
+    return { render, renderLive, renderMessage, renderAvatar, renderTimeSep, clusterMessagesWithTimeSeparators, escapeHtml };
 })();
 
 if (typeof window !== 'undefined') {
