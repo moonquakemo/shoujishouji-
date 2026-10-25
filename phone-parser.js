@@ -31,6 +31,10 @@ const PhoneParser = (() => {
     const f = String(fromAttr).trim().toLowerCase();
     if (f === 'me' || f === 'user' || f === '我' || f === '{{user}}') return true;
     try {
+      const userLiveId = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getUserLiveId) ? PhoneComposer.getUserLiveId() : null;
+      if (userLiveId && userLiveId.toLowerCase() === f) return true;
+    } catch (e) { }
+    try {
       const ctx = (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) ? SillyTavern.getContext() : null;
       if (ctx && ctx.name1 && ctx.name1.toLowerCase() === f) return true;
     } catch (e) { }

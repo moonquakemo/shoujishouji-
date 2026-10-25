@@ -636,23 +636,30 @@ ${noticeHtml}`;
      */
     function renderLive(liveData, liveId) {
         const id = liveId || `live_${Date.now()}`;
-        const streamer = liveData.streamer || '主播';
+        const rawStreamer = liveData.streamer || '主播';
+        const streamerDisplay = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getCharacterLiveId)
+            ? PhoneComposer.getCharacterLiveId(rawStreamer)
+            : rawStreamer;
+        const userLiveId = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getUserLiveId)
+            ? PhoneComposer.getUserLiveId()
+            : '热心观众';
+
         const isLive = liveData.isLive !== false;
         const statusText = isLive ? 'LIVE' : '未开播';
         const statusClass = isLive ? '' : 'offline';
         const timerText = isLive ? '00:00' : '未开播';
         const viewers = liveData.viewers || (isLive ? '1.2w' : '--');
-        const bio = liveData.bio || (typeof PhoneComposer !== 'undefined' ? PhoneComposer.getCharacterLiveBio(streamer) : '');
+        const bio = liveData.bio || (typeof PhoneComposer !== 'undefined' ? PhoneComposer.getCharacterLiveBio(rawStreamer) : '');
         const scene = liveData.scene || (isLive ? '主播正在直播中...' : '主播未开播');
         const sc = liveData.sc;
         const danmuList = liveData.danmu || [];
         const gift = liveData.gift;
 
-        // 头像匹配
+        // 头像匹配 (支持按原角色名或艺名匹配)
         const cfg = (typeof PhoneInteractions !== 'undefined' && PhoneInteractions.getConfig) ? PhoneInteractions.getConfig() : {};
         const avatarMap = cfg.charAvatarMap || {};
-        const avatarUrl = avatarMap[streamer] || cfg.charAvatar || tryMatchSTAvatar(streamer) || '';
-        const avatarLetter = escapeHtml(streamer.charAt(0) || '主');
+        const avatarUrl = avatarMap[rawStreamer] || avatarMap[streamerDisplay] || cfg.charAvatar || tryMatchSTAvatar(rawStreamer) || tryMatchSTAvatar(streamerDisplay) || '';
+        const avatarLetter = escapeHtml(streamerDisplay.charAt(0) || '主');
         const avatarStyle = avatarUrl ? `background-image:url('${escapeHtml(avatarUrl)}');background-size:cover;background-position:center;` : '';
 
         const bioHtml = bio ? `
@@ -680,7 +687,7 @@ ${noticeHtml}`;
             <div class="live-gift-banner" style="display: flex;">
                 <span class="gift-banner-icon">🎁</span>
                 <div class="gift-banner-text">
-                    <div class="gift-banner-user">${escapeHtml(gift.user || '你')} 送出了</div>
+                    <div class="gift-banner-user">${escapeHtml(gift.user || userLiveId)} 送出了</div>
                     <div class="gift-banner-name">${escapeHtml(gift.name || '心意礼物')}</div>
                 </div>
             </div>
@@ -690,7 +697,7 @@ ${noticeHtml}`;
             const isMe = d.isMe;
             const meClass = isMe ? 'danmu-me' : '';
             const meSenderClass = isMe ? 'danmu-me-sender' : '';
-            const sender = d.sender || (isMe ? '你' : '观众');
+            const sender = d.sender || (isMe ? userLiveId : '观众');
             return `
                 <div class="danmu-item ${meClass}">
                     <span class="danmu-sender ${meSenderClass}">${escapeHtml(sender)}:</span>
@@ -710,7 +717,7 @@ ${noticeHtml}`;
                 </div>
                 <div class="live-streamer-meta">
                     <div class="live-streamer-name-row">
-                        <span class="live-streamer-name">${escapeHtml(streamer)}</span>
+                        <span class="live-streamer-name">${escapeHtml(streamerDisplay)}</span>
                         <span class="live-stream-live-pill ${statusClass}">${statusText}</span>
                     </div>
                     ${bioHtml}
@@ -747,6 +754,10 @@ ${noticeHtml}`;
         </div>
 
         <div class="live-bottom-bar st-live-msg-bottom">
+            <div class="live-user-id-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="我的直播间昵称 (可在伴侣中修改)">
+                <span class="live-user-id-prefix"><i class="fa-regular fa-user"></i></span>
+                <span class="live-user-name-val">${escapeHtml(userLiveId)}</span>
+            </div>
             <div class="live-danmu-input-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="点击打开小手机伴侣互动" style="cursor: pointer;">
                 <span style="font-size: 11px; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-paper-plane" style="font-size: 10px;"></i> 点击右侧悬浮伴侣发送弹幕/心动礼物...
