@@ -647,8 +647,14 @@ ${noticeHtml}`;
         const isLive = liveData.isLive !== false;
         const statusText = isLive ? 'LIVE' : '未开播';
         const statusClass = isLive ? '' : 'offline';
-        const sessionTime = liveData.time || '';
+        const savedTime = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getCharacterLiveTime)
+            ? PhoneComposer.getCharacterLiveTime(rawStreamer)
+            : '';
+        const sessionTime = liveData.time || savedTime || '';
         const timerText = isLive ? (sessionTime || '00:00') : '未开播';
+        if (liveData.time && typeof PhoneComposer !== 'undefined' && PhoneComposer.saveCharacterLiveTime) {
+            PhoneComposer.saveCharacterLiveTime(rawStreamer, liveData.time);
+        }
 
         // 场次持久化人数
         const savedViewers = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getCharacterLiveViewers)

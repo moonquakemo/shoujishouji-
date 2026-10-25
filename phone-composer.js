@@ -69,6 +69,7 @@ const PhoneComposer = (() => {
     const characterLiveBios = {}; // 记录各角色的直播间签名 (持久化记录直到切换角色)
     const characterLiveIds = {};  // 记录各角色的直播间艺名/ID (持久化记录直到切换角色)
     const characterLiveViewers = {}; // 记录各角色场次的在线人数 (持久化记录)
+    const characterLiveTimes = {};   // 记录各角色场次的时间/场次标识 (持久化记录直到新开播)
     let currentLiveSessionKey = '';  // 当前场次唯一键 (streamer + time)，用于区分场次并避免串档
     let currentUserLiveId = '';   // 用户在直播间的专属昵称/观众ID (拒绝实名制上网)
 
@@ -1278,6 +1279,38 @@ const PhoneComposer = (() => {
     }
 
     /**
+     * 获取角色当前直播场次的时间/场次标识 (持久化记录)
+     */
+    function getCharacterLiveTime(charName) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return '';
+        if (characterLiveTimes[targetChar] !== undefined) {
+            return characterLiveTimes[targetChar];
+        }
+        try {
+            const local = localStorage.getItem('st_phone_live_time_' + encodeURIComponent(targetChar));
+            if (local && local.trim()) {
+                characterLiveTimes[targetChar] = local.trim();
+                return characterLiveTimes[targetChar];
+            }
+        } catch (e) { }
+        return '';
+    }
+
+    /**
+     * 保存角色直播场次的时间/场次标识
+     */
+    function saveCharacterLiveTime(charName, timeStr) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return;
+        const clean = String(timeStr || '').trim();
+        characterLiveTimes[targetChar] = clean;
+        try {
+            localStorage.setItem('st_phone_live_time_' + encodeURIComponent(targetChar), clean);
+        } catch (e) { }
+    }
+
+    /**
      * 同步直播间主播信息 (头像、艺名、用户观众ID、签名、在线人数)
      */
     function syncLiveStreamer() {
@@ -1345,17 +1378,28 @@ const PhoneComposer = (() => {
         const targetChar = getTargetLiveCharacter(opts.streamer) || '主播';
         const streamerLiveId = getCharacterLiveId(targetChar);
 
-        // 场次时间标识与场次隔离 (避免不同场次串档)
-        const sessionTime = opts.time ? String(opts.time).trim() : '';
-        const sessionKey = `${targetChar}_${sessionTime || 'default'}`;
-        if (sessionTime && currentLiveSessionKey && currentLiveSessionKey !== sessionKey) {
-            // 检测到新的一场直播！清空旧场次的残留弹幕与SC，避免串档！
+        // 场次时间标识与场次自然隔离 (避免不同场次串档)
+        // 核心设计：仅在开播那一刻输出一次 time，后续同场直播互动无需重复输出！
+        // 系统会自动持久化本场时间；直到下一次开播 AI 输出了一个全新的不同时间（如跨天 "次日 15:00"），才自动识别为新场次并自然分隔
+        const passedTime = opts.time ? String(opts.time).trim() : '';
+        const oldTime = getCharacterLiveTime(targetChar);
+
+        if (passedTime && oldTime && oldTime !== passedTime) {
+            // 💥 检测到全新的一场直播！时间与上一场不同，清空旧场次的残留弹幕与SC，自然分隔，绝不串档！
             $('#live_danmu_stream').empty();
             $('#live_sc_container').hide();
         }
+
+        if (passedTime) {
+            saveCharacterLiveTime(targetChar, passedTime);
+        }
+
+        const sessionTime = passedTime || oldTime;
         if (sessionTime) {
-            currentLiveSessionKey = sessionKey;
-            $('#live_stage_timer').html(`<i class="fa-regular fa-clock"></i> ${escapeHtml(sessionTime)}`);
+            currentLiveSessionKey = `${targetChar}_${sessionTime}`;
+            if (isLiveActive) {
+                $('#live_stage_timer').html(`<i class="fa-regular fa-clock"></i> ${escapeHtml(sessionTime)}`);
+            }
         }
 
         if (opts.isLive !== undefined) {
@@ -2741,6 +2785,8 @@ const PhoneComposer = (() => {
         saveCharacterLiveBio,
         getCharacterLiveViewers,
         saveCharacterLiveViewers,
+        getCharacterLiveTime,
+        saveCharacterLiveTime,
         getUserLiveId,
         saveUserLiveId,
         getCharacterLiveId,
