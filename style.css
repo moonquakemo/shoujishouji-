@@ -1734,58 +1734,761 @@
   max-height: none;
 }
 
-/* 视图 3：RLive 直播间 App (Live View) */
+/* ========================================================
+   视图 3：RLive 沉浸式互动直播间 (Live Stream Room)
+   ======================================================== */
 .composer-view-live {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 30px 20px;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: #0b0d13;
+  color: #fff;
+  user-select: none;
   animation: composerFadeIn 0.2s ease-out;
 }
 
-.composer-live-placeholder {
+/* 1. 顶部主播信息栏 */
+.live-stream-header {
+  height: 48px;
+  min-height: 48px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.6);
+  justify-content: space-between;
+  padding: 0 12px;
+  background: rgba(18, 20, 29, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10;
 }
 
-.live-ph-icon {
-  font-size: 38px;
-  color: #ff2d55;
-  margin-bottom: 12px;
+.live-streamer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
-.live-ph-title {
-  font-size: 16px;
+.live-streamer-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
-  color: var(--input-text, #333);
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.35);
+  overflow: hidden;
+}
+
+.live-streamer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-streamer-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.live-streamer-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-streamer-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.2px;
+}
+
+.live-stream-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #ff2d55;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.live-dot-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  animation: liveDotPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.65); }
+}
+
+.live-stream-desc {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.live-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.live-viewers-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.live-viewers-pill i {
+  color: #ff5e3a;
+  font-size: 11px;
+}
+
+.live-follow-btn {
+  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(255, 45, 85, 0.35);
+}
+
+.live-follow-btn:hover {
+  transform: scale(1.04);
+}
+
+.live-follow-btn.followed {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: none;
+}
+
+/* 2. 直播主舞台容器 (口述实况画面 + SC + 弹幕 + 动效) */
+.live-stage-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0d0f17 75%, #08090d 100%);
+}
+
+.live-ambient-glow {
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  right: 20%;
+  height: 180px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.22) 0%, rgba(236, 72, 153, 0.12) 40%, transparent 70%);
+  filter: blur(25px);
+  pointer-events: none;
+  animation: ambientFloat 8s infinite alternate ease-in-out;
+}
+
+@keyframes ambientFloat {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(20px) scale(1.15); opacity: 1; }
+}
+
+/* 2.1 直播画面 (文字口述实况卡片) */
+.live-stage-canvas {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
+.live-narration-card {
+  background: rgba(20, 22, 33, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease;
+}
+
+.live-narration-card:hover {
+  border-color: rgba(236, 72, 153, 0.35);
+}
+
+.live-narration-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
 
-.live-ph-desc {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 14px;
-  line-height: 1.4;
+.narration-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f472b6;
+  letter-spacing: 0.3px;
 }
 
-.live-ph-hint {
-  font-size: 11px;
-  color: var(--accent-blue, #007aff);
-  background: rgba(0, 122, 255, 0.08);
-  padding: 4px 12px;
+.live-timer {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-narration-body {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.2px;
+  max-height: 85px;
+  overflow-y: auto;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 2.2 醒目留言 SC (Super Chat) 置顶卡片 */
+.live-sc-container {
+  position: absolute;
+  top: 135px;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
+}
+
+.live-sc-card {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.92) 0%, rgba(217, 119, 6, 0.96) 100%);
   border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  animation: scSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.sc-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sc-price-pill {
+  background: #fff;
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.sc-sender-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.sc-status-pill {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.sc-card-content {
+  font-size: 11.5px;
+  color: #ffffff;
+  line-height: 1.45;
   font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  max-height: 48px;
+  overflow-y: auto;
+}
+
+/* 2.3 弹幕瀑布流 */
+.live-danmu-stream {
+  max-height: 155px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 12px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 5;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 100%);
+}
+
+.danmu-item {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  background: rgba(14, 16, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  color: #ffffff;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 90%;
+  align-self: flex-start;
+  animation: danmuFadeIn 0.22s ease-out;
+}
+
+@keyframes danmuFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.danmu-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 6px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.badge-fan { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+.badge-vip { background: linear-gradient(135deg, #eab308, #f59e0b); color: #000; }
+.badge-me { background: linear-gradient(135deg, #8b5cf6, #ec4899); font-weight: 800; }
+.badge-gift { background: linear-gradient(135deg, #f43f5e, #e11d48); }
+
+.danmu-sender {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.danmu-item.danmu-me {
+  background: rgba(236, 72, 153, 0.22);
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.danmu-item.danmu-me .danmu-sender {
+  color: #f472b6;
+}
+
+.danmu-item.danmu-system {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
+  max-width: 96%;
+}
+
+.danmu-system-text {
+  font-size: 11px;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.danmu-item.danmu-gift {
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.3), rgba(245, 158, 11, 0.3));
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* 2.4 飘屏爱心容器 */
+.live-floating-hearts {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  width: 60px;
+  height: 220px;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 6;
+}
+
+.floating-heart {
+  position: absolute;
+  bottom: 0;
+  font-size: 20px;
+  opacity: 1;
+  animation: heartFloatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes heartFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.15) rotate(-12deg);
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-200px) scale(1) rotate(18deg);
+  }
+}
+
+/* 2.5 礼物横幅 */
+.live-gift-banner {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.95), rgba(139, 92, 246, 0.95));
+  padding: 10px 20px;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(236, 72, 153, 0.5), 0 0 0 1.5px rgba(255, 255, 255, 0.4);
+  z-index: 20;
+  pointer-events: none;
+  animation: giftBannerPop 2.4s ease-in-out forwards;
+}
+
+@keyframes giftBannerPop {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -65%) scale(0.9); }
+}
+
+.gift-banner-icon {
+  font-size: 34px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.gift-banner-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.gift-banner-user {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.gift-banner-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.3px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 3. 底部互动栏 */
+.live-bottom-bar {
+  height: 52px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: rgba(18, 20, 29, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10;
+}
+
+.live-danmu-input-pill {
+  flex: 1;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 12px;
+  transition: all 0.2s ease;
+}
+
+.live-danmu-input-pill:focus-within {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
+}
+
+.live-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.live-input-field::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.live-danmu-send-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.live-danmu-send-btn:active {
+  transform: scale(0.92);
+}
+
+.live-action-circle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.live-action-circle-btn:active {
+  transform: scale(0.88);
+}
+
+.live-gift-btn {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: #fff;
+  font-size: 15px;
+  box-shadow: 0 3px 10px rgba(236, 72, 153, 0.35);
+}
+
+.live-gift-btn:hover {
+  transform: scale(1.08);
+}
+
+.live-like-btn {
+  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
+  color: #fff;
+  font-size: 15px;
+  box-shadow: 0 3px 10px rgba(255, 45, 85, 0.35);
+}
+
+.live-like-btn:hover {
+  transform: scale(1.08);
+}
+
+.live-like-counter {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  background: #fff;
+  color: #ff2d55;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+
+/* 4. 礼物托盘抽屉 */
+.live-gift-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(19, 21, 31, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px 20px 0 0;
+  padding: 14px 14px 16px 14px;
+  z-index: 30;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+  animation: giftDrawerUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes giftDrawerUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.live-gift-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.drawer-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.drawer-subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.live-gift-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.live-gift-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.gift-card-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.gift-card-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-2px);
+}
+
+.gift-card-item.selected {
+  background: rgba(236, 72, 153, 0.18);
+  border-color: #ec4899;
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.4);
+  transform: scale(1.03);
+}
+
+.gift-card-emoji {
+  font-size: 26px;
+  margin-bottom: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.gift-card-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.gift-card-price {
+  font-size: 9px;
+  color: #fb7185;
+  font-weight: 600;
+}
+
+.live-gift-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+.gift-selected-info {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.gift-send-btn {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 7px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35);
+}
+
+.gift-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.gift-send-btn:not(:disabled):hover {
+  transform: scale(1.04);
 }
 
 @keyframes composerFadeIn {
