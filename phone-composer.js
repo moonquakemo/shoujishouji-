@@ -21,6 +21,8 @@ const PhoneComposer = (() => {
     // SVG / 图标库 (与 PhoneRenderer 保持 1:1 原生一致)
     const ICONS = {
         power: '<i class="fa-solid fa-power-off"></i>',
+        rchat: '<i class="fa-solid fa-comment-dots"></i>',
+        rlive: '<i class="fa-solid fa-tower-broadcast"></i>',
         signal: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.8"/><rect x="7" y="14" width="3" height="8" rx="0.8"/><rect x="12" y="9" width="3" height="13" rx="0.8"/><rect x="17" y="4" width="3" height="18" rx="0.8"/></svg>',
         wifi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5.07 12.5a10 10 0 0 1 13.86 0"/><path d="M8.72 16a5 5 0 0 1 6.56 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>',
         battery: '<svg viewBox="0 0 28 14" fill="currentColor"><rect x="0.5" y="0.5" width="23" height="13" rx="2.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="3" width="18" height="8" rx="1"/><path d="M24.5 4.5 C26 4.5 26 9.5 24.5 9.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
@@ -32,6 +34,24 @@ const PhoneComposer = (() => {
         image: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>',
         video: '<svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>',
         location: '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>'
+    };
+
+    // 桌面 App 注册表 (解耦图标、标题与跳转逻辑，方便外部主题、CSS变量或JS插件自由定制与换肤)
+    const APP_REGISTRY = {
+        rchat: {
+            id: 'rchat',
+            title: 'RChat',
+            view: 'chat',
+            iconHtml: ICONS.rchat,
+            desc: '即时通讯与互动',
+        },
+        rlive: {
+            id: 'rlive',
+            title: 'RLive',
+            view: 'live',
+            iconHtml: ICONS.rlive,
+            desc: '沉浸式角色互动直播间',
+        }
     };
 
     /**
@@ -77,31 +97,37 @@ const PhoneComposer = (() => {
                     <div class="home-widget-date" id="home_widget_date">10月25日 星期六</div>
                 </div>
 
-                <!-- 桌面 App 网格 -->
+                <!-- 桌面 App 网格 (解耦支持动态替换图标与标题) -->
                 <div class="home-app-grid">
-                    <!-- App 1: 畅聊 -->
-                    <div class="home-app-item" id="home_app_chat" title="打开畅聊">
-                        <div class="home-app-icon app-icon-chat">
-                            <span class="app-icon-emoji">💬</span>
+                    <!-- App 1: RChat -->
+                    <div class="home-app-item" id="home_app_chat" data-app="rchat" title="打开 RChat">
+                        <div class="home-app-icon" data-app="rchat">
+                            <div class="home-app-icon-custom"></div>
+                            <div class="home-app-icon-glyph">
+                                ${APP_REGISTRY.rchat.iconHtml}
+                            </div>
                             <span class="home-app-badge" id="home_chat_badge" style="display: none;">1</span>
                         </div>
-                        <span class="home-app-label">畅聊</span>
+                        <span class="home-app-label">${APP_REGISTRY.rchat.title}</span>
                     </div>
 
-                    <!-- App 2: 直播 -->
-                    <div class="home-app-item" id="home_app_live" title="打开直播间">
-                        <div class="home-app-icon app-icon-live">
-                            <span class="app-icon-emoji">🔴</span>
+                    <!-- App 2: RLive -->
+                    <div class="home-app-item" id="home_app_live" data-app="rlive" title="打开 RLive">
+                        <div class="home-app-icon" data-app="rlive">
+                            <div class="home-app-icon-custom"></div>
+                            <div class="home-app-icon-glyph">
+                                ${APP_REGISTRY.rlive.iconHtml}
+                            </div>
                             <span class="home-app-live-tag">LIVE</span>
                         </div>
-                        <span class="home-app-label">直播间</span>
+                        <span class="home-app-label">${APP_REGISTRY.rlive.title}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 视图 2：畅聊 App (Chat View) -->
+            <!-- 视图 2：RChat 聊天 App (Chat View) -->
             <div class="composer-view-chat" id="composer_view_chat">
-                <!-- 畅聊导航栏 (< 留空预留给未来联系人列表) -->
+                <!-- 聊天导航栏 (< 留空预留给未来联系人列表) -->
                 <div class="composer-header st-phone-navbar" title="按住可拖拽悬浮窗">
                     <div class="composer-title-group">
                         <div class="nav-back composer-nav-back" id="composer_nav_back_reserved" title="联系人列表 (预留)">${ICONS.back}</div>
@@ -151,12 +177,12 @@ const PhoneComposer = (() => {
                 </div>
             </div>
 
-            <!-- 视图 3：直播间 App (Live View) -->
+            <!-- 视图 3：RLive 直播间 App (Live View) -->
             <div class="composer-view-live" id="composer_view_live" style="display: none;">
                 <div class="composer-live-placeholder">
-                    <div class="live-ph-icon">🔴</div>
-                    <div class="live-ph-title">星芒直播间</div>
-                    <div class="live-ph-desc">直播间模块就绪，准备接入专属直播与弹幕系统...</div>
+                    <div class="live-ph-icon"><i class="fa-solid fa-tower-broadcast"></i></div>
+                    <div class="live-ph-title">RLive</div>
+                    <div class="live-ph-desc">RLive 直播间就绪，准备接入专属直播与弹幕系统...</div>
                     <div class="live-ph-hint">点击顶部灵动岛返回手机桌面</div>
                 </div>
             </div>
@@ -1927,6 +1953,38 @@ const PhoneComposer = (() => {
         textarea.focus();
     }
 
+    /**
+     * 动态配置或替换桌面 App 图标、背景与标题 (供主题、CSS变量注入或JS插件调用)
+     * @param {'rchat'|'rlive'} appId - 目标 App 标识
+     * @param {Object} options - { title?: string, iconHtml?: string, imgUrl?: string, bg?: string }
+     */
+    function setAppConfig(appId, options = {}) {
+        const app = APP_REGISTRY[appId];
+        if (!app) return;
+        if (options.title) {
+            app.title = options.title;
+            $(`.home-app-item[data-app="${appId}"] .home-app-label`).text(options.title);
+            $(`.home-app-item[data-app="${appId}"]`).attr('title', `打开 ${options.title}`);
+        }
+        if (options.iconHtml) {
+            app.iconHtml = options.iconHtml;
+            $(`.home-app-icon[data-app="${appId}"] .home-app-icon-glyph`).html(options.iconHtml);
+        }
+        if (options.imgUrl !== undefined) {
+            const $custom = $(`.home-app-icon[data-app="${appId}"] .home-app-icon-custom`);
+            if (options.imgUrl) {
+                $custom.css('background-image', `url("${options.imgUrl}")`);
+                $(`.home-app-icon[data-app="${appId}"] .home-app-icon-glyph`).hide();
+            } else {
+                $custom.css('background-image', 'none');
+                $(`.home-app-icon[data-app="${appId}"] .home-app-icon-glyph`).show();
+            }
+        }
+        if (options.bg) {
+            $(`.home-app-icon[data-app="${appId}"]`).css('background', options.bg);
+        }
+    }
+
     function escapeHtml(str) {
         const d = document.createElement('div');
         d.textContent = str || '';
@@ -1951,6 +2009,8 @@ const PhoneComposer = (() => {
         getContact: () => currentContact,
         insertIntoSendTextarea,
         switchAppView,
+        setAppConfig,
+        getAppConfig: (appId) => APP_REGISTRY[appId],
     };
 })();
 

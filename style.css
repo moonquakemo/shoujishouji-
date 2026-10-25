@@ -1596,22 +1596,68 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
   position: relative;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+  overflow: hidden;
 }
 
 .home-app-item:hover .home-app-icon {
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
 }
 
-.app-icon-chat {
-  background: linear-gradient(135deg, #07c160, #10d66c);
+/* RChat 图标样式与解耦变量 */
+.home-app-icon[data-app="rchat"],
+.home-app-icon.app-icon-chat {
+  background: var(--app-rchat-bg, linear-gradient(135deg, #07c160, #10d66c));
+}
+.home-app-icon[data-app="rchat"] .home-app-icon-custom {
+  background-image: var(--app-rchat-img, none);
+}
+.home-app-icon[data-app="rchat"] .home-app-icon-glyph {
+  color: var(--app-rchat-glyph-color, #ffffff);
+  display: var(--app-rchat-glyph-display, flex);
 }
 
-.app-icon-live {
-  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
+/* RLive 图标样式与解耦变量 */
+.home-app-icon[data-app="rlive"],
+.home-app-icon.app-icon-live {
+  background: var(--app-rlive-bg, linear-gradient(135deg, #ff2d55, #ff5e3a));
+}
+.home-app-icon[data-app="rlive"] .home-app-icon-custom {
+  background-image: var(--app-rlive-img, none);
+}
+.home-app-icon[data-app="rlive"] .home-app-icon-glyph {
+  color: var(--app-rlive-glyph-color, #ffffff);
+  display: var(--app-rlive-glyph-display, flex);
+}
+
+/* 自定义图片图标层 (解耦图片) */
+.home-app-icon-custom {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 默认矢量字体图标层 (FontAwesome / SVG) */
+.home-app-icon-glyph {
+  position: relative;
+  z-index: 2;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 0.18s ease;
+}
+
+.home-app-item:hover .home-app-icon-glyph {
+  transform: scale(1.08);
 }
 
 .home-app-label {
@@ -1635,6 +1681,7 @@
   text-align: center;
   border-radius: 9px;
   border: 2px solid #fff;
+  z-index: 3;
 }
 
 .home-app-live-tag {
@@ -1649,9 +1696,10 @@
   border-radius: 6px;
   border: 1.5px solid #fff;
   box-shadow: 0 2px 6px rgba(255, 45, 85, 0.4);
+  z-index: 3;
 }
 
-/* 视图 2：畅聊 App (Chat View) */
+/* 视图 2：RChat 聊天 App (Chat View) */
 .composer-view-chat {
   flex: 1;
   display: flex;
@@ -1686,7 +1734,7 @@
   max-height: none;
 }
 
-/* 视图 3：直播间 App (Live View) */
+/* 视图 3：RLive 直播间 App (Live View) */
 .composer-view-live {
   flex: 1;
   display: flex;
@@ -1712,7 +1760,8 @@
 }
 
 .live-ph-icon {
-  font-size: 42px;
+  font-size: 38px;
+  color: #ff2d55;
   margin-bottom: 12px;
 }
 

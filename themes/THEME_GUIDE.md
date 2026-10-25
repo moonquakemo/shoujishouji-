@@ -105,6 +105,17 @@
   --home-widget-date-color: var(--msg-time-color); /* 桌面日期文字颜色 */
   --home-app-label-color: var(--input-text); /* 桌面 App 图标标题文字颜色 */
 
+  /* ===== 桌面 App 图标解耦与换肤 (v2.2+) ===== */
+  --app-rchat-bg: linear-gradient(135deg, #07c160, #10d66c); /* RChat 图标背景渐变/底色 */
+  --app-rchat-img: none;                   /* RChat 自定义图片图标 (如 url('icons/rchat.png')) */
+  --app-rchat-glyph-color: #ffffff;        /* RChat 默认矢量图标颜色 */
+  --app-rchat-glyph-display: flex;         /* 设为 none 可完全隐藏矢量图标，只显示图片 */
+
+  --app-rlive-bg: linear-gradient(135deg, #ff2d55, #ff5e3a); /* RLive 图标背景渐变/底色 */
+  --app-rlive-img: none;                   /* RLive 自定义图片图标 (如 url('icons/rlive.png')) */
+  --app-rlive-glyph-color: #ffffff;        /* RLive 默认矢量图标颜色 */
+  --app-rlive-glyph-display: flex;         /* 设为 none 可完全隐藏矢量图标，只显示图片 */
+
   /* ===== 字体 ===== */
   --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-size-xs: 10px;
@@ -138,4 +149,23 @@
 --input-bg: #333;
 --input-text: #eee;
 --navbar-bg: #111;
+```
+
+想定制桌面 App 图标或图片？
+```css
+/* 示例：将 RChat 换成粉紫渐变，或直接使用自定义图片图标 */
+--app-rchat-bg: linear-gradient(135deg, #a855f7, #ec4899);
+--app-rchat-img: url('https://your-domain.com/my-chat-icon.png');
+--app-rchat-glyph-display: none; /* 使用图片时隐藏默认矢量图标 */
+
+/* 示例：将 RLive 换成暗夜霓虹风格 */
+--app-rlive-bg: linear-gradient(135deg, #4f46e5, #06b6d4);
+```
+
+也可通过 JS API 动态更换 App 标题与图标：
+```javascript
+window.PhoneComposer.setAppConfig('rchat', {
+    title: '微信',
+    imgUrl: 'https://.../wechat.png'
+});
 ```
