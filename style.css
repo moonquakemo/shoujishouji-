@@ -1844,14 +1844,32 @@
   50% { opacity: 0.4; transform: scale(0.65); }
 }
 
-.live-stream-desc {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.65);
-  white-space: nowrap;
+.live-stream-desc-container {
   overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
+  white-space: nowrap;
+  width: 100%;
+  position: relative;
   margin-top: 2px;
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+.live-stream-desc {
+  display: inline-block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  padding-left: 100%;
+  animation: liveMarquee 18s linear infinite;
+  line-height: 1.2;
+}
+
+.live-stream-desc:hover {
+  animation-play-state: paused;
+}
+
+@keyframes liveMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 
 .live-header-actions {
@@ -1876,29 +1894,6 @@
 .live-viewers-pill i {
   color: #ff5e3a;
   font-size: 11px;
-}
-
-.live-follow-btn {
-  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  box-shadow: 0 2px 8px rgba(255, 45, 85, 0.35);
-}
-
-.live-follow-btn:hover {
-  transform: scale(1.04);
-}
-
-.live-follow-btn.followed {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.85);
-  box-shadow: none;
 }
 
 /* 2. 直播主舞台容器 (口述实况画面 + SC + 弹幕 + 动效) */
@@ -2092,23 +2087,10 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.danmu-badge {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 6px;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.badge-fan { background: linear-gradient(135deg, #ec4899, #f43f5e); }
-.badge-vip { background: linear-gradient(135deg, #eab308, #f59e0b); color: #000; }
-.badge-me { background: linear-gradient(135deg, #8b5cf6, #ec4899); font-weight: 800; }
-.badge-gift { background: linear-gradient(135deg, #f43f5e, #e11d48); }
-
 .danmu-sender {
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
+  color: #93c5fd;
+  margin-right: 4px;
   flex-shrink: 0;
 }
 
@@ -2117,8 +2099,8 @@
   border-color: rgba(236, 72, 153, 0.45);
 }
 
-.danmu-item.danmu-me .danmu-sender {
-  color: #f472b6;
+.danmu-me-sender {
+  color: #f472b6 !important;
 }
 
 .danmu-item.danmu-system {
@@ -2134,49 +2116,11 @@
 }
 
 .danmu-item.danmu-gift {
-  background: linear-gradient(90deg, rgba(236, 72, 153, 0.3), rgba(245, 158, 11, 0.3));
-  border-color: rgba(245, 158, 11, 0.5);
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.32), rgba(245, 158, 11, 0.32));
+  border-color: rgba(245, 158, 11, 0.45);
 }
 
-/* 2.4 飘屏爱心容器 */
-.live-floating-hearts {
-  position: absolute;
-  right: 14px;
-  bottom: 8px;
-  width: 60px;
-  height: 220px;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 6;
-}
-
-.floating-heart {
-  position: absolute;
-  bottom: 0;
-  font-size: 20px;
-  opacity: 1;
-  animation: heartFloatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-@keyframes heartFloatUp {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(0.6) rotate(0deg);
-  }
-  15% {
-    opacity: 1;
-    transform: translateY(-20px) scale(1.15) rotate(-12deg);
-  }
-  75% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-200px) scale(1) rotate(18deg);
-  }
-}
-
-/* 2.5 礼物横幅 */
+/* 2.4 礼物全屏特效横幅 */
 .live-gift-banner {
   position: absolute;
   top: 40%;
@@ -2232,7 +2176,7 @@
   min-height: 52px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 0 12px;
   background: rgba(18, 20, 29, 0.85);
   backdrop-filter: blur(16px);
@@ -2243,13 +2187,13 @@
 
 .live-danmu-input-pill {
   flex: 1;
-  height: 36px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
+  border-radius: 19px;
   display: flex;
   align-items: center;
-  padding: 0 6px 0 12px;
+  padding: 0 6px 0 14px;
   transition: all 0.2s ease;
 }
 
@@ -2265,7 +2209,7 @@
   border: none;
   outline: none;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 .live-input-field::placeholder {
@@ -2292,8 +2236,8 @@
 }
 
 .live-action-circle-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
   display: flex;
@@ -2312,37 +2256,12 @@
 .live-gift-btn {
   background: linear-gradient(135deg, #a855f7, #ec4899);
   color: #fff;
-  font-size: 15px;
+  font-size: 16px;
   box-shadow: 0 3px 10px rgba(236, 72, 153, 0.35);
 }
 
 .live-gift-btn:hover {
   transform: scale(1.08);
-}
-
-.live-like-btn {
-  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
-  color: #fff;
-  font-size: 15px;
-  box-shadow: 0 3px 10px rgba(255, 45, 85, 0.35);
-}
-
-.live-like-btn:hover {
-  transform: scale(1.08);
-}
-
-.live-like-counter {
-  position: absolute;
-  top: -6px;
-  right: -4px;
-  background: #fff;
-  color: #ff2d55;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 1px 4px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  line-height: 1;
 }
 
 /* 4. 礼物托盘抽屉 */

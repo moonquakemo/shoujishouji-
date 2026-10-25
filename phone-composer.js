@@ -64,9 +64,18 @@ const PhoneComposer = (() => {
         { id: 'blackcard', name: '无限额黑卡', emoji: '💳', price: '9999钻', desc: '无限宠溺 · 随心所欲' }
     ];
 
-    let liveLikeCount = 12050;
     let selectedLiveGiftId = null;
-    let isLiveFollowed = false;
+    let liveDanmuInterval = null;
+    let liveDanmuIndex = 0;
+    const DEFAULT_DANMU_POOL = [
+        { sender: '星空巡游', text: '晚上好呀！前排打卡打卡~' },
+        { sender: '晚风微醺', text: '终于开播了！等了好久呢！' },
+        { sender: '汽水不加糖', text: '主播喝口水慢慢聊，今天状态真好~' },
+        { sender: '云朵制造机', text: '今天直播间好热闹呀~' },
+        { sender: '橘子汽水', text: '前排占座！打卡打卡！' },
+        { sender: '迷途小鹿', text: '主播晚上好，今天的背景音乐好听！' },
+        { sender: '浅海拾贝', text: '主播辛苦啦，注意休息哦~' }
+    ];
 
     /**
      * 初始化挂载
@@ -193,7 +202,7 @@ const PhoneComposer = (() => {
 
             <!-- 视图 3：RLive 沉浸式互动直播间 (Live View) -->
             <div class="composer-view-live" id="composer_view_live" style="display: none;">
-                <!-- 1. 直播顶部信息栏 (主播头像、姓名、简介、在线人数、关注) -->
+                <!-- 1. 直播顶部信息栏 (主播头像、姓名、自动滚动简介、在线人数) -->
                 <div class="live-stream-header">
                     <div class="live-streamer-info">
                         <div class="live-streamer-avatar" id="live_streamer_avatar">
@@ -201,11 +210,13 @@ const PhoneComposer = (() => {
                         </div>
                         <div class="live-streamer-meta">
                             <div class="live-streamer-name-row">
-                                <span class="live-streamer-name" id="live_streamer_name">沈星回</span>
+                                <span class="live-streamer-name" id="live_streamer_name">主播</span>
                                 <span class="live-stream-live-pill"><span class="live-dot-pulse"></span>LIVE</span>
                             </div>
-                            <div class="live-stream-desc" id="live_stream_desc" title="主播直播间专属简介">
-                                深夜私密电台 · 听你的心事与日常陪伴
+                            <div class="live-stream-desc-container">
+                                <div class="live-stream-desc" id="live_stream_desc">
+                                    日常互动与陪伴 · 欢迎来到直播间交流互动 · 感谢支持与陪伴 ·
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -213,22 +224,21 @@ const PhoneComposer = (() => {
                         <div class="live-viewers-pill" title="当前在线观看人数">
                             <i class="fa-solid fa-fire"></i> <span id="live_viewers_count">12.8万</span>
                         </div>
-                        <button type="button" class="live-follow-btn" id="live_follow_btn">+ 关注</button>
                     </div>
                 </div>
 
-                <!-- 2. 直播主舞台视口 (口述实况画面 + 悬浮 SC + 弹幕瀑布流 + 飘心动效) -->
+                <!-- 2. 直播主舞台视口 (直播画面 + 悬浮 SC + 弹幕瀑布流 + 礼物全屏特效) -->
                 <div class="live-stage-container" id="live_stage_container">
-                    <!-- 2.1 动态光晕与口述画面画布 -->
+                    <!-- 2.1 动态光晕与直播画面画布 -->
                     <div class="live-ambient-glow"></div>
                     <div class="live-stage-canvas" id="live_stage_canvas">
                         <div class="live-narration-card" id="live_narration_card">
                             <div class="live-narration-header">
-                                <span class="narration-tag"><i class="fa-solid fa-video"></i> 镜头口述实况</span>
+                                <span class="narration-tag"><i class="fa-solid fa-video"></i> 直播画面</span>
                                 <span class="live-timer" id="live_stage_timer">01:24:50</span>
                             </div>
                             <div class="live-narration-body" id="live_narration_body">
-                                镜头前微光浮动，主播正低头调试着桌面麦克风，窗外的夜色映在玻璃上。他抬起浅琉璃色的眼眸看向屏幕，唇角含着若有若无的温柔浅笑……
+                                镜头前光线微暖，主播正在调试着桌面麦克风，微笑着看向屏幕，与观众们轻松互动着……
                             </div>
                         </div>
                     </div>
@@ -239,42 +249,40 @@ const PhoneComposer = (() => {
                             <div class="sc-card-header">
                                 <div class="sc-badge-group">
                                     <span class="sc-price-pill">SC ￥520</span>
-                                    <span class="sc-sender-name">榜一大小姐</span>
+                                    <span class="sc-sender-name">热心观众</span>
                                 </div>
                                 <span class="sc-status-pill"><i class="fa-regular fa-clock"></i> 置顶中</span>
                             </div>
                             <div class="sc-card-content">
-                                今天也是为你心动的一天！记得喝杯热牛奶早点休息哦，我们一直在~ ❤️
+                                今天辛苦啦！直播结束早点休息哦，我们一直在~ ❤️
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2.3 弹幕瀑布流 (半透明浮动在画面下半部分) -->
+                    <!-- 2.3 弹幕流 (纯净无牌子，自动循环滚动) -->
                     <div class="live-danmu-stream" id="live_danmu_stream">
                         <div class="danmu-item danmu-system">
-                            <span class="danmu-system-text"><i class="fa-solid fa-bullhorn"></i> 欢迎来到 RLive 直播间，请遵守社区礼仪，浪漫互动~</span>
+                            <span class="danmu-system-text"><i class="fa-solid fa-bullhorn"></i> 欢迎来到 RLive 直播间，文明互动，浪漫相伴~</span>
                         </div>
                         <div class="danmu-item">
-                            <span class="danmu-badge badge-fan">星河 5</span>
-                            <span class="danmu-sender">小兔软糖:</span>
-                            <span class="danmu-text">沈老师晚上好！！今天声音也太苏了呜呜呜！</span>
+                            <span class="danmu-sender">星空巡游:</span>
+                            <span class="danmu-text">晚上好呀！前排打卡打卡~</span>
                         </div>
                         <div class="danmu-item">
-                            <span class="danmu-badge badge-vip">VIP</span>
-                            <span class="danmu-sender">夜行猫猫:</span>
-                            <span class="danmu-text">前排占座！白衬衫太犯规了！</span>
+                            <span class="danmu-sender">晚风微醺:</span>
+                            <span class="danmu-text">终于开播了！等了好久呢！</span>
                         </div>
                         <div class="danmu-item">
-                            <span class="danmu-badge badge-fan">星河 8</span>
-                            <span class="danmu-sender">柠檬气泡水:</span>
-                            <span class="danmu-text">大家快把荧光棒和点赞刷起来！！</span>
+                            <span class="danmu-sender">汽水不加糖:</span>
+                            <span class="danmu-text">主播喝口水慢慢聊，今天状态真好~</span>
+                        </div>
+                        <div class="danmu-item">
+                            <span class="danmu-sender">云朵制造机:</span>
+                            <span class="danmu-text">今天直播间好热闹呀~</span>
                         </div>
                     </div>
 
-                    <!-- 2.4 飘屏爱心容器 (点赞时从右下角飞升) -->
-                    <div class="live-floating-hearts" id="live_floating_hearts"></div>
-
-                    <!-- 2.5 礼物全屏特效横幅 (送出礼物时横穿屏幕) -->
+                    <!-- 2.4 礼物全屏特效横幅 (送出礼物时横穿屏幕) -->
                     <div class="live-gift-banner" id="live_gift_banner" style="display: none;">
                         <span class="gift-banner-icon" id="gift_banner_icon">🏰</span>
                         <div class="gift-banner-text">
@@ -284,7 +292,7 @@ const PhoneComposer = (() => {
                     </div>
                 </div>
 
-                <!-- 3. 底部互动栏 (弹幕输入框 + 礼物按钮 + 点赞按钮) -->
+                <!-- 3. 底部互动栏 (弹幕输入框 + 礼物按钮) -->
                 <div class="live-bottom-bar">
                     <div class="live-danmu-input-pill">
                         <input type="text" class="live-input-field" id="live_danmu_input" placeholder="发条弹幕互动一下..." autocomplete="off">
@@ -294,10 +302,6 @@ const PhoneComposer = (() => {
                     </div>
                     <button type="button" class="live-action-circle-btn live-gift-btn" id="live_gift_btn" title="赠送心动礼物">
                         <i class="fa-solid fa-gift"></i>
-                    </button>
-                    <button type="button" class="live-action-circle-btn live-like-btn" id="live_like_btn" title="点赞">
-                        <i class="fa-solid fa-heart"></i>
-                        <span class="live-like-counter" id="live_like_counter">1.2w</span>
                     </button>
                 </div>
 
@@ -610,31 +614,8 @@ const PhoneComposer = (() => {
         });
 
         // ----------------------------------------------------
-        // RLive 直播间交互事件 (关注、点赞、弹幕、礼物)
+        // RLive 直播间交互事件 (弹幕与礼物)
         // ----------------------------------------------------
-        // 关注按钮切换
-        $('#live_follow_btn').on('click', function (e) {
-            e.stopPropagation();
-            isLiveFollowed = !isLiveFollowed;
-            if (isLiveFollowed) {
-                $(this).addClass('followed').text('✓ 已关注');
-            } else {
-                $(this).removeClass('followed').text('+ 关注');
-            }
-        });
-
-        // 点赞心动按钮 (爱心喷射动效 + 计数)
-        $('#live_like_btn').on('click', function (e) {
-            e.stopPropagation();
-            liveLikeCount++;
-            const displayStr = liveLikeCount >= 10000 ? `${(liveLikeCount / 10000).toFixed(1)}w` : liveLikeCount;
-            $('#live_like_counter').text(displayStr);
-            spawnFloatingHeart();
-            if (Math.random() > 0.4) {
-                setTimeout(spawnFloatingHeart, 120);
-            }
-        });
-
         // 发送弹幕 (点击纸飞机或按 Enter)
         $('#live_danmu_send_btn').on('click', function (e) {
             e.stopPropagation();
@@ -999,45 +980,66 @@ const PhoneComposer = (() => {
             $chat.hide();
             $live.stop(true, true).fadeIn(140);
             syncLiveStreamer();
+            startLiveDanmuTicker();
             setTimeout(() => {
                 const $stream = $('#live_danmu_stream');
                 if ($stream.length) {
                     $stream.scrollTop($stream[0].scrollHeight);
                 }
             }, 60);
+        } else {
+            stopLiveDanmuTicker();
         }
     }
 
     /**
-     * 同步直播间主播信息 (头像、主播名、简介)
+     * 同步直播间主播信息 (头像、主播名、滚动简介)
      */
     function syncLiveStreamer() {
-        const streamerName = currentContact || '沈星回';
+        const streamerName = currentContact || '主播';
         $('#live_streamer_name').text(streamerName);
         $('#live_streamer_avatar_text').text(streamerName.charAt(0) || '主');
-        $('#live_stream_desc').text(`${streamerName} 的专属私密直播间 · 听你的心事与日常陪伴`);
+        $('#live_stream_desc').text(`${streamerName} 的直播间 · 欢迎来到这里交流互动 · 感谢支持与陪伴 · `);
     }
 
     /**
-     * 产生直播间飘屏点赞爱心动效
+     * 启动弹幕自动循环滚动 Ticker (真实直播间氛围)
      */
-    function spawnFloatingHeart() {
-        const hearts = ['❤️', '💖', '💕', '✨', '🌸', '💫', '🔥'];
-        const emoji = hearts[Math.floor(Math.random() * hearts.length)];
-        const $container = $('#live_floating_hearts');
-        if (!$container.length) return;
-
-        const offsetLeft = Math.floor(Math.random() * 32);
-        const $heart = $(`<span class="floating-heart" style="left: ${offsetLeft}px;">${emoji}</span>`);
-        $container.append($heart);
-
-        setTimeout(() => {
-            $heart.remove();
-        }, 2200);
+    function startLiveDanmuTicker() {
+        stopLiveDanmuTicker();
+        liveDanmuInterval = setInterval(() => {
+            if (!isOpen || currentAppView !== 'live') return;
+            const poolItem = DEFAULT_DANMU_POOL[liveDanmuIndex % DEFAULT_DANMU_POOL.length];
+            liveDanmuIndex++;
+            const itemHtml = `
+                <div class="danmu-item">
+                    <span class="danmu-sender">${escapeHtml(poolItem.sender)}:</span>
+                    <span class="danmu-text">${escapeHtml(poolItem.text)}</span>
+                </div>
+            `;
+            const $stream = $('#live_danmu_stream');
+            if (!$stream.length) return;
+            $stream.append(itemHtml);
+            const $items = $stream.children('.danmu-item');
+            if ($items.length > 25) {
+                $items.slice(0, $items.length - 25).remove();
+            }
+            $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 280);
+        }, 3600);
     }
 
     /**
-     * 发送直播间弹幕
+     * 停止弹幕自动循环滚动 Ticker
+     */
+    function stopLiveDanmuTicker() {
+        if (liveDanmuInterval) {
+            clearInterval(liveDanmuInterval);
+            liveDanmuInterval = null;
+        }
+    }
+
+    /**
+     * 发送直播间弹幕 (纯净无牌子格式)
      */
     function handleLiveDanmuSend() {
         const $input = $('#live_danmu_input');
@@ -1046,14 +1048,13 @@ const PhoneComposer = (() => {
 
         const danmuHtml = `
             <div class="danmu-item danmu-me">
-                <span class="danmu-badge badge-me">大小姐</span>
-                <span class="danmu-sender">你:</span>
+                <span class="danmu-sender danmu-me-sender">你:</span>
                 <span class="danmu-text">${escapeHtml(text)}</span>
             </div>
         `;
         const $stream = $('#live_danmu_stream');
         $stream.append(danmuHtml);
-        $stream.scrollTop($stream[0].scrollHeight);
+        $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 200);
 
         $input.val('');
 
@@ -1062,7 +1063,7 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 赠送直播间礼物
+     * 赠送直播间心意礼物
      */
     function handleLiveGiftSend() {
         if (!selectedLiveGiftId) return;
@@ -1080,26 +1081,20 @@ const PhoneComposer = (() => {
             $banner.fadeOut(300);
         }, 2200);
 
-        // 2. 弹幕区追加礼物通知
+        // 2. 弹幕区追加礼物通知 (纯净无牌子)
         const giftDanmuHtml = `
             <div class="danmu-item danmu-gift">
-                <span class="danmu-badge badge-gift">打赏</span>
                 <span class="danmu-text">🎉 <strong>你</strong> 送出了 <strong>【${gift.name}】</strong>！</span>
             </div>
         `;
         const $stream = $('#live_danmu_stream');
         $stream.append(giftDanmuHtml);
-        $stream.scrollTop($stream[0].scrollHeight);
+        $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 200);
 
-        // 3. 喷射爱心动效
-        for (let i = 0; i < 4; i++) {
-            setTimeout(spawnFloatingHeart, i * 150);
-        }
-
-        // 4. 收起礼物抽屉
+        // 3. 收起礼物抽屉
         $('#live_gift_drawer').fadeOut(180);
 
-        // 5. 自动插入酒馆输入框 〖打赏：主播 礼物名〗
+        // 4. 自动插入酒馆输入框 〖打赏：主播 礼物名〗
         insertIntoSendTextarea(`〖打赏：${streamerName} ${gift.name}〗`);
     }
 
@@ -1139,9 +1134,13 @@ const PhoneComposer = (() => {
             if (!isMobile) {
                 $('#composer_text_input').focus();
             }
+            if (currentAppView === 'live') {
+                startLiveDanmuTicker();
+            }
         } else {
             $panel.stop(true, true).fadeOut(150);
             $trigger.removeClass('active');
+            stopLiveDanmuTicker();
             closeDrawer();
             toggleClockPopover(false);
             toggleContactPopover(false);
