@@ -18,9 +18,9 @@ const PhoneComposer = (() => {
     let pendingDrafts = [];
     let currentAppView = 'chat'; // 'home' | 'chat' | 'live'
 
-    // SVG 图标库 (与 PhoneRenderer 保持 1:1 原生一致)
+    // SVG / 图标库 (与 PhoneRenderer 保持 1:1 原生一致)
     const ICONS = {
-        power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>',
+        power: '<i class="fa-solid fa-power-off"></i>',
         signal: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.8"/><rect x="7" y="14" width="3" height="8" rx="0.8"/><rect x="12" y="9" width="3" height="13" rx="0.8"/><rect x="17" y="4" width="3" height="18" rx="0.8"/></svg>',
         wifi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5.07 12.5a10 10 0 0 1 13.86 0"/><path d="M8.72 16a5 5 0 0 1 6.56 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>',
         battery: '<svg viewBox="0 0 28 14" fill="currentColor"><rect x="0.5" y="0.5" width="23" height="13" rx="2.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="3" width="18" height="8" rx="1"/><path d="M24.5 4.5 C26 4.5 26 9.5 24.5 9.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
@@ -52,18 +52,15 @@ const PhoneComposer = (() => {
         <!-- 顶部全功能状态栏 (含虚拟时间、iOS灵动岛、电量/信号、锁屏电源键) -->
         <div class="composer-statusbar st-phone-statusbar" id="composer_statusbar" title="按住可拖拽悬浮窗">
             <span class="status-left" id="composer_status_time">14:00</span>
-            <!-- 灵动岛 (Dynamic Island): 点击返回主桌面 -->
-            <div class="composer-dynamic-island" id="composer_dynamic_island" title="点击返回手机主桌面">
-                <span class="island-pill">
-                    <span class="island-dot"></span>
-                    <span class="island-title" id="composer_island_title">返回桌面</span>
-                </span>
+            <!-- 灵动岛 (Dynamic Island): 纯黑无字胶囊，点击返回主桌面 -->
+            <div class="composer-dynamic-island" id="composer_dynamic_island" title="灵动岛 (点击返回主桌面)">
+                <span class="island-lens"></span>
             </div>
             <div class="status-right">
                 ${ICONS.signal}
                 ${ICONS.wifi}
                 ${ICONS.battery}
-                <button type="button" class="composer-power-btn" id="composer_power_btn" title="锁屏 (收起手机回酒馆)">
+                <button type="button" class="composer-power-btn" id="composer_power_btn" title="锁屏收起 (退回酒馆)">
                     ${ICONS.power}
                 </button>
             </div>
@@ -745,7 +742,6 @@ const PhoneComposer = (() => {
         const $home = $('#composer_view_home');
         const $chat = $('#composer_view_chat');
         const $live = $('#composer_view_live');
-        const $islandTitle = $('#composer_island_title');
 
         // 关闭浮动弹窗与抽屉
         toggleClockPopover(false);
@@ -755,21 +751,15 @@ const PhoneComposer = (() => {
             $chat.hide();
             $live.hide();
             $home.stop(true, true).fadeIn(140);
-            $islandTitle.text('R-Phone');
-            $('#composer_dynamic_island').attr('title', '当前在手机主桌面');
             updateClockDisplay();
         } else if (viewName === 'chat') {
             $home.hide();
             $live.hide();
             $chat.stop(true, true).fadeIn(140);
-            $islandTitle.text('返回桌面');
-            $('#composer_dynamic_island').attr('title', '点击返回手机主桌面');
         } else if (viewName === 'live') {
             $home.hide();
             $chat.hide();
             $live.stop(true, true).fadeIn(140);
-            $islandTitle.text('返回桌面');
-            $('#composer_dynamic_island').attr('title', '点击返回手机主桌面');
         }
     }
 

@@ -1389,6 +1389,7 @@
 
 /* 顶部全功能状态栏 (StatusBar) */
 .composer-statusbar.st-phone-statusbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1404,6 +1405,7 @@
   border-top-left-radius: 32px;
   border-top-right-radius: 32px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  min-height: 38px;
 }
 
 .composer-statusbar.st-phone-statusbar:active {
@@ -1417,52 +1419,43 @@
   font-size: 12px;
 }
 
-/* iOS 灵动岛 (Dynamic Island) */
+/* iOS 灵动岛 (Dynamic Island) - 绝对水平与垂直居中，100% 拒绝偏移 */
 .composer-dynamic-island {
-  position: relative;
-  background: #000;
-  color: #fff;
-  border-radius: 14px;
-  padding: 3px 10px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 20px;
+  background: #000000;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding: 0 6px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.15) inset;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.12) inset;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  z-index: 2;
+  z-index: 5;
 }
 
 .composer-dynamic-island:hover {
-  transform: scale(1.05);
-  background: #111;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.25) inset;
+  transform: translate(-50%, -50%) scale(1.08);
+  width: 82px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.22) inset;
 }
 
 .composer-dynamic-island:active {
-  transform: scale(0.95);
+  transform: translate(-50%, -50%) scale(0.92);
 }
 
-.composer-dynamic-island .island-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.composer-dynamic-island .island-dot {
-  width: 6px;
-  height: 6px;
+.composer-dynamic-island .island-lens {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--accent-green, #07c160);
-  box-shadow: 0 0 5px var(--accent-green, #07c160);
-}
-
-.composer-dynamic-island .island-title {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #fff;
+  background: radial-gradient(circle at 35% 35%, #24354d 0%, #0c1219 70%, #000 100%);
+  box-shadow: 0 0 0 0.6px rgba(255, 255, 255, 0.15) inset;
 }
 
 /* 状态栏右侧 (信号/WiFi/电池/锁屏电源键) */
@@ -1478,7 +1471,7 @@
   opacity: 0.9;
 }
 
-/* 右上角 SVG 锁屏关机键 */
+/* 右上角电源锁屏键 */
 .composer-power-btn {
   background: transparent;
   border: none;
@@ -1488,17 +1481,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  padding: 3px 5px;
   margin-left: 2px;
   border-radius: 6px;
   transition: all 0.15s ease;
   line-height: 1;
+  font-size: 13px;
 }
 
-.composer-power-btn svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2.3;
+.composer-power-btn i {
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
 }
 
 .composer-power-btn:hover {
