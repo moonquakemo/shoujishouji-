@@ -179,22 +179,6 @@
             if (typeof toastr !== 'undefined') toastr.success('头像/背景配置已保存', 'Phone UI');
         });
 
-        // --- 直播间身份设置 (拒绝实名制) ---
-        $('#phone_ui_save_live_ids').on('click', function () {
-            const ctx = SillyTavern.getContext();
-            const charName = ctx.name2 || '';
-            const userLiveId = $('#phone_ui_user_live_id').val()?.trim() || '';
-            const charLiveId = $('#phone_ui_char_live_id').val()?.trim() || '';
-
-            if (typeof PhoneComposer !== 'undefined') {
-                if (userLiveId) PhoneComposer.saveUserLiveId(userLiveId);
-                if (charName) PhoneComposer.saveCharacterLiveId(charName, charLiveId);
-                if (PhoneComposer.syncLiveStreamer) PhoneComposer.syncLiveStreamer();
-            }
-            renderAllExistingMessages();
-            if (typeof toastr !== 'undefined') toastr.success('直播间身份已更新 (拒绝实名制)', 'RLive');
-        });
-
         // --- 多角色头像映射 ---
         $('#phone_ui_save_avatar_map').on('click', function () {
             try {
@@ -998,13 +982,6 @@
         $('#phone_ui_char_avatar').val(charAvatar);
         $('#phone_ui_user_avatar').val(userAvatar);
         $('#phone_ui_chat_bg').val(chatBackground);
-
-        if (typeof PhoneComposer !== 'undefined') {
-            $('#phone_ui_user_live_id').val(PhoneComposer.getUserLiveId ? PhoneComposer.getUserLiveId() : '');
-            if (charName && PhoneComposer.getCharacterLiveId) {
-                $('#phone_ui_char_live_id').val(PhoneComposer.getCharacterLiveId(charName));
-            }
-        }
     }
 
     function updateStickerUI(charName, charStickers, globalStickers) {

@@ -273,13 +273,11 @@ const PhoneComposer = (() => {
                     </div>
                 </div>
 
-                <!-- 3. 底部互动栏 (我的观众ID + 弹幕输入框 + 礼物按钮) -->
+                <!-- 3. 底部互动栏 (我的观众ID按钮 + 弹幕输入框 + 礼物按钮) -->
                 <div class="live-bottom-bar">
-                    <div class="live-user-id-pill" id="live_user_id_pill" title="点击修改我的直播间昵称 (拒绝实名制上网)">
-                        <span class="live-user-id-prefix"><i class="fa-regular fa-user"></i></span>
-                        <span class="live-user-name-val" id="live_user_name_val">热心观众</span>
-                        <span class="live-user-edit-icon"><i class="fa-solid fa-pen"></i></span>
-                    </div>
+                    <button type="button" class="live-action-circle-btn live-user-id-btn" id="live_user_id_btn" title="我的直播间观众昵称 (点击修改，拒绝实名制)">
+                        <i class="fa-regular fa-user"></i>
+                    </button>
                     <div class="live-danmu-input-pill">
                         <input type="text" class="live-input-field" id="live_danmu_input" placeholder="发条弹幕互动一下..." autocomplete="off">
                         <button type="button" class="live-danmu-send-btn" id="live_danmu_send_btn" title="发弹幕">
@@ -659,14 +657,15 @@ const PhoneComposer = (() => {
             }
         });
 
-        // 修改用户在直播间的观众昵称/ID (拒绝实名制上网)
-        $(document).on('click', '#live_user_id_pill', function (e) {
+        // 点击用户观众ID按钮 (弹出式修改昵称，拒绝实名制上网)
+        $(document).on('click', '#live_user_id_btn', function (e) {
             e.stopPropagation();
             const curNick = getUserLiveId();
-            const newNick = prompt('修改你的直播间观众昵称/ID：\n(拒绝实名制上网，如："草莓汽水不加糖", "星夜漫游者")', curNick);
-            if (newNick !== null) {
+            const newNick = prompt(`当前直播间观众昵称：【${curNick}】\n\n请输入新的直播间网名：\n(拒绝实名制上网，如："草莓汽水不加糖", "星夜漫游者")`, curNick);
+            if (newNick !== null && newNick.trim()) {
                 saveUserLiveId(newNick.trim());
-                if (typeof toastr !== 'undefined') toastr.success(`你的直播间昵称已修改为: ${getUserLiveId()}`, 'RLive');
+                $('#live_user_id_btn').attr('title', `我的直播间昵称: ${getUserLiveId()} (点击修改)`);
+                if (typeof toastr !== 'undefined') toastr.success(`你的直播间昵称已更新为: ${getUserLiveId()}`, 'RLive');
             }
         });
 
@@ -1289,7 +1288,7 @@ const PhoneComposer = (() => {
 
         $('#live_streamer_name').text(streamerLiveId);
         $('#live_streamer_avatar_text').text(streamerLiveId.charAt(0) || '主');
-        $('#live_user_name_val').text(userLiveId);
+        $('#live_user_id_btn').attr('title', `我的直播间观众昵称: ${userLiveId} (点击修改)`);
         if (isLiveActive) {
             $('#live_viewers_count').text(viewers);
         }

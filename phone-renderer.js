@@ -776,10 +776,9 @@ ${noticeHtml}`;
         </div>
 
         <div class="live-bottom-bar st-live-msg-bottom">
-            <div class="live-user-id-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="我的直播间昵称 (可在伴侣中修改)">
-                <span class="live-user-id-prefix"><i class="fa-regular fa-user"></i></span>
-                <span class="live-user-name-val">${escapeHtml(userLiveId)}</span>
-            </div>
+            <button type="button" class="live-action-circle-btn live-user-id-btn" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="我的直播间观众昵称: ${escapeHtml(userLiveId)} (点击打开伴侣修改)">
+                <i class="fa-regular fa-user"></i>
+            </button>
             <div class="live-danmu-input-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="点击打开小手机伴侣互动" style="cursor: pointer;">
                 <span style="font-size: 11px; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-paper-plane" style="font-size: 10px;"></i> 点击右侧悬浮伴侣发送弹幕/心动礼物...

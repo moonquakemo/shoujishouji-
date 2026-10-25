@@ -2308,53 +2308,23 @@
   z-index: 10;
 }
 
-.live-user-id-pill {
-  height: 32px;
-  padding: 0 9px;
-  border-radius: 16px;
+.live-user-id-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  max-width: 110px;
-  transition: all 0.2s ease;
+  color: #f472b6;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.live-user-id-pill:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(236, 72, 153, 0.4);
+.live-user-id-btn:hover {
+  background: rgba(236, 72, 153, 0.18);
+  border-color: rgba(236, 72, 153, 0.45);
+  color: #ffffff;
+  transform: scale(1.06);
 }
 
-.live-user-id-prefix {
-  font-size: 10px;
-  color: #ec4899;
-  display: flex;
-  align-items: center;
-}
-
-.live-user-name-val {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 62px;
-}
-
-.live-user-edit-icon {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.45);
-  margin-left: 1px;
-  display: flex;
-  align-items: center;
-}
-
-.st-live-msg-bottom .live-user-id-pill {
-  cursor: pointer;
+.live-user-id-btn:active {
+  transform: scale(0.92);
 }
 
 .live-danmu-input-pill {
