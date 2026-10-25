@@ -65,17 +65,8 @@ const PhoneComposer = (() => {
     ];
 
     let selectedLiveGiftId = null;
-    let liveDanmuInterval = null;
-    let liveDanmuIndex = 0;
-    const DEFAULT_DANMU_POOL = [
-        { sender: '星空巡游', text: '晚上好呀！前排打卡打卡~' },
-        { sender: '晚风微醺', text: '终于开播了！等了好久呢！' },
-        { sender: '汽水不加糖', text: '主播喝口水慢慢聊，今天状态真好~' },
-        { sender: '云朵制造机', text: '今天直播间好热闹呀~' },
-        { sender: '橘子汽水', text: '前排占座！打卡打卡！' },
-        { sender: '迷途小鹿', text: '主播晚上好，今天的背景音乐好听！' },
-        { sender: '浅海拾贝', text: '主播辛苦啦，注意休息哦~' }
-    ];
+    let isLiveActive = false; // 是否处于开播状态 (默认主播未开播)
+    const characterLiveBios = {}; // 记录各角色的直播间签名 (持久化记录直到切换角色)
 
     /**
      * 初始化挂载
@@ -190,7 +181,7 @@ const PhoneComposer = (() => {
                     <div id="composer_drawer_content" class="composer-drawer-content" style="display: none;"></div>
                 </div>
 
-                <!-- 原生复用手机底部输入条 (st-phone-inputbar) -->
+                <!-- 原生复用手机底部输入栏 (st-phone-inputbar) -->
                 <div class="st-phone-inputbar composer-inputbar">
                     <div class="input-voice-btn" id="composer_btn_voice" title="发送语音条">${ICONS.mic}</div>
                     <input type="text" id="composer_text_input" class="input-field-real" placeholder="输入消息..." autocomplete="off">
@@ -202,7 +193,7 @@ const PhoneComposer = (() => {
 
             <!-- 视图 3：RLive 沉浸式互动直播间 (Live View) -->
             <div class="composer-view-live" id="composer_view_live" style="display: none;">
-                <!-- 1. 直播顶部信息栏 (主播头像、姓名、自动滚动简介、在线人数) -->
+                <!-- 1. 直播顶部信息栏 (主播头像、姓名、自适应匹配签名、在线人数) -->
                 <div class="live-stream-header">
                     <div class="live-streamer-info">
                         <div class="live-streamer-avatar" id="live_streamer_avatar">
@@ -211,76 +202,52 @@ const PhoneComposer = (() => {
                         <div class="live-streamer-meta">
                             <div class="live-streamer-name-row">
                                 <span class="live-streamer-name" id="live_streamer_name">主播</span>
-                                <span class="live-stream-live-pill"><span class="live-dot-pulse"></span>LIVE</span>
+                                <span class="live-stream-live-pill offline" id="live_status_badge">未开播</span>
                             </div>
-                            <div class="live-stream-desc-container">
-                                <div class="live-stream-desc" id="live_stream_desc">
-                                    日常互动与陪伴 · 欢迎来到直播间交流互动 · 感谢支持与陪伴 ·
-                                </div>
+                            <div class="live-stream-desc-container" id="live_stream_desc_container" style="display: none;">
+                                <div class="live-stream-desc" id="live_stream_desc"></div>
                             </div>
                         </div>
                     </div>
                     <div class="live-header-actions">
                         <div class="live-viewers-pill" title="当前在线观看人数">
-                            <i class="fa-solid fa-fire"></i> <span id="live_viewers_count">12.8万</span>
+                            <i class="fa-solid fa-fire"></i> <span id="live_viewers_count">--</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. 直播主舞台视口 (直播画面 + 悬浮 SC + 弹幕瀑布流 + 礼物全屏特效) -->
                 <div class="live-stage-container" id="live_stage_container">
-                    <!-- 2.1 动态光晕与直播画面画布 -->
+                    <!-- 2.1 动态光晕与直播画面卡片 (默认主播未开播) -->
                     <div class="live-ambient-glow"></div>
                     <div class="live-stage-canvas" id="live_stage_canvas">
                         <div class="live-narration-card" id="live_narration_card">
                             <div class="live-narration-header">
                                 <span class="narration-tag"><i class="fa-solid fa-video"></i> 直播画面</span>
-                                <span class="live-timer" id="live_stage_timer">01:24:50</span>
+                                <span class="live-timer offline" id="live_stage_timer">未开播</span>
                             </div>
                             <div class="live-narration-body" id="live_narration_body">
-                                镜头前光线微暖，主播正在调试着桌面麦克风，微笑着看向屏幕，与观众们轻松互动着……
+                                主播未开播
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2.2 醒目留言 SC 置顶卡片 (Super Chat) -->
-                    <div class="live-sc-container" id="live_sc_container">
+                    <!-- 2.2 醒目留言 SC 置顶卡片 (默认未开播/无SC时隐藏) -->
+                    <div class="live-sc-container" id="live_sc_container" style="display: none;">
                         <div class="live-sc-card" id="live_sc_card">
                             <div class="sc-card-header">
                                 <div class="sc-badge-group">
-                                    <span class="sc-price-pill">SC ￥520</span>
-                                    <span class="sc-sender-name">热心观众</span>
+                                    <span class="sc-price-pill" id="live_sc_price">SC ￥520</span>
+                                    <span class="sc-sender-name" id="live_sc_sender"></span>
                                 </div>
                                 <span class="sc-status-pill"><i class="fa-regular fa-clock"></i> 置顶中</span>
                             </div>
-                            <div class="sc-card-content">
-                                今天辛苦啦！直播结束早点休息哦，我们一直在~ ❤️
-                            </div>
+                            <div class="sc-card-content" id="live_sc_content"></div>
                         </div>
                     </div>
 
-                    <!-- 2.3 弹幕流 (纯净无牌子，自动循环滚动) -->
-                    <div class="live-danmu-stream" id="live_danmu_stream">
-                        <div class="danmu-item danmu-system">
-                            <span class="danmu-system-text"><i class="fa-solid fa-bullhorn"></i> 欢迎来到 RLive 直播间，文明互动，浪漫相伴~</span>
-                        </div>
-                        <div class="danmu-item">
-                            <span class="danmu-sender">星空巡游:</span>
-                            <span class="danmu-text">晚上好呀！前排打卡打卡~</span>
-                        </div>
-                        <div class="danmu-item">
-                            <span class="danmu-sender">晚风微醺:</span>
-                            <span class="danmu-text">终于开播了！等了好久呢！</span>
-                        </div>
-                        <div class="danmu-item">
-                            <span class="danmu-sender">汽水不加糖:</span>
-                            <span class="danmu-text">主播喝口水慢慢聊，今天状态真好~</span>
-                        </div>
-                        <div class="danmu-item">
-                            <span class="danmu-sender">云朵制造机:</span>
-                            <span class="danmu-text">今天直播间好热闹呀~</span>
-                        </div>
-                    </div>
+                    <!-- 2.3 弹幕流 (真实弹幕流，默认完全空置) -->
+                    <div class="live-danmu-stream" id="live_danmu_stream"></div>
 
                     <!-- 2.4 礼物全屏特效横幅 (送出礼物时横穿屏幕) -->
                     <div class="live-gift-banner" id="live_gift_banner" style="display: none;">
@@ -980,62 +947,245 @@ const PhoneComposer = (() => {
             $chat.hide();
             $live.stop(true, true).fadeIn(140);
             syncLiveStreamer();
-            startLiveDanmuTicker();
             setTimeout(() => {
                 const $stream = $('#live_danmu_stream');
                 if ($stream.length) {
                     $stream.scrollTop($stream[0].scrollHeight);
                 }
             }, 60);
-        } else {
-            stopLiveDanmuTicker();
         }
     }
 
     /**
-     * 同步直播间主播信息 (头像、主播名、滚动简介)
+     * 获取当前直播间绑定的目标角色名
+     */
+    function getTargetLiveCharacter(overrideName) {
+        if (overrideName && typeof overrideName === 'string' && overrideName.trim()) {
+            return overrideName.trim();
+        }
+        if (currentContact && currentContact !== '未知') {
+            return currentContact;
+        }
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                if (ctx && ctx.name2) return ctx.name2;
+            }
+        } catch (e) { }
+        return '';
+    }
+
+    /**
+     * 获取指定角色的直播间专属签名 (自动匹配当前角色，持久化记录直到切换角色)
+     * 若未设置则返回空字符串 (不使用占位符，由 AI 在 RP 中填充)
+     */
+    function getCharacterLiveBio(charName) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return '';
+
+        // 1. 内存高速缓存
+        if (characterLiveBios[targetChar] !== undefined) {
+            return characterLiveBios[targetChar];
+        }
+
+        // 2. SillyTavern 插件扩展设置
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                const settings = ctx.extensionSettings?.['phone_ui'];
+                if (settings?.char_live_bio && settings.char_live_bio[targetChar]) {
+                    characterLiveBios[targetChar] = String(settings.char_live_bio[targetChar]).trim();
+                    return characterLiveBios[targetChar];
+                }
+                // 3. 角色卡内置扩展字段 (导出卡片时自带)
+                if (ctx.characterId && ctx.characters?.[ctx.characterId]) {
+                    const cardBio = ctx.characters[ctx.characterId]?.data?.extensions?.phone_live_bio;
+                    if (cardBio && typeof cardBio === 'string') {
+                        characterLiveBios[targetChar] = cardBio.trim();
+                        return characterLiveBios[targetChar];
+                    }
+                }
+            }
+        } catch (e) { }
+
+        // 4. 本地 localStorage 兜底
+        try {
+            const localBio = localStorage.getItem('st_phone_live_bio_' + encodeURIComponent(targetChar));
+            if (localBio) {
+                characterLiveBios[targetChar] = String(localBio).trim();
+                return characterLiveBios[targetChar];
+            }
+        } catch (e) { }
+
+        return '';
+    }
+
+    /**
+     * 保存指定角色的直播间专属签名 (持久化记录直到换角色)
+     */
+    function saveCharacterLiveBio(charName, bio) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return;
+        const cleanBio = String(bio || '').trim();
+
+        // 1. 内存同步
+        characterLiveBios[targetChar] = cleanBio;
+
+        // 2. localStorage 同步
+        try {
+            if (cleanBio) {
+                localStorage.setItem('st_phone_live_bio_' + encodeURIComponent(targetChar), cleanBio);
+            } else {
+                localStorage.removeItem('st_phone_live_bio_' + encodeURIComponent(targetChar));
+            }
+        } catch (e) { }
+
+        // 3. SillyTavern 设置及角色卡同步
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                const settings = ctx.extensionSettings?.['phone_ui'];
+                if (settings) {
+                    if (!settings.char_live_bio) settings.char_live_bio = {};
+                    settings.char_live_bio[targetChar] = cleanBio;
+                    if (ctx.saveSettingsDebounced) ctx.saveSettingsDebounced();
+                }
+                if (ctx.characterId && ctx.writeExtensionField) {
+                    ctx.writeExtensionField(ctx.characterId, 'phone_live_bio', cleanBio);
+                }
+            }
+        } catch (e) { }
+    }
+
+    /**
+     * 同步直播间主播信息 (头像、主播名、自动匹配该角色的签名)
      */
     function syncLiveStreamer() {
-        const streamerName = currentContact || '主播';
+        const streamerName = getTargetLiveCharacter() || '主播';
         $('#live_streamer_name').text(streamerName);
         $('#live_streamer_avatar_text').text(streamerName.charAt(0) || '主');
-        $('#live_stream_desc').text(`${streamerName} 的直播间 · 欢迎来到这里交流互动 · 感谢支持与陪伴 · `);
-    }
 
-    /**
-     * 启动弹幕自动循环滚动 Ticker (真实直播间氛围)
-     */
-    function startLiveDanmuTicker() {
-        stopLiveDanmuTicker();
-        liveDanmuInterval = setInterval(() => {
-            if (!isOpen || currentAppView !== 'live') return;
-            const poolItem = DEFAULT_DANMU_POOL[liveDanmuIndex % DEFAULT_DANMU_POOL.length];
-            liveDanmuIndex++;
-            const itemHtml = `
-                <div class="danmu-item">
-                    <span class="danmu-sender">${escapeHtml(poolItem.sender)}:</span>
-                    <span class="danmu-text">${escapeHtml(poolItem.text)}</span>
-                </div>
-            `;
-            const $stream = $('#live_danmu_stream');
-            if (!$stream.length) return;
-            $stream.append(itemHtml);
-            const $items = $stream.children('.danmu-item');
-            if ($items.length > 25) {
-                $items.slice(0, $items.length - 25).remove();
+        // 尝试自动匹配角色头像图片
+        try {
+            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
+                const ctx = SillyTavern.getContext();
+                if (ctx && ctx.characterId && ctx.characters?.[ctx.characterId]) {
+                    const charData = ctx.characters[ctx.characterId];
+                    if (charData.avatar) {
+                        const avatarUrl = `/characters/${encodeURIComponent(charData.avatar)}`;
+                        $('#live_streamer_avatar').css({
+                            'background-image': `url("${avatarUrl}")`,
+                            'background-size': 'cover',
+                            'background-position': 'center'
+                        });
+                        $('#live_streamer_avatar_text').hide();
+                    } else {
+                        $('#live_streamer_avatar').css('background-image', 'none');
+                        $('#live_streamer_avatar_text').show();
+                    }
+                }
             }
-            $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 280);
-        }, 3600);
+        } catch (e) { }
+
+        // 自动匹配并保留当前角色的签名直到角色更换
+        const charBio = getCharacterLiveBio(streamerName);
+        const $descContainer = $('#live_stream_desc_container');
+        const $descText = $('#live_stream_desc');
+
+        if (charBio) {
+            $descText.text(`${charBio} · `);
+            $descContainer.show();
+        } else {
+            // 空置，无需占位符，等待 AI 在 RP 中填充
+            $descText.text('');
+            $descContainer.hide();
+        }
     }
 
     /**
-     * 停止弹幕自动循环滚动 Ticker
+     * 动态更新直播间状态 (支持 AI 在 RP 中或扩展系统调用更新)
+     * @param {object} opts
+     * @param {boolean} [opts.isLive] - 是否开播 (true: LIVE / false: 未开播)
+     * @param {string} [opts.scene] - 直播画面叙述
+     * @param {string} [opts.bio] - 主播签名简介 (自动持久化并绑定当前角色直到切换角色)
+     * @param {string|number} [opts.viewers] - 在线人数
+     * @param {object} [opts.sc] - { sender, content, price }
      */
-    function stopLiveDanmuTicker() {
-        if (liveDanmuInterval) {
-            clearInterval(liveDanmuInterval);
-            liveDanmuInterval = null;
+    function updateLiveState(opts = {}) {
+        const streamerName = getTargetLiveCharacter(opts.streamer) || '主播';
+
+        if (opts.isLive !== undefined) {
+            isLiveActive = !!opts.isLive;
+            if (isLiveActive) {
+                $('#live_status_badge').removeClass('offline').text('LIVE');
+                $('#live_stage_timer').removeClass('offline').text('00:00');
+            } else {
+                $('#live_status_badge').addClass('offline').text('未开播');
+                $('#live_stage_timer').addClass('offline').text('未开播');
+                $('#live_viewers_count').text('--');
+                $('#live_narration_body').text('主播未开播');
+            }
         }
+
+        if (opts.viewers !== undefined) {
+            $('#live_viewers_count').text(opts.viewers || '--');
+        }
+
+        if (opts.scene !== undefined) {
+            $('#live_narration_body').text(opts.scene || (isLiveActive ? '直播进行中...' : '主播未开播'));
+        }
+
+        if (opts.bio !== undefined) {
+            const bioText = String(opts.bio).trim();
+            saveCharacterLiveBio(streamerName, bioText);
+            const $descContainer = $('#live_stream_desc_container');
+            const $descText = $('#live_stream_desc');
+            if (bioText) {
+                $descText.text(`${bioText} · `);
+                $descContainer.show();
+            } else {
+                $descText.text('');
+                $descContainer.hide();
+            }
+        }
+
+        if (opts.sc) {
+            showLiveSc(opts.sc.sender || '热心观众', opts.sc.content, opts.sc.price || '￥520');
+        }
+    }
+
+    /**
+     * 展示置顶 SC 卡片
+     */
+    function showLiveSc(sender, content, price = '￥520') {
+        $('#live_sc_price').text(`SC ${price}`);
+        $('#live_sc_sender').text(sender || '');
+        $('#live_sc_content').text(content || '');
+        $('#live_sc_container').stop(true, true).slideDown(200);
+    }
+
+    /**
+     * 向直播间弹幕流中追加弹幕
+     */
+    function appendLiveDanmu({ sender, text, isMe }) {
+        if (!text) return;
+        const s = sender || (isMe ? '你' : '观众');
+        const meClass = isMe ? 'danmu-me' : '';
+        const meSenderClass = isMe ? 'danmu-me-sender' : '';
+        const danmuHtml = `
+            <div class="danmu-item ${meClass}">
+                <span class="danmu-sender ${meSenderClass}">${escapeHtml(s)}:</span>
+                <span class="danmu-text">${escapeHtml(text)}</span>
+            </div>
+        `;
+        const $stream = $('#live_danmu_stream');
+        if (!$stream.length) return;
+        $stream.append(danmuHtml);
+        const $items = $stream.children('.danmu-item');
+        if ($items.length > 50) {
+            $items.slice(0, $items.length - 50).remove();
+        }
+        $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 200);
     }
 
     /**
@@ -1046,16 +1196,7 @@ const PhoneComposer = (() => {
         const text = $input.val()?.trim();
         if (!text) return;
 
-        const danmuHtml = `
-            <div class="danmu-item danmu-me">
-                <span class="danmu-sender danmu-me-sender">你:</span>
-                <span class="danmu-text">${escapeHtml(text)}</span>
-            </div>
-        `;
-        const $stream = $('#live_danmu_stream');
-        $stream.append(danmuHtml);
-        $stream.stop().animate({ scrollTop: $stream[0].scrollHeight }, 200);
-
+        appendLiveDanmu({ sender: '你', text, isMe: true });
         $input.val('');
 
         // 自动插入酒馆输入框 〖弹幕：...〗
@@ -1070,7 +1211,7 @@ const PhoneComposer = (() => {
         const gift = LIVE_GIFTS.find(g => g.id === selectedLiveGiftId);
         if (!gift) return;
 
-        const streamerName = currentContact || '主播';
+        const streamerName = getTargetLiveCharacter() || '主播';
 
         // 1. 播放全屏礼物飘屏动画
         $('#gift_banner_icon').text(gift.emoji);
@@ -2325,6 +2466,12 @@ const PhoneComposer = (() => {
         switchAppView,
         setAppConfig,
         getAppConfig: (appId) => APP_REGISTRY[appId],
+        updateLiveState,
+        getCharacterLiveBio,
+        saveCharacterLiveBio,
+        appendLiveDanmu,
+        showLiveSc,
+        syncLiveStreamer,
     };
 })();
 

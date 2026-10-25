@@ -828,7 +828,64 @@ const PhoneParser = (() => {
       }
     }
 
-    // 8. 默认情况：作为普通文字消息
+    // 8. 直播签名 / 简介: 【直播签名：...】 / 【直播简介：...】
+    if (!parsedMsg) {
+      const bioMatch = text.match(/^(?:直播签名|直播间签名|直播简介|直播间简介)[：:\s]+([\s\S]+)$/i);
+      if (bioMatch) {
+        const bioContent = bioMatch[1].trim();
+        parsedMsg = {
+          type: 'live_bio',
+          isMe,
+          from,
+          content: bioContent,
+        };
+        try {
+          if (typeof PhoneComposer !== 'undefined' && PhoneComposer.updateLiveState) {
+            PhoneComposer.updateLiveState({ bio: bioContent, streamer: from });
+          }
+        } catch (e) { }
+      }
+    }
+
+    // 9. 直播画面: 【直播画面：...】 / 【直播：...】
+    if (!parsedMsg) {
+      const liveMatch = text.match(/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+([\s\S]+)$/i);
+      if (liveMatch) {
+        const sceneContent = liveMatch[1].trim();
+        parsedMsg = {
+          type: 'live_scene',
+          isMe,
+          from,
+          content: sceneContent,
+        };
+        try {
+          if (typeof PhoneComposer !== 'undefined' && PhoneComposer.updateLiveState) {
+            PhoneComposer.updateLiveState({ scene: sceneContent, isLive: true, streamer: from });
+          }
+        } catch (e) { }
+      }
+    }
+
+    // 10. 弹幕: 【弹幕：...】
+    if (!parsedMsg) {
+      const danmuMatch = text.match(/^弹幕[：:\s]+([\s\S]+)$/i);
+      if (danmuMatch) {
+        const danmuContent = danmuMatch[1].trim();
+        parsedMsg = {
+          type: 'live_danmu',
+          isMe,
+          from,
+          content: danmuContent,
+        };
+        try {
+          if (typeof PhoneComposer !== 'undefined' && PhoneComposer.appendLiveDanmu) {
+            PhoneComposer.appendLiveDanmu({ sender: from, text: danmuContent, isMe });
+          }
+        } catch (e) { }
+      }
+    }
+
+    // 11. 默认情况：作为普通文字消息
     if (!parsedMsg) {
       parsedMsg = {
         type: 'msg',

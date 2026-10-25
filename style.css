@@ -1831,6 +1831,11 @@
   line-height: 1.2;
 }
 
+.live-stream-live-pill.offline {
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.65);
+}
+
 .live-dot-pulse {
   width: 5px;
   height: 5px;
@@ -1969,6 +1974,10 @@
   font-size: 10px;
   color: rgba(255, 255, 255, 0.55);
   font-variant-numeric: tabular-nums;
+}
+
+.live-timer.offline {
+  color: rgba(255, 255, 255, 0.38);
 }
 
 .live-narration-body {
