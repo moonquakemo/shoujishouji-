@@ -1108,7 +1108,9 @@
                     }
                     PhoneComposer.updateLiveState({
                         isLive: liveData.isLive,
+                        time: liveData.time,
                         scene: liveData.scene,
+                        talk: liveData.talk,
                         bio: liveData.bio,
                         viewers: liveData.viewers,
                         streamer: liveData.streamer,

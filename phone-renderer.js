@@ -647,10 +647,21 @@ ${noticeHtml}`;
         const isLive = liveData.isLive !== false;
         const statusText = isLive ? 'LIVE' : '未开播';
         const statusClass = isLive ? '' : 'offline';
-        const timerText = isLive ? '00:00' : '未开播';
-        const viewers = liveData.viewers || (isLive ? '1.2w' : '--');
+        const sessionTime = liveData.time || '';
+        const timerText = isLive ? (sessionTime || '00:00') : '未开播';
+
+        // 场次持久化人数
+        const savedViewers = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getCharacterLiveViewers)
+            ? PhoneComposer.getCharacterLiveViewers(rawStreamer)
+            : '';
+        const viewers = liveData.viewers || savedViewers || (isLive ? '1.2w' : '--');
+        if (liveData.viewers && typeof PhoneComposer !== 'undefined' && PhoneComposer.saveCharacterLiveViewers) {
+            PhoneComposer.saveCharacterLiveViewers(rawStreamer, liveData.viewers);
+        }
+
         const bio = liveData.bio || (typeof PhoneComposer !== 'undefined' ? PhoneComposer.getCharacterLiveBio(rawStreamer) : '');
         const scene = liveData.scene || (isLive ? '主播正在直播中...' : '主播未开播');
+        const talk = liveData.talk || '';
         const sc = liveData.sc;
         const danmuList = liveData.danmu || [];
         const gift = liveData.gift;
@@ -736,12 +747,23 @@ ${noticeHtml}`;
                 <div class="live-narration-card">
                     <div class="live-narration-header">
                         <span class="narration-tag"><i class="fa-solid fa-video"></i> 直播画面</span>
-                        <span class="live-timer ${statusClass}">${escapeHtml(timerText)}</span>
+                        <span class="live-timer ${statusClass}"><i class="fa-regular fa-clock"></i> ${escapeHtml(timerText)}</span>
                     </div>
                     <div class="live-narration-body">
                         ${escapeHtml(scene)}
                     </div>
                 </div>
+
+                ${talk ? `
+                <div class="live-talk-card">
+                    <div class="live-talk-header">
+                        <span class="talk-tag"><i class="fa-solid fa-microphone-lines"></i> ${escapeHtml(streamerDisplay)} 开麦</span>
+                        <div class="talk-wave-anim"><span></span><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="live-talk-body">
+                        ${escapeHtml(talk)}
+                    </div>
+                </div>` : ''}
             </div>
 
             ${scHtml}

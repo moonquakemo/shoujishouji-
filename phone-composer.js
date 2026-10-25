@@ -68,6 +68,8 @@ const PhoneComposer = (() => {
     let isLiveActive = false; // 是否处于开播状态 (默认主播未开播)
     const characterLiveBios = {}; // 记录各角色的直播间签名 (持久化记录直到切换角色)
     const characterLiveIds = {};  // 记录各角色的直播间艺名/ID (持久化记录直到切换角色)
+    const characterLiveViewers = {}; // 记录各角色场次的在线人数 (持久化记录)
+    let currentLiveSessionKey = '';  // 当前场次唯一键 (streamer + time)，用于区分场次并避免串档
     let currentUserLiveId = '';   // 用户在直播间的专属昵称/观众ID (拒绝实名制上网)
 
     /**
@@ -227,11 +229,20 @@ const PhoneComposer = (() => {
                         <div class="live-narration-card" id="live_narration_card">
                             <div class="live-narration-header">
                                 <span class="narration-tag"><i class="fa-solid fa-video"></i> 直播画面</span>
-                                <span class="live-timer offline" id="live_stage_timer">未开播</span>
+                                <span class="live-timer offline" id="live_stage_timer"><i class="fa-regular fa-clock"></i> 未开播</span>
                             </div>
                             <div class="live-narration-body" id="live_narration_body">
                                 主播未开播
                             </div>
+                        </div>
+
+                        <!-- 2.1.2 主播开麦原声实时字幕卡片 -->
+                        <div class="live-talk-card" id="live_talk_card" style="display: none;">
+                            <div class="live-talk-header">
+                                <span class="talk-tag"><i class="fa-solid fa-microphone-lines"></i> <span id="live_talk_streamer_tag">主播开麦</span></span>
+                                <div class="talk-wave-anim"><span></span><span></span><span></span><span></span></div>
+                            </div>
+                            <div class="live-talk-body" id="live_talk_body"></div>
                         </div>
                     </div>
 
@@ -656,6 +667,18 @@ const PhoneComposer = (() => {
             if (newNick !== null) {
                 saveUserLiveId(newNick.trim());
                 if (typeof toastr !== 'undefined') toastr.success(`你的直播间昵称已修改为: ${getUserLiveId()}`, 'RLive');
+            }
+        });
+
+        // 修改当前直播间在线人数
+        $(document).on('click', '.live-viewers-pill', function (e) {
+            e.stopPropagation();
+            const targetChar = getTargetLiveCharacter() || '主播';
+            const curCount = getCharacterLiveViewers(targetChar);
+            const newCount = prompt(`修改主播【${getCharacterLiveId(targetChar)}】直播间的在线人数：\n(如："3.5w", "12580")`, curCount);
+            if (newCount !== null && newCount.trim()) {
+                saveCharacterLiveViewers(targetChar, newCount.trim());
+                if (typeof toastr !== 'undefined') toastr.success(`直播间在线人数已更新为: ${newCount.trim()}`, 'RLive');
             }
         });
     }
@@ -1223,16 +1246,53 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 同步直播间主播信息 (头像、艺名、用户观众ID、签名)
+     * 获取角色当前直播场次的人数
+     */
+    function getCharacterLiveViewers(charName) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return '1.2w';
+        if (characterLiveViewers[targetChar] !== undefined) {
+            return characterLiveViewers[targetChar];
+        }
+        try {
+            const local = localStorage.getItem('st_phone_live_viewers_' + encodeURIComponent(targetChar));
+            if (local && local.trim()) {
+                characterLiveViewers[targetChar] = local.trim();
+                return characterLiveViewers[targetChar];
+            }
+        } catch (e) { }
+        return '1.2w';
+    }
+
+    /**
+     * 保存角色直播场次的人数
+     */
+    function saveCharacterLiveViewers(charName, count) {
+        const targetChar = getTargetLiveCharacter(charName);
+        if (!targetChar) return;
+        const clean = String(count || '').trim() || '1.2w';
+        characterLiveViewers[targetChar] = clean;
+        try {
+            localStorage.setItem('st_phone_live_viewers_' + encodeURIComponent(targetChar), clean);
+        } catch (e) { }
+        $('#live_viewers_count').text(clean);
+    }
+
+    /**
+     * 同步直播间主播信息 (头像、艺名、用户观众ID、签名、在线人数)
      */
     function syncLiveStreamer() {
         const targetChar = getTargetLiveCharacter() || '主播';
         const streamerLiveId = getCharacterLiveId(targetChar);
         const userLiveId = getUserLiveId();
+        const viewers = getCharacterLiveViewers(targetChar);
 
         $('#live_streamer_name').text(streamerLiveId);
         $('#live_streamer_avatar_text').text(streamerLiveId.charAt(0) || '主');
         $('#live_user_name_val').text(userLiveId);
+        if (isLiveActive) {
+            $('#live_viewers_count').text(viewers);
+        }
 
         // 尝试自动匹配角色头像图片
         try {
@@ -1276,33 +1336,70 @@ const PhoneComposer = (() => {
      * @param {object} opts
      * @param {boolean} [opts.isLive] - 是否开播 (true: LIVE / false: 未开播)
      * @param {string} [opts.scene] - 直播画面叙述
+     * @param {string} [opts.talk] - 主播开麦原声台词
      * @param {string} [opts.bio] - 主播签名简介 (自动持久化并绑定当前角色直到切换角色)
      * @param {string|number} [opts.viewers] - 在线人数
+     * @param {string} [opts.time] - 直播场次/时间标识 (用于隔离场次，避免串档)
      * @param {object} [opts.sc] - { sender, content, price }
      */
     function updateLiveState(opts = {}) {
         const targetChar = getTargetLiveCharacter(opts.streamer) || '主播';
         const streamerLiveId = getCharacterLiveId(targetChar);
 
+        // 场次时间标识与场次隔离 (避免不同场次串档)
+        const sessionTime = opts.time ? String(opts.time).trim() : '';
+        const sessionKey = `${targetChar}_${sessionTime || 'default'}`;
+        if (sessionTime && currentLiveSessionKey && currentLiveSessionKey !== sessionKey) {
+            // 检测到新的一场直播！清空旧场次的残留弹幕与SC，避免串档！
+            $('#live_danmu_stream').empty();
+            $('#live_sc_container').hide();
+        }
+        if (sessionTime) {
+            currentLiveSessionKey = sessionKey;
+            $('#live_stage_timer').html(`<i class="fa-regular fa-clock"></i> ${escapeHtml(sessionTime)}`);
+        }
+
         if (opts.isLive !== undefined) {
             isLiveActive = !!opts.isLive;
             if (isLiveActive) {
                 $('#live_status_badge').removeClass('offline').text('LIVE');
-                $('#live_stage_timer').removeClass('offline').text('00:00');
+                if (!sessionTime) {
+                    $('#live_stage_timer').removeClass('offline').html('<i class="fa-regular fa-clock"></i> 00:00');
+                } else {
+                    $('#live_stage_timer').removeClass('offline');
+                }
+                $('#live_viewers_count').text(getCharacterLiveViewers(targetChar));
             } else {
                 $('#live_status_badge').addClass('offline').text('未开播');
-                $('#live_stage_timer').addClass('offline').text('未开播');
+                $('#live_stage_timer').addClass('offline').html('<i class="fa-regular fa-clock"></i> 未开播');
                 $('#live_viewers_count').text('--');
                 $('#live_narration_body').text('主播未开播');
+                $('#live_talk_card').hide();
             }
         }
 
-        if (opts.viewers !== undefined) {
-            $('#live_viewers_count').text(opts.viewers || '--');
+        if (opts.viewers !== undefined && opts.viewers) {
+            saveCharacterLiveViewers(targetChar, opts.viewers);
+            if (isLiveActive) {
+                $('#live_viewers_count').text(opts.viewers);
+            }
         }
 
         if (opts.scene !== undefined) {
             $('#live_narration_body').text(opts.scene || (isLiveActive ? '直播进行中...' : '主播未开播'));
+        }
+
+        // 主播开麦原声台词
+        if (opts.talk !== undefined) {
+            const talkText = String(opts.talk || '').trim();
+            const $talkCard = $('#live_talk_card');
+            if (talkText) {
+                $('#live_talk_streamer_tag').text(`${streamerLiveId} 开麦`);
+                $('#live_talk_body').text(talkText);
+                $talkCard.stop(true, true).slideDown(180);
+            } else {
+                $talkCard.hide();
+            }
         }
 
         if (opts.bio !== undefined) {
@@ -2643,6 +2740,8 @@ const PhoneComposer = (() => {
         updateLiveState,
         getCharacterLiveBio,
         saveCharacterLiveBio,
+        getCharacterLiveViewers,
+        saveCharacterLiveViewers,
         getUserLiveId,
         saveUserLiveId,
         getCharacterLiveId,

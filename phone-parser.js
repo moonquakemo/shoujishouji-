@@ -53,7 +53,7 @@ const PhoneParser = (() => {
     if (!trimmed) return attrs;
 
     // 1. 如果完全不包含 '=' 和 ':'，说明是纯位置参数 (如: [phone:小红] 或 [phone:小红|avatar.jpg])
-    const hasKeyVal = /[=]|(?:^|[\s|,，|])(?:pov|POV|视角|avatar|头像|contact|联系人|from|发送者|time|时间|duration|时长|amount|金额|note|备注|quote|引用|quoteFrom|引用人|lang|语言|trans|翻译|id|status|name|地点|addr|地址|src|key)\s*[:=]/i.test(trimmed);
+    const hasKeyVal = /[=]|(?:^|[\s|,，|])(?:pov|POV|视角|avatar|头像|contact|联系人|from|发送者|time|时间|duration|时长|amount|金额|note|备注|quote|引用|quoteFrom|引用人|lang|语言|trans|翻译|id|status|name|地点|addr|地址|src|key|viewers|人数|在线|观众数|session|场次|bio|签名|简介)\s*[:=]/i.test(trimmed);
 
     if (!hasKeyVal) {
       const parts = trimmed.split('|');
@@ -66,7 +66,9 @@ const PhoneParser = (() => {
     function setAttr(rawKey, rawVal) {
       if (!rawKey || !rawVal) return;
       let k = rawKey.trim();
-      if (k === '时间') k = 'time';
+      if (k === '时间' || k === '场次' || k === 'session') k = 'time';
+      else if (k === '人数' || k === '在线' || k === '观众数' || k === 'count') k = 'viewers';
+      else if (k === '签名' || k === '简介') k = 'bio';
       else if (k === '发送者') k = 'from';
       else if (k === '视角') k = 'pov';
       else if (k === '联系人') k = 'contact';
@@ -198,6 +200,7 @@ const PhoneParser = (() => {
       const streamer = attrs.contact || attrs.streamer || attrs.name || '主播';
       const bio = attrs.bio || attrs.note || '';
       const viewers = attrs.viewers || '';
+      const time = attrs.time || attrs.session || '';
       const isLive = attrs.status ? (attrs.status !== 'offline' && attrs.status !== '未开播') : true;
 
       // 解析内部子元素
@@ -207,8 +210,10 @@ const PhoneParser = (() => {
         streamer,
         bio: bio || parsedData.bio || '',
         viewers: viewers || parsedData.viewers || '',
+        time: time || parsedData.time || '',
         isLive: parsedData.isLive !== undefined ? parsedData.isLive : isLive,
         scene: parsedData.scene || '',
+        talk: parsedData.talk || '',
         sc: parsedData.sc || null,
         danmu: parsedData.danmu || [],
         gift: parsedData.gift || null,
@@ -228,6 +233,9 @@ const PhoneParser = (() => {
     const res = {
       bio: '',
       scene: '',
+      talk: '',
+      viewers: '',
+      time: '',
       sc: null,
       danmu: [],
       gift: null,
@@ -240,10 +248,28 @@ const PhoneParser = (() => {
       res.scene = sceneMatch[1].trim();
     }
 
+    // 1.2 匹配 [talk]...[/talk] 或 [say]...[/say] 或 [speech]...[/speech] 或 [台词]...[/台词] 或 [开麦]...[/开麦] 或 [主播开麦]...[/主播开麦]
+    const talkMatch = innerText.match(/\[(?:talk|say|speech|台词|开麦|主播开麦|麦克风)[^\]]*\]([\s\S]*?)\[\/(?:talk|say|speech|台词|开麦|主播开麦|麦克风)\]/i);
+    if (talkMatch) {
+      res.talk = talkMatch[1].trim();
+    }
+
     // 2. 匹配 [bio]...[/bio] 或 [签名]...[/签名]
     const bioMatch = innerText.match(/\[(?:bio|签名|直播签名)[^\]]*\]([\s\S]*?)\[\/(?:bio|签名|直播签名)\]/i);
     if (bioMatch) {
       res.bio = bioMatch[1].trim();
+    }
+
+    // 2.2 匹配 [viewers:1.8w] / [人数:1.8w] / [在线:1.8w]
+    const vm = innerText.match(/\[(?:viewers|人数|在线|观众数)(?:[:：]([^\]]+))?\](?:([\s\S]*?)\[\/(?:viewers|人数|在线|观众数)\])?/i);
+    if (vm) {
+      res.viewers = (vm[1] || vm[2] || '').trim();
+    }
+
+    // 2.3 匹配 [time:20:00] / [时间:20:00] / [场次:第1场]
+    const tm = innerText.match(/\[(?:time|时间|场次|session)(?:[:：]([^\]]+))?\](?:([\s\S]*?)\[\/(?:time|时间|场次|session)\])?/i);
+    if (tm) {
+      res.time = (tm[1] || tm[2] || '').trim();
     }
 
     // 3. 匹配 [sc:观众名 price=520]...[/sc] 或 [sc]...[/sc]
@@ -295,7 +321,7 @@ const PhoneParser = (() => {
       };
     }
 
-    // 6. 兼容内部使用自然括号 〖直播画面：...〗、〖直播签名：...〗、〖弹幕：...〗、〖SC：...〗
+    // 6. 兼容内部使用自然括号 〖直播画面：...〗、〖主播开麦：...〗、〖台词：...〗、〖直播签名：...〗、〖弹幕：...〗、〖SC：...〗、〖人数：...〗、〖时间：...〗
     const bracketRegex = /〖([\s\S]*?)〗/g;
     let bMatch;
     while ((bMatch = bracketRegex.exec(innerText)) !== null) {
@@ -304,6 +330,18 @@ const PhoneParser = (() => {
       if (/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+([\s\S]+)$/i.test(raw)) {
         if (!res.scene) {
           res.scene = raw.replace(/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+/i, '').trim();
+        }
+      } else if (/^(?:主播开麦|开麦|台词|说话|主播说话|主播原声)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        if (!res.talk) {
+          res.talk = raw.replace(/^(?:主播开麦|开麦|台词|说话|主播说话|主播原声)[：:\s]+/i, '').trim();
+        }
+      } else if (/^(?:在线人数|人数|在线|观众数)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        if (!res.viewers) {
+          res.viewers = raw.replace(/^(?:在线人数|人数|在线|观众数)[：:\s]+/i, '').trim();
+        }
+      } else if (/^(?:直播时间|场次|时间)[：:\s]+([\s\S]+)$/i.test(raw)) {
+        if (!res.time) {
+          res.time = raw.replace(/^(?:直播时间|场次|时间)[：:\s]+/i, '').trim();
         }
       } else if (/^(?:直播签名|直播间签名|直播简介)[：:\s]+([\s\S]+)$/i.test(raw)) {
         if (!res.bio) {
@@ -329,17 +367,24 @@ const PhoneParser = (() => {
       }
     }
 
-    // 7. 若未明确标注 [scene]，容器内部未被消费的文本默认作为画面/主播动作
-    if (!res.scene) {
-      const stripped = innerText
-        .replace(/\[(?:scene|screen|画面|直播画面)[^\]]*\][\s\S]*?\[\/(?:scene|screen|画面|直播画面)\]/gi, '')
-        .replace(/\[(?:bio|签名)[^\]]*\][\s\S]*?\[\/(?:bio|签名)\]/gi, '')
-        .replace(/\[(?:sc|醒目留言)[^\]]*\][\s\S]*?\[\/(?:sc|醒目留言)\]/gi, '')
-        .replace(/\[(?:danmu|弹幕)[^\]]*\][\s\S]*?\[\/(?:danmu|弹幕)\]/gi, '')
-        .replace(/\[(?:gift|礼物|打赏)[^\]]*\]/gi, '')
-        .replace(/〖[\s\S]*?〗/g, '')
-        .trim();
-      if (stripped) {
+    // 7. 处理未被消费的文本 (未打标签的纯文本)
+    const stripped = innerText
+      .replace(/\[(?:scene|screen|画面|直播画面)[^\]]*\][\s\S]*?\[\/(?:scene|screen|画面|直播画面)\]/gi, '')
+      .replace(/\[(?:talk|say|speech|台词|开麦|主播开麦|麦克风)[^\]]*\][\s\S]*?\[\/(?:talk|say|speech|台词|开麦|主播开麦|麦克风)\]/gi, '')
+      .replace(/\[(?:bio|签名|直播签名)[^\]]*\][\s\S]*?\[\/(?:bio|签名|直播签名)\]/gi, '')
+      .replace(/\[(?:sc|醒目留言)[^\]]*\][\s\S]*?\[\/(?:sc|醒目留言)\]/gi, '')
+      .replace(/\[(?:danmu|弹幕)[^\]]*\][\s\S]*?\[\/(?:danmu|弹幕)\]/gi, '')
+      .replace(/\[(?:gift|礼物|打赏)[^\]]*\]/gi, '')
+      .replace(/\[(?:viewers|人数|在线|观众数|time|时间|场次|session)[^\]]*\]/gi, '')
+      .replace(/〖[\s\S]*?〗/g, '')
+      .trim();
+
+    if (stripped) {
+      if (res.scene && !res.talk) {
+        // 如果已经有显式的 [scene]，但又有未标注的台词文本，则优雅归为主播开麦台词！
+        res.talk = stripped;
+      } else if (!res.scene) {
+        // 否则默认作为直播画面描述
         res.scene = stripped;
       }
     }
