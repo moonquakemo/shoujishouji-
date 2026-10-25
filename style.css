@@ -1524,23 +1524,23 @@
   align-items: center;
   justify-content: flex-start;
   padding: 24px 18px 24px 18px;
-  background: var(--phone-chat-bg, #f5f5f7);
+  background-color: var(--home-bg, var(--phone-chat-bg, #f5f5f7));
   position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
   animation: composerFadeIn 0.2s ease-out;
 }
 
-/* 桌面时间日历卡片 (Widget) */
+/* 桌面时间日历卡片 (Widget，解耦变量支持任何浅色/暗黑主题) */
 .home-widget-clock {
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--home-widget-bg, rgba(255, 255, 255, 0.72));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 22px;
   padding: 18px 20px;
   width: 100%;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--home-widget-shadow, 0 6px 20px rgba(0, 0, 0, 0.06));
+  border: 1px solid var(--home-widget-border, rgba(255, 255, 255, 0.5));
   text-align: center;
   margin-bottom: 24px;
 }
@@ -1549,7 +1549,7 @@
   font-size: 38px;
   font-weight: 700;
   letter-spacing: -1px;
-  color: var(--input-text, #333);
+  color: var(--home-widget-time-color, var(--input-text, #333));
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
@@ -1557,7 +1557,7 @@
 .home-widget-date {
   font-size: 13px;
   font-weight: 500;
-  color: #777;
+  color: var(--home-widget-date-color, var(--msg-time-color, #777));
   margin-top: 5px;
   letter-spacing: 0.3px;
 }
@@ -1617,7 +1617,7 @@
 .home-app-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--input-text, #333);
+  color: var(--home-app-label-color, var(--input-text, #333));
   letter-spacing: 0.3px;
 }
 

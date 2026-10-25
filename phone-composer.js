@@ -1349,14 +1349,22 @@ const PhoneComposer = (() => {
                 ? PhoneInteractions.getConfig()
                 : {};
             const $display = $('#composer_display_area');
+            const $home = $('#composer_view_home');
             if (cfg.chatBackground) {
-                $display.css({
+                const bgCss = {
                     'background-image': `url("${cfg.chatBackground}")`,
                     'background-size': 'cover',
                     'background-position': 'center',
-                });
+                };
+                $display.css(bgCss);
+                $home.css(bgCss);
             } else {
                 $display.css({
+                    'background-image': '',
+                    'background-size': '',
+                    'background-position': '',
+                });
+                $home.css({
                     'background-image': '',
                     'background-size': '',
                     'background-position': '',

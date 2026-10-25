@@ -97,6 +97,14 @@
   --preview-border: rgba(7,193,96,0.4); /* 预览气泡边框 */
   --sent-border: rgba(7,193,96,0.3);    /* 已发送气泡边框 */
 
+  /* ===== 手机桌面与小组件 (v2.1+) ===== */
+  --home-bg: var(--phone-chat-bg);      /* 手机桌面背景色 (未设独立壁纸时跟随聊天背景) */
+  --home-widget-bg: rgba(255,255,255,0.72); /* 桌面时钟小组件卡片背景 */
+  --home-widget-border: rgba(255,255,255,0.45); /* 桌面小组件边框 */
+  --home-widget-time-color: var(--input-text); /* 桌面大时钟文字颜色 */
+  --home-widget-date-color: var(--msg-time-color); /* 桌面日期文字颜色 */
+  --home-app-label-color: var(--input-text); /* 桌面 App 图标标题文字颜色 */
+
   /* ===== 字体 ===== */
   --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-size-xs: 10px;
