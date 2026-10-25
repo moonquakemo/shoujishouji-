@@ -248,10 +248,11 @@ const PhoneParser = (() => {
       res.scene = sceneMatch[1].trim();
     }
 
-    // 1.2 匹配 [talk]...[/talk] 或 [say]...[/say] 或 [speech]...[/speech] 或 [台词]...[/台词] 或 [开麦]...[/开麦] 或 [主播开麦]...[/主播开麦]
-    const talkMatch = innerText.match(/\[(?:talk|say|speech|台词|开麦|主播开麦|麦克风)[^\]]*\]([\s\S]*?)\[\/(?:talk|say|speech|台词|开麦|主播开麦|麦克风)\]/i);
-    if (talkMatch) {
-      res.talk = talkMatch[1].trim();
+    // 1.2 匹配 [talk]...[/talk] 或 [say]...[/say] 或 [speech]...[/speech] 或 [台词]...[/台词] 或 [开麦]...[/开麦] 或 [主播开麦]...[/主播开麦] (支持多段合并)
+    const talkRegex = /\[(?:talk|say|speech|台词|开麦|主播开麦|麦克风)[^\]]*\]([\s\S]*?)\[\/(?:talk|say|speech|台词|开麦|主播开麦|麦克风)\]/gi;
+    const talkMatches = [...innerText.matchAll(talkRegex)];
+    if (talkMatches.length > 0) {
+      res.talk = talkMatches.map(m => m[1].trim()).filter(Boolean).join('\n');
     }
 
     // 2. 匹配 [bio]...[/bio] 或 [签名]...[/签名]
@@ -332,9 +333,8 @@ const PhoneParser = (() => {
           res.scene = raw.replace(/^(?:直播画面|直播实况|直播口述|直播)[：:\s]+/i, '').trim();
         }
       } else if (/^(?:主播开麦|开麦|台词|说话|主播说话|主播原声)[：:\s]+([\s\S]+)$/i.test(raw)) {
-        if (!res.talk) {
-          res.talk = raw.replace(/^(?:主播开麦|开麦|台词|说话|主播说话|主播原声)[：:\s]+/i, '').trim();
-        }
+        const line = raw.replace(/^(?:主播开麦|开麦|台词|说话|主播说话|主播原声)[：:\s]+/i, '').trim();
+        res.talk = res.talk ? (res.talk + '\n' + line) : line;
       } else if (/^(?:在线人数|人数|在线|观众数)[：:\s]+([\s\S]+)$/i.test(raw)) {
         if (!res.viewers) {
           res.viewers = raw.replace(/^(?:在线人数|人数|在线|观众数)[：:\s]+/i, '').trim();
