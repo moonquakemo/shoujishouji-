@@ -1347,7 +1347,7 @@
   display: none !important;
 }
 
-/* --- 伴侣主面板 --- */
+/* --- 伴侣主面板 (全功能拟真智能手机外壳) --- */
 .st-phone-composer-panel {
   position: fixed;
   bottom: 135px;
@@ -1355,10 +1355,12 @@
   z-index: 100000 !important;
   width: 360px;
   max-width: calc(100vw - 32px);
+  height: 600px;
+  max-height: calc(100vh - 36px);
   background: var(--phone-chat-bg, #f5f5f7);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 28px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   color: #333;
   font-family: var(--font-family);
   overflow: hidden;
@@ -1378,6 +1380,375 @@
   from {
     opacity: 0;
     transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 顶部全功能状态栏 (StatusBar) */
+.composer-statusbar.st-phone-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 6px 14px;
+  background: var(--navbar-bg, #1a1a2e);
+  color: var(--navbar-text, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.composer-statusbar.st-phone-statusbar:active {
+  cursor: grabbing;
+}
+
+.composer-statusbar .status-left {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+  min-width: 44px;
+  font-size: 12px;
+}
+
+/* iOS 灵动岛 (Dynamic Island) */
+.composer-dynamic-island {
+  position: relative;
+  background: #000;
+  color: #fff;
+  border-radius: 14px;
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.15) inset;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  z-index: 2;
+}
+
+.composer-dynamic-island:hover {
+  transform: scale(1.05);
+  background: #111;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.25) inset;
+}
+
+.composer-dynamic-island:active {
+  transform: scale(0.95);
+}
+
+.composer-dynamic-island .island-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.composer-dynamic-island .island-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-green, #07c160);
+  box-shadow: 0 0 5px var(--accent-green, #07c160);
+}
+
+.composer-dynamic-island .island-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+
+/* 状态栏右侧 (信号/WiFi/电池/锁屏电源键) */
+.composer-statusbar .status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.composer-statusbar .status-right svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.9;
+}
+
+/* 右上角 SVG 锁屏关机键 */
+.composer-power-btn {
+  background: transparent;
+  border: none;
+  color: var(--navbar-text, #fff);
+  opacity: 0.85;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  margin-left: 2px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.composer-power-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.3;
+}
+
+.composer-power-btn:hover {
+  opacity: 1;
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.15);
+  transform: scale(1.1);
+}
+
+.composer-power-btn:active {
+  transform: scale(0.92);
+}
+
+/* 屏幕主视口容器 */
+.composer-screen-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--phone-chat-bg, #f5f5f7);
+}
+
+/* 视图 1：手机主桌面 */
+.composer-view-home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 18px 24px 18px;
+  background: var(--phone-chat-bg, #f5f5f7);
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: composerFadeIn 0.2s ease-out;
+}
+
+/* 桌面时间日历卡片 (Widget) */
+.home-widget-clock {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 22px;
+  padding: 18px 20px;
+  width: 100%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.home-widget-time {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--input-text, #333);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.home-widget-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: #777;
+  margin-top: 5px;
+  letter-spacing: 0.3px;
+}
+
+/* 桌面 App 图标矩阵 */
+.home-app-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 16px;
+  width: 100%;
+  padding: 0 8px;
+}
+
+.home-app-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.home-app-item:hover {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.home-app-item:active {
+  transform: scale(0.94);
+}
+
+.home-app-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.18s ease;
+}
+
+.home-app-item:hover .home-app-icon {
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+}
+
+.app-icon-chat {
+  background: linear-gradient(135deg, #07c160, #10d66c);
+}
+
+.app-icon-live {
+  background: linear-gradient(135deg, #ff2d55, #ff5e3a);
+}
+
+.home-app-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--input-text, #333);
+  letter-spacing: 0.3px;
+}
+
+.home-app-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9px;
+  border: 2px solid #fff;
+}
+
+.home-app-live-tag {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff2d55;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(255, 45, 85, 0.4);
+}
+
+/* 视图 2：畅聊 App (Chat View) */
+.composer-view-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  animation: composerFadeIn 0.2s ease-out;
+}
+
+.composer-nav-back {
+  opacity: 0.85;
+  cursor: default;
+  margin-right: 4px;
+}
+
+/* 畅聊中间消息展示区自动撑开 */
+.composer-view-chat .composer-display-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.composer-view-chat .composer-chat-stream {
+  flex: 1;
+  max-height: 100%;
+}
+
+.composer-view-chat .composer-stream-messages {
+  flex: 1;
+  max-height: none;
+}
+
+/* 视图 3：直播间 App (Live View) */
+.composer-view-live {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+  animation: composerFadeIn 0.2s ease-out;
+}
+
+.composer-live-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.live-ph-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.live-ph-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--input-text, #333);
+  margin-bottom: 6px;
+}
+
+.live-ph-desc {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.live-ph-hint {
+  font-size: 11px;
+  color: var(--accent-blue, #007aff);
+  background: rgba(0, 122, 255, 0.08);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+@keyframes composerFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
@@ -2270,12 +2641,13 @@
     font-size: 22px;
   }
 
-  /* 方案 1：移动端伴侣屏幕随悬浮按钮向屏幕中心展开，支持自由拖动 */
+  /* 移动端伴侣屏幕适配 */
   .st-phone-composer-panel {
     width: min(360px, calc(100vw - 20px));
     max-width: calc(100vw - 20px);
-    max-height: calc(78vh - env(safe-area-inset-bottom, 0px));
-    border-radius: 22px;
+    height: min(620px, calc(86vh - env(safe-area-inset-bottom, 0px)));
+    max-height: calc(86vh - env(safe-area-inset-bottom, 0px));
+    border-radius: 28px;
     z-index: 100000 !important;
   }
 }

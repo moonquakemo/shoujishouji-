@@ -16,9 +16,15 @@ const PhoneComposer = (() => {
     let currentContact = '';
     let isContactManuallyCustomized = false;
     let pendingDrafts = [];
+    let currentAppView = 'chat'; // 'home' | 'chat' | 'live'
 
     // SVG 图标库 (与 PhoneRenderer 保持 1:1 原生一致)
     const ICONS = {
+        power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>',
+        signal: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="18" width="3" height="4" rx="0.8"/><rect x="7" y="14" width="3" height="8" rx="0.8"/><rect x="12" y="9" width="3" height="13" rx="0.8"/><rect x="17" y="4" width="3" height="18" rx="0.8"/></svg>',
+        wifi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5.07 12.5a10 10 0 0 1 13.86 0"/><path d="M8.72 16a5 5 0 0 1 6.56 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>',
+        battery: '<svg viewBox="0 0 28 14" fill="currentColor"><rect x="0.5" y="0.5" width="23" height="13" rx="2.5" ry="2.5" fill="none" stroke="currentColor" stroke-width="1"/><rect x="3" y="3" width="18" height="8" rx="1"/><path d="M24.5 4.5 C26 4.5 26 9.5 24.5 9.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>',
+        back: '<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>',
         mic: '<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>',
         emoji: '<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>',
         plus: '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>',
@@ -41,25 +47,123 @@ const PhoneComposer = (() => {
         <span class="composer-trigger-icon">📱</span>
     </div>
 
-    <!-- 手机输入伴侣主面板 (拟真半截手机UI，顶部支持拖拽) -->
+    <!-- 手机输入伴侣主面板 (完整拟真全屏手机UI，顶部含状态栏与灵动岛) -->
     <div id="st_phone_composer_panel" class="st-phone-composer-panel" style="display: none;">
-        <!-- 顶部导航栏 (含虚拟电子钟与联系人，按住可任意拖动悬浮窗) -->
-        <div class="composer-header st-phone-navbar" title="按住可拖拽悬浮窗">
-            <div class="composer-title-group">
-                <span class="composer-signal-dot"></span>
-                <div class="composer-contact-chip" id="composer_contact_chip" title="点击切换联络对象">
-                    <span class="composer-contact-icon"><i class="fa-regular fa-user"></i></span>
-                    <span class="composer-contact-name" id="composer_contact_val">联络中</span>
-                    <span class="composer-contact-arrow">▾</span>
+        <!-- 顶部全功能状态栏 (含虚拟时间、iOS灵动岛、电量/信号、锁屏电源键) -->
+        <div class="composer-statusbar st-phone-statusbar" id="composer_statusbar" title="按住可拖拽悬浮窗">
+            <span class="status-left" id="composer_status_time">14:00</span>
+            <!-- 灵动岛 (Dynamic Island): 点击返回主桌面 -->
+            <div class="composer-dynamic-island" id="composer_dynamic_island" title="点击返回手机主桌面">
+                <span class="island-pill">
+                    <span class="island-dot"></span>
+                    <span class="island-title" id="composer_island_title">返回桌面</span>
+                </span>
+            </div>
+            <div class="status-right">
+                ${ICONS.signal}
+                ${ICONS.wifi}
+                ${ICONS.battery}
+                <button type="button" class="composer-power-btn" id="composer_power_btn" title="锁屏 (收起手机回酒馆)">
+                    ${ICONS.power}
+                </button>
+            </div>
+        </div>
+
+        <!-- 屏幕主视口容器 -->
+        <div class="composer-screen-body" id="composer_screen_body">
+
+            <!-- 视图 1：主桌面 (Home View) -->
+            <div class="composer-view-home" id="composer_view_home" style="display: none;">
+                <!-- 桌面时间日历小组件 (Widget) -->
+                <div class="home-widget-clock">
+                    <div class="home-widget-time" id="home_widget_time">14:00</div>
+                    <div class="home-widget-date" id="home_widget_date">10月25日 星期六</div>
                 </div>
-                <div class="composer-clock-chip" id="composer_clock_chip" title="点击使用时间魔法（制造时间差）">
-                    <span class="clock-icon"><i class="fa-regular fa-clock"></i></span>
-                    <span class="clock-time-val" id="composer_clock_val">14:00</span>
+
+                <!-- 桌面 App 网格 -->
+                <div class="home-app-grid">
+                    <!-- App 1: 畅聊 -->
+                    <div class="home-app-item" id="home_app_chat" title="打开畅聊">
+                        <div class="home-app-icon app-icon-chat">
+                            <span class="app-icon-emoji">💬</span>
+                            <span class="home-app-badge" id="home_chat_badge" style="display: none;">1</span>
+                        </div>
+                        <span class="home-app-label">畅聊</span>
+                    </div>
+
+                    <!-- App 2: 直播 -->
+                    <div class="home-app-item" id="home_app_live" title="打开直播间">
+                        <div class="home-app-icon app-icon-live">
+                            <span class="app-icon-emoji">🔴</span>
+                            <span class="home-app-live-tag">LIVE</span>
+                        </div>
+                        <span class="home-app-label">直播间</span>
+                    </div>
                 </div>
             </div>
-            <div class="composer-header-actions">
-                <button type="button" class="composer-close-btn" id="composer_close_btn" title="收起">✕</button>
+
+            <!-- 视图 2：畅聊 App (Chat View) -->
+            <div class="composer-view-chat" id="composer_view_chat">
+                <!-- 畅聊导航栏 (< 留空预留给未来联系人列表) -->
+                <div class="composer-header st-phone-navbar" title="按住可拖拽悬浮窗">
+                    <div class="composer-title-group">
+                        <div class="nav-back composer-nav-back" id="composer_nav_back_reserved" title="联系人列表 (预留)">${ICONS.back}</div>
+                        <span class="composer-signal-dot"></span>
+                        <div class="composer-contact-chip" id="composer_contact_chip" title="点击切换联络对象">
+                            <span class="composer-contact-icon"><i class="fa-regular fa-user"></i></span>
+                            <span class="composer-contact-name" id="composer_contact_val">联络中</span>
+                            <span class="composer-contact-arrow">▾</span>
+                        </div>
+                        <div class="composer-clock-chip" id="composer_clock_chip" title="点击使用时间魔法（制造时间差）">
+                            <span class="clock-icon"><i class="fa-regular fa-clock"></i></span>
+                            <span class="clock-time-val" id="composer_clock_val">14:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 屏幕中间展示区 (闲置提示 / 动态抽屉表单 / 实时气泡流) -->
+                <div id="composer_display_area" class="composer-display-area">
+                    <!-- 闲置就绪提示 -->
+                    <div id="composer_idle_canvas" class="composer-idle-canvas">
+                        <div class="composer-idle-pill">
+                            <span class="idle-dot"></span>
+                            <span class="idle-text">手机联络伴侣已就绪</span>
+                        </div>
+                    </div>
+
+                    <!-- 实时拟真聊天气泡流 (本轮发送的消息实时上屏) -->
+                    <div id="composer_chat_stream" class="composer-chat-stream" style="display: none;">
+                        <div class="composer-stream-header">
+                            <span class="stream-tip">本轮发送预览</span>
+                            <button type="button" class="stream-clear-btn" id="composer_stream_clear" title="清空并撤回本轮手机消息"><i class="fa-regular fa-trash-can"></i> 撤回清空</button>
+                        </div>
+                        <div id="composer_stream_messages" class="composer-stream-messages"></div>
+                    </div>
+
+                    <!-- 动态抽屉表单区 -->
+                    <div id="composer_drawer_content" class="composer-drawer-content" style="display: none;"></div>
+                </div>
+
+                <!-- 原生复用手机底部输入条 (st-phone-inputbar) -->
+                <div class="st-phone-inputbar composer-inputbar">
+                    <div class="input-voice-btn" id="composer_btn_voice" title="发送语音条">${ICONS.mic}</div>
+                    <input type="text" id="composer_text_input" class="input-field-real" placeholder="输入消息..." autocomplete="off">
+                    <div class="input-action-btn" id="composer_btn_emoji" title="表情包">${ICONS.emoji}</div>
+                    <div class="input-action-btn" id="composer_btn_plus" title="更多功能">${ICONS.plus}</div>
+                    <button type="button" class="composer-send-btn direct" id="composer_btn_send" title="发送" style="display: none;">发送</button>
+                </div>
             </div>
+
+            <!-- 视图 3：直播间 App (Live View) -->
+            <div class="composer-view-live" id="composer_view_live" style="display: none;">
+                <div class="composer-live-placeholder">
+                    <div class="live-ph-icon">🔴</div>
+                    <div class="live-ph-title">星芒直播间</div>
+                    <div class="live-ph-desc">直播间模块就绪，准备接入专属直播与弹幕系统...</div>
+                    <div class="live-ph-hint">点击顶部灵动岛返回手机桌面</div>
+                </div>
+            </div>
+
         </div>
 
         <!-- 联系人选择与设定弹窗 -->
@@ -140,39 +244,6 @@ const PhoneComposer = (() => {
                 <i class="fa-solid fa-circle-info"></i> 点击按钮直接生效；连续点击会自动累加（如点两次“第二天”为后天，日历自动跨月）
             </div>
         </div>
-
-        <!-- 屏幕中间展示区 (闲置提示 / 动态抽屉表单 / 实时气泡流) -->
-        <div id="composer_display_area" class="composer-display-area">
-            <!-- 闲置就绪提示 -->
-            <div id="composer_idle_canvas" class="composer-idle-canvas">
-                <div class="composer-idle-pill">
-                    <span class="idle-dot"></span>
-                    <span class="idle-text">手机联络伴侣已就绪</span>
-                </div>
-            </div>
-
-            <!-- 实时拟真聊天气泡流 (本轮发送的消息实时上屏) -->
-            <div id="composer_chat_stream" class="composer-chat-stream" style="display: none;">
-                <div class="composer-stream-header">
-                    <span class="stream-tip">本轮发送预览</span>
-                    <button type="button" class="stream-clear-btn" id="composer_stream_clear" title="清空并撤回本轮手机消息"><i class="fa-regular fa-trash-can"></i> 撤回清空</button>
-                </div>
-                <div id="composer_stream_messages" class="composer-stream-messages"></div>
-            </div>
-
-            <!-- 动态抽屉表单区 -->
-            <div id="composer_drawer_content" class="composer-drawer-content" style="display: none;"></div>
-        </div>
-
-        <!-- 原生复用手机底部输入条 (st-phone-inputbar) -->
-        <div class="st-phone-inputbar composer-inputbar">
-            <div class="input-voice-btn" id="composer_btn_voice" title="发送语音条">${ICONS.mic}</div>
-            <input type="text" id="composer_text_input" class="input-field-real" placeholder="输入消息..." autocomplete="off">
-            <div class="input-action-btn" id="composer_btn_emoji" title="表情包">${ICONS.emoji}</div>
-            <div class="input-action-btn" id="composer_btn_plus" title="更多功能">${ICONS.plus}</div>
-            <button type="button" class="composer-send-btn direct" id="composer_btn_send" title="发送" style="display: none;">发送</button>
-        </div>
-        <div class="st-phone-bottom-safe"></div>
     </div>
 </div>
 `;
@@ -206,8 +277,31 @@ const PhoneComposer = (() => {
             toggleComposer();
         });
 
-        $('#composer_close_btn').on('click', function () {
+        // 顶部电源锁屏键 (收起手机回酒馆)
+        $('#composer_power_btn, #composer_close_btn').on('click', function (e) {
+            e.stopPropagation();
             toggleComposer(false);
+        });
+
+        // 灵动岛点击事件 (切回主桌面 / 进畅聊)
+        $('#composer_dynamic_island').on('click', function (e) {
+            e.stopPropagation();
+            if (currentAppView === 'home') {
+                switchAppView('chat');
+            } else {
+                switchAppView('home');
+            }
+        });
+
+        // 桌面 App 点击
+        $('#home_app_chat').on('click', function (e) {
+            e.stopPropagation();
+            switchAppView('chat');
+        });
+
+        $('#home_app_live').on('click', function (e) {
+            e.stopPropagation();
+            switchAppView('live');
         });
 
         $('#composer_stream_clear').on('click', function () {
@@ -386,7 +480,7 @@ const PhoneComposer = (() => {
             pW = isMobile ? Math.min(360, screenW - 20) : 360;
         }
         if (!pH || pH < 100) {
-            pH = isMobile ? Math.min(500, Math.round(screenH * 0.72)) : 520;
+            pH = isMobile ? Math.min(620, Math.round(screenH * 0.85)) : 600;
         }
 
         const tRect = $trigger[0].getBoundingClientRect();
@@ -467,7 +561,7 @@ const PhoneComposer = (() => {
      */
     function initDraggables() {
         makeDraggable('#st_phone_composer_trigger', '#st_phone_composer_trigger', 'st_phone_trigger_pos');
-        makeDraggable('#st_phone_composer_panel', '#st_phone_composer_panel .composer-header', 'st_phone_panel_pos');
+        makeDraggable('#st_phone_composer_panel', '#st_phone_composer_panel .composer-statusbar, #st_phone_composer_panel .composer-header', 'st_phone_panel_pos');
 
         $(window).on('resize.pu_draggables orientationchange.pu_draggables', function () {
             clampToViewport('#st_phone_composer_trigger');
@@ -562,7 +656,7 @@ const PhoneComposer = (() => {
         }
 
         $handle.on('mousedown touchstart', function (e) {
-            if ($(e.target).closest('button, input, select, textarea, .composer-clock-chip, .composer-header-actions').length) {
+            if ($(e.target).closest('button, input, select, textarea, .composer-clock-chip, .composer-contact-chip, .composer-dynamic-island, .composer-power-btn, .nav-back, .home-app-item').length) {
                 return;
             }
 
@@ -640,6 +734,42 @@ const PhoneComposer = (() => {
             } else {
                 el._pu_drag_prevent_click = false;
             }
+        }
+    }
+
+    /**
+     * 切换手机伴侣内的 App 视图 ('home' | 'chat' | 'live')
+     */
+    function switchAppView(viewName) {
+        currentAppView = viewName || 'chat';
+        const $home = $('#composer_view_home');
+        const $chat = $('#composer_view_chat');
+        const $live = $('#composer_view_live');
+        const $islandTitle = $('#composer_island_title');
+
+        // 关闭浮动弹窗与抽屉
+        toggleClockPopover(false);
+        toggleContactPopover(false);
+
+        if (viewName === 'home') {
+            $chat.hide();
+            $live.hide();
+            $home.stop(true, true).fadeIn(140);
+            $islandTitle.text('R-Phone');
+            $('#composer_dynamic_island').attr('title', '当前在手机主桌面');
+            updateClockDisplay();
+        } else if (viewName === 'chat') {
+            $home.hide();
+            $live.hide();
+            $chat.stop(true, true).fadeIn(140);
+            $islandTitle.text('返回桌面');
+            $('#composer_dynamic_island').attr('title', '点击返回手机主桌面');
+        } else if (viewName === 'live') {
+            $home.hide();
+            $chat.hide();
+            $live.stop(true, true).fadeIn(140);
+            $islandTitle.text('返回桌面');
+            $('#composer_dynamic_island').attr('title', '点击返回手机主桌面');
         }
     }
 
@@ -1203,6 +1333,21 @@ const PhoneComposer = (() => {
         $('#composer_clock_val').text(currentVirtualTime);
         $('#popover_current_clock').text(currentVirtualTime);
         $('#composer_clock_chip').toggleClass('customized', isTimeCustomized);
+
+        // 同步顶部状态栏时间与主桌面时钟小组件
+        const timeMatch = currentVirtualTime.match(/\b\d{1,2}:\d{2}\b/);
+        const timeOnly = timeMatch ? timeMatch[0] : currentVirtualTime;
+        $('#composer_status_time').text(timeOnly);
+        $('#home_widget_time').text(timeOnly);
+
+        if (currentVirtualDate && !isNaN(currentVirtualDate.getTime())) {
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const m = months[currentVirtualDate.getMonth()];
+            const d = `${currentVirtualDate.getDate()}日`;
+            const w = days[currentVirtualDate.getDay()];
+            $('#home_widget_date').text(`${m}${d} ${w}`);
+        }
     }
 
     /**
@@ -1807,6 +1952,7 @@ const PhoneComposer = (() => {
         updateContact: (c) => updateContact(c, false),
         getContact: () => currentContact,
         insertIntoSendTextarea,
+        switchAppView,
     };
 })();
 
