@@ -1742,6 +1742,7 @@
    ======================================================== */
 .composer-view-live {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1819,23 +1820,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.2px;
-  cursor: pointer;
-}
-
-.live-edit-pencil-icon {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.45);
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-}
-
-.live-edit-pencil-icon:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.16);
 }
 
 .live-stream-live-pill {
@@ -1924,6 +1908,7 @@
 /* 2. 直播主舞台容器 (口述实况画面 + SC + 弹幕 + 动效) */
 .live-stage-container {
   flex: 1;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -3505,7 +3490,6 @@
     min-height: 48px;
     gap: 8px;
     padding: 0 10px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .live-action-circle-btn {
@@ -3530,7 +3514,7 @@
   }
 
   .live-gift-drawer {
-    padding: 12px 10px calc(14px + env(safe-area-inset-bottom, 0px)) 10px;
+    padding: 12px 10px 14px;
     max-height: 82%;
     overflow-y: auto;
   }

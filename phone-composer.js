@@ -67,7 +67,7 @@ const PhoneComposer = (() => {
     let selectedLiveGiftId = null;
     let isLiveActive = false; // 是否处于开播状态 (默认主播未开播)
     const characterLiveBios = {}; // 记录各角色的直播间签名 (持久化记录直到切换角色)
-    const characterLiveIds = {};  // 记录各角色的直播间艺名/ID (持久化记录直到切换角色)
+    let currentLiveStreamer = '';
     const characterLiveViewers = {}; // 记录各角色场次的在线人数 (持久化记录)
     const characterLiveTimes = {};   // 记录各角色场次的时间/场次标识 (持久化记录直到新开播)
     let currentLiveSessionKey = '';  // 当前场次唯一键 (streamer + time)，用于区分场次并避免串档
@@ -207,8 +207,7 @@ const PhoneComposer = (() => {
                         </div>
                         <div class="live-streamer-meta">
                             <div class="live-streamer-name-row">
-                                <span class="live-streamer-name" id="live_streamer_name" title="点击修改主播直播间艺名/ID">主播</span>
-                                <span class="live-edit-pencil-icon" id="live_streamer_name_edit" title="修改主播直播间艺名/ID"><i class="fa-solid fa-pen"></i></span>
+                                <span class="live-streamer-name" id="live_streamer_name">主播</span>
                                 <span class="live-stream-live-pill offline" id="live_status_badge">未开播</span>
                             </div>
                             <div class="live-stream-desc-container" id="live_stream_desc_container" style="display: none;">
@@ -277,7 +276,7 @@ const PhoneComposer = (() => {
 
                 <!-- 3. 底部互动栏 (我的观众ID按钮 + 弹幕输入框 + 礼物按钮) -->
                 <div class="live-bottom-bar">
-                    <button type="button" class="live-action-circle-btn live-user-id-btn" id="live_user_id_btn" title="我的直播间观众昵称 (点击修改，拒绝实名制)">
+                    <button type="button" class="live-action-circle-btn live-user-id-btn" id="live_user_id_btn" title="我的直播间观众昵称">
                         <i class="fa-regular fa-user"></i>
                     </button>
                     <div class="live-danmu-input-pill">
@@ -647,26 +646,14 @@ const PhoneComposer = (() => {
             handleLiveGiftSend();
         });
 
-        // 修改主播直播间艺名/ID
-        $(document).on('click', '#live_streamer_name, #live_streamer_name_edit', function (e) {
-            e.stopPropagation();
-            const targetChar = getTargetLiveCharacter() || '主播';
-            const curId = getCharacterLiveId(targetChar);
-            const newId = prompt(`修改主播【${targetChar}】的直播间艺名/ID：\n(拒绝实名制直播，如："夜航星", "晚风唱片机")`, curId);
-            if (newId !== null) {
-                saveCharacterLiveId(targetChar, newId.trim());
-                if (typeof toastr !== 'undefined') toastr.success(`主播艺名已修改为: ${getCharacterLiveId(targetChar)}`, 'RLive');
-            }
-        });
-
         // 点击用户观众ID按钮 (弹出式修改昵称，拒绝实名制上网)
         $(document).on('click', '#live_user_id_btn', function (e) {
             e.stopPropagation();
             const curNick = getUserLiveId();
-            const newNick = prompt(`当前直播间观众昵称：【${curNick}】\n\n请输入新的直播间网名：\n(拒绝实名制上网，如："草莓汽水不加糖", "星夜漫游者")`, curNick);
+            const newNick = prompt(`当前直播间观众昵称：【${curNick}】\n\n请输入新的直播间网名：`, curNick);
             if (newNick !== null && newNick.trim()) {
                 saveUserLiveId(newNick.trim());
-                $('#live_user_id_btn').attr('title', `我的直播间昵称: ${getUserLiveId()} (点击修改)`);
+                $('#live_user_id_btn').attr('title', `我的直播间昵称: ${getUserLiveId()}`);
                 if (typeof toastr !== 'undefined') toastr.success(`你的直播间昵称已更新为: ${getUserLiveId()}`, 'RLive');
             }
         });
@@ -676,7 +663,7 @@ const PhoneComposer = (() => {
             e.stopPropagation();
             const targetChar = getTargetLiveCharacter() || '主播';
             const curCount = getCharacterLiveViewers(targetChar);
-            const newCount = prompt(`修改主播【${getCharacterLiveId(targetChar)}】直播间的在线人数：\n(如："3.5w", "12580")`, curCount);
+            const newCount = prompt(`修改主播【${getCharacterLiveId(targetChar)}】直播间的在线人数：`, curCount);
             if (newCount !== null && newCount.trim()) {
                 saveCharacterLiveViewers(targetChar, newCount.trim());
                 if (typeof toastr !== 'undefined') toastr.success(`直播间在线人数已更新为: ${newCount.trim()}`, 'RLive');
@@ -1018,6 +1005,9 @@ const PhoneComposer = (() => {
         if (overrideName && typeof overrideName === 'string' && overrideName.trim()) {
             return overrideName.trim();
         }
+        if (currentLiveStreamer) {
+            return currentLiveStreamer;
+        }
         if (currentContact && currentContact !== '未知') {
             return currentContact;
         }
@@ -1169,81 +1159,10 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 获取角色专属的直播间艺名/ID (拒绝实名制直播)
+     * 获取 AI 输出匹配的直播间主播名
      */
     function getCharacterLiveId(charName) {
-        const targetChar = getTargetLiveCharacter(charName);
-        if (!targetChar) return '主播';
-
-        // 1. 内存高速缓存
-        if (characterLiveIds[targetChar]) {
-            return characterLiveIds[targetChar];
-        }
-
-        // 2. SillyTavern 插件扩展设置
-        try {
-            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
-                const ctx = SillyTavern.getContext();
-                const settings = ctx.extensionSettings?.['phone_ui'];
-                if (settings?.char_live_ids && settings.char_live_ids[targetChar]) {
-                    characterLiveIds[targetChar] = String(settings.char_live_ids[targetChar]).trim();
-                    return characterLiveIds[targetChar];
-                }
-                // 3. 角色卡扩展字段
-                if (ctx.characterId && ctx.characters?.[ctx.characterId]) {
-                    const cardId = ctx.characters[ctx.characterId]?.data?.extensions?.phone_live_id;
-                    if (cardId && typeof cardId === 'string' && cardId.trim()) {
-                        characterLiveIds[targetChar] = cardId.trim();
-                        return characterLiveIds[targetChar];
-                    }
-                }
-            }
-        } catch (e) { }
-
-        // 4. localStorage 兜底
-        try {
-            const localCharLiveId = localStorage.getItem('st_phone_live_char_id_' + encodeURIComponent(targetChar));
-            if (localCharLiveId && localCharLiveId.trim()) {
-                characterLiveIds[targetChar] = localCharLiveId.trim();
-                return characterLiveIds[targetChar];
-            }
-        } catch (e) { }
-
-        // 默认回退为当前角色名
-        return targetChar;
-    }
-
-    /**
-     * 保存角色专属的直播间艺名/ID
-     */
-    function saveCharacterLiveId(charName, newId) {
-        const targetChar = getTargetLiveCharacter(charName);
-        if (!targetChar) return;
-        const cleanId = String(newId || '').trim() || targetChar;
-
-        characterLiveIds[targetChar] = cleanId;
-
-        try {
-            localStorage.setItem('st_phone_live_char_id_' + encodeURIComponent(targetChar), cleanId);
-        } catch (e) { }
-
-        try {
-            if (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) {
-                const ctx = SillyTavern.getContext();
-                const settings = ctx.extensionSettings?.['phone_ui'];
-                if (settings) {
-                    if (!settings.char_live_ids) settings.char_live_ids = {};
-                    settings.char_live_ids[targetChar] = cleanId;
-                    if (ctx.saveSettingsDebounced) ctx.saveSettingsDebounced();
-                }
-                if (ctx.characterId && ctx.writeExtensionField) {
-                    ctx.writeExtensionField(ctx.characterId, 'phone_live_id', cleanId);
-                }
-            }
-        } catch (e) { }
-
-        $('#live_streamer_name').text(cleanId);
-        $('#live_streamer_avatar_text').text(cleanId.charAt(0) || '主');
+        return getTargetLiveCharacter(charName) || '主播';
     }
 
     /**
@@ -1312,9 +1231,12 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 同步直播间主播信息 (头像、艺名、用户观众ID、签名、在线人数)
+     * 同步直播间主播信息 (头像、主播名、用户观众ID、签名、在线人数)
      */
-    function syncLiveStreamer() {
+    function syncLiveStreamer(streamerName) {
+        if (typeof streamerName === 'string') {
+            currentLiveStreamer = streamerName.trim();
+        }
         const targetChar = getTargetLiveCharacter() || '主播';
         const streamerLiveId = getCharacterLiveId(targetChar);
         const userLiveId = getUserLiveId();
@@ -1322,7 +1244,7 @@ const PhoneComposer = (() => {
 
         $('#live_streamer_name').text(streamerLiveId);
         $('#live_streamer_avatar_text').text(streamerLiveId.charAt(0) || '主');
-        $('#live_user_id_btn').attr('title', `我的直播间观众昵称: ${userLiveId} (点击修改)`);
+        $('#live_user_id_btn').attr('title', `我的直播间观众昵称: ${userLiveId}`);
         if (isLiveActive) {
             $('#live_viewers_count').text(viewers);
         }
@@ -1463,6 +1385,8 @@ const PhoneComposer = (() => {
         if (opts.sc) {
             showLiveSc(opts.sc.sender || '热心观众', opts.sc.content, opts.sc.price || '￥520');
         }
+
+        syncLiveStreamer(targetChar);
     }
 
     /**
@@ -2793,7 +2717,6 @@ const PhoneComposer = (() => {
         getUserLiveId,
         saveUserLiveId,
         getCharacterLiveId,
-        saveCharacterLiveId,
         appendLiveDanmu,
         showLiveSc,
         syncLiveStreamer,

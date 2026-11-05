@@ -782,7 +782,7 @@ ${noticeHtml}`;
         </div>
 
         <div class="live-bottom-bar st-live-msg-bottom">
-            <button type="button" class="live-action-circle-btn live-user-id-btn" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="我的直播间观众昵称: ${escapeHtml(userLiveId)} (点击打开伴侣修改)">
+            <button type="button" class="live-action-circle-btn live-user-id-btn" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="我的直播间观众昵称: ${escapeHtml(userLiveId)}">
                 <i class="fa-regular fa-user"></i>
             </button>
             <div class="live-danmu-input-pill" onclick="if(window.PhoneComposer) PhoneComposer.toggleComposer(true)" title="点击打开小手机伴侣互动" style="cursor: pointer;">

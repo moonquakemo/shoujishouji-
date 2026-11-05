@@ -1119,6 +1119,7 @@
         loadThemeForCurrentCharacter();
         if (typeof PhoneComposer !== 'undefined') {
             if (PhoneComposer.updateTheme) PhoneComposer.updateTheme();
+            if (PhoneComposer.syncLiveStreamer) PhoneComposer.syncLiveStreamer('');
             if (PhoneComposer.updateContact) PhoneComposer.updateContact();
             if (PhoneComposer.clearDraft) PhoneComposer.clearDraft(false);
         }
