@@ -16,7 +16,7 @@
   --phone-chat-bg: #f5f5f7;
 
   /* === Status Bar & Navbar === */
-  --navbar-bg: #1a1a2e;
+  --navbar-bg: #111111;
   --navbar-text: #fff;
   --navbar-icon-fill: #fff;
 
@@ -1301,7 +1301,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--navbar-bg, #1a1a2e);
+  background: var(--navbar-bg, #111111);
   color: var(--navbar-text, #ffffff);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 50%;
@@ -1394,7 +1394,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px 6px 14px;
-  background: var(--navbar-bg, #1a1a2e);
+  background: var(--navbar-bg, #111111);
   color: var(--navbar-text, #fff);
   font-size: 12px;
   font-weight: 600;
@@ -1475,7 +1475,7 @@
 .composer-power-btn {
   background: transparent;
   border: none;
-  color: var(--navbar-text, #fff);
+  color: #ffffff !important;
   opacity: 0.85;
   cursor: pointer;
   display: inline-flex;
@@ -1493,6 +1493,7 @@
   font-size: 13px;
   line-height: 1;
   display: inline-block;
+  color: #ffffff !important;
 }
 
 .composer-power-btn:hover {
@@ -2588,7 +2589,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: var(--navbar-bg, #1a1a2e);
+  background: var(--navbar-bg, #111111);
   color: var(--navbar-text, #fff);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   cursor: grab;
@@ -2644,12 +2645,12 @@
   gap: 4px;
   padding: 2px 8px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 12px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff !important;
   transition: all 0.18s;
   user-select: none;
   max-width: 120px;
@@ -2660,9 +2661,11 @@
   color: #fff;
 }
 
-.composer-contact-chip .composer-contact-icon {
+.composer-contact-chip .composer-contact-icon,
+.composer-contact-chip .composer-contact-icon i {
   font-size: 10px;
-  opacity: 0.85;
+  color: #ffffff !important;
+  opacity: 0.95;
 }
 
 .composer-contact-chip .composer-contact-name {
@@ -2673,7 +2676,8 @@
 
 .composer-contact-chip .composer-contact-arrow {
   font-size: 9px;
-  opacity: 0.7;
+  color: #ffffff !important;
+  opacity: 0.85;
 }
 
 /* 联系人设置弹出层 */
@@ -2711,12 +2715,12 @@
   margin-left: 6px;
   padding: 2px 8px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 12px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff !important;
   transition: all 0.18s;
   user-select: none;
 }
@@ -2734,9 +2738,11 @@
   box-shadow: 0 0 8px rgba(7, 193, 96, 0.5);
 }
 
-.composer-clock-chip .clock-icon {
+.composer-clock-chip .clock-icon,
+.composer-clock-chip .clock-icon i {
   font-size: 11px;
   line-height: 1;
+  color: #ffffff !important;
 }
 
 /* 时间魔法设置弹出层 */
@@ -3365,6 +3371,14 @@
   background: #f7f7f8;
 }
 
+/* 消除 + 号抽屉内层多余的分割线与重叠内边距 */
+.composer-drawer-content .composer-action-panel {
+  border-top: none !important;
+  background: transparent !important;
+  padding: 6px 4px !important;
+  box-shadow: none !important;
+}
+
 /* 微信/iOS 原生复用底部输入条 (st-phone-inputbar) */
 .st-phone-inputbar.composer-inputbar {
   display: flex;
@@ -3575,3 +3589,16 @@
   }
 }
 
+
+/* 确保状态栏与导航栏图标和文本全白（反色对比） */
+.composer-statusbar .status-left {
+  color: #ffffff !important;
+}
+.composer-statusbar .status-right svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+.composer-nav-back svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
