@@ -182,9 +182,10 @@ const PhoneComposer = (() => {
                         <div id="composer_stream_messages" class="composer-stream-messages"></div>
                     </div>
 
-                    <!-- 动态抽屉表单区 -->
-                    <div id="composer_drawer_content" class="composer-drawer-content" style="display: none;"></div>
                 </div>
+
+                <!-- 动态抽屉表单区 (紧贴输入框上方) -->
+                <div id="composer_drawer_content" class="composer-drawer-content" style="display: none;"></div>
 
                 <!-- 原生复用手机底部输入栏 (st-phone-inputbar) -->
                 <div class="st-phone-inputbar composer-inputbar">
@@ -2208,9 +2209,17 @@ const PhoneComposer = (() => {
             renderLocationDrawer($content);
         }
 
-        $idle.hide();
-        $('#composer_chat_stream').hide();
-        $content.stop(true, true).slideDown(180);
+        if (pendingDrafts.length === 0) {
+            $idle.hide();
+        }
+        $content.stop(true, true).slideDown(180, function () {
+            if (pendingDrafts.length > 0) {
+                const $msgContainer = $('#composer_stream_messages');
+                if ($msgContainer.length) {
+                    $msgContainer.scrollTop($msgContainer[0].scrollHeight);
+                }
+            }
+        });
     }
 
     /**
@@ -2224,13 +2233,7 @@ const PhoneComposer = (() => {
 
         $content.stop(true, true).slideUp(150, function () {
             $(this).empty();
-            if (pendingDrafts.length > 0) {
-                $('#composer_chat_stream').fadeIn(120);
-                const $msgContainer = $('#composer_stream_messages');
-                if ($msgContainer.length) {
-                    $msgContainer.scrollTop($msgContainer[0].scrollHeight);
-                }
-            } else {
+            if (pendingDrafts.length === 0) {
                 $idle.fadeIn(120);
             }
         });
