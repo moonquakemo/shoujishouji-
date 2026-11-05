@@ -56,12 +56,12 @@ const PhoneComposer = (() => {
 
     // RLive 直播间专属心意礼物配置库 (女性向/沉浸式高甜与排面礼物)
     const LIVE_GIFTS = [
-        { id: 'milktea', name: '草莓波波奶茶', emoji: '🧋', price: '6钻', desc: '甜度超标 · 暖心陪伴' },
-        { id: 'glowstick', name: '星光应援棒', emoji: '🪄', price: '18钻', desc: '星海闪烁 · 为你挥舞' },
-        { id: 'rose', name: '心动纯白玫瑰', emoji: '🌹', price: '52钻', desc: '浪漫私语 · 钟情于你' },
-        { id: 'galaxy', name: '星河之誓', emoji: '🌌', price: '520钻', desc: '浩瀚银河 · 唯你璀璨' },
-        { id: 'castle', name: '梦幻告白城堡', emoji: '🏰', price: '1314钻', desc: '童话之境 · 全服见证' },
-        { id: 'blackcard', name: '无限额黑卡', emoji: '💳', price: '9999钻', desc: '无限宠溺 · 随心所欲' }
+        { id: 'milktea', name: '草莓波波奶茶', emoji: '🧋', price: 6, desc: '甜度超标 · 暖心陪伴' },
+        { id: 'glowstick', name: '星光应援棒', emoji: '🪄', price: 18, desc: '星海闪烁 · 为你挥舞' },
+        { id: 'rose', name: '心动纯白玫瑰', emoji: '🌹', price: 52, desc: '浪漫私语 · 钟情于你' },
+        { id: 'galaxy', name: '星河之誓', emoji: '🌌', price: 520, desc: '浩瀚银河 · 唯你璀璨' },
+        { id: 'castle', name: '梦幻告白城堡', emoji: '🏰', price: 1314, desc: '童话之境 · 全服见证' },
+        { id: 'blackcard', name: '无限额黑卡', emoji: '💳', price: 9999, desc: '无限宠溺 · 随心所欲' }
     ];
 
     let selectedLiveGiftId = null;
@@ -285,7 +285,7 @@ const PhoneComposer = (() => {
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
-                    <button type="button" class="live-action-circle-btn live-gift-btn" id="live_gift_btn" title="赠送心动礼物">
+                    <button type="button" class="live-action-circle-btn live-gift-btn" id="live_gift_btn" title="礼物与 SC 留言">
                         <i class="fa-solid fa-gift"></i>
                     </button>
                 </div>
@@ -294,25 +294,48 @@ const PhoneComposer = (() => {
                 <div class="live-gift-drawer" id="live_gift_drawer" style="display: none;">
                     <div class="live-gift-drawer-header">
                         <div class="drawer-title-group">
-                            <span class="drawer-title">🎁 专属心意礼物</span>
-                            <span class="drawer-subtitle">选择心动礼物赠予主播</span>
+                            <span class="drawer-title">🎁 心意互动</span>
+                            <span class="drawer-subtitle" id="live_support_subtitle">选择心动礼物赠予主播</span>
                         </div>
                         <button type="button" class="live-gift-close-btn" id="live_gift_close_btn" title="收起"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                    <div class="live-gift-grid" id="live_gift_grid">
-                        ${LIVE_GIFTS.map(g => `
-                            <div class="gift-card-item" data-gift-id="${g.id}">
-                                <span class="gift-card-emoji">${g.emoji}</span>
-                                <span class="gift-card-name">${g.name}</span>
-                                <span class="gift-card-price">${g.price}</span>
-                            </div>
-                        `).join('')}
+                    <div class="live-support-tabs" role="group" aria-label="互动方式">
+                        <button type="button" class="live-support-tab active" id="live_support_gift_tab" aria-pressed="true" aria-controls="live_gift_panel">心意礼物</button>
+                        <button type="button" class="live-support-tab" id="live_support_sc_tab" aria-pressed="false" aria-controls="live_sc_panel">SC 留言</button>
                     </div>
-                    <div class="live-gift-footer">
-                        <div class="gift-selected-info" id="gift_selected_info">
-                            请选择上方心动礼物
+                    <div id="live_gift_panel">
+                        <div class="live-gift-grid" id="live_gift_grid">
+                            ${LIVE_GIFTS.map(gift => `
+                                <div class="gift-card-item" data-gift-id="${gift.id}">
+                                    <span class="gift-card-emoji">${gift.emoji}</span>
+                                    <span class="gift-card-name">${gift.name}</span>
+                                    <span class="gift-card-price">${gift.price}钻</span>
+                                </div>
+                            `).join('')}
                         </div>
-                        <button type="button" class="gift-send-btn" id="gift_send_action_btn" disabled>赠送</button>
+                        <div class="live-gift-footer">
+                            <div class="gift-selected-info" id="gift_selected_info">请选择上方心动礼物</div>
+                            <div class="live-gift-quantity" role="group" aria-label="礼物数量">
+                                <button type="button" id="live_gift_quantity_minus" aria-label="减少礼物数量" disabled>−</button>
+                                <input type="number" id="live_gift_quantity" aria-label="礼物数量" min="1" max="9999" step="1" value="1" inputmode="numeric" required disabled>
+                                <button type="button" id="live_gift_quantity_plus" aria-label="增加礼物数量" disabled>+</button>
+                            </div>
+                            <span class="live-gift-total" id="live_gift_total" aria-live="polite">合计 0 钻</span>
+                            <button type="button" class="gift-send-btn" id="gift_send_action_btn" disabled>赠送</button>
+                        </div>
+                    </div>
+                    <div class="live-sc-form" id="live_sc_panel" style="display: none;">
+                        <label class="live-sc-label" for="live_sc_amount">留言金额</label>
+                        <div class="live-sc-amount-field">
+                            <span aria-hidden="true">￥</span>
+                            <input type="number" id="live_sc_amount" aria-label="留言金额" min="0.01" max="999999.99" step="0.01" inputmode="decimal" placeholder="输入金额" required>
+                        </div>
+                        <label class="live-sc-label" for="live_sc_message">想对主播说的话</label>
+                        <textarea id="live_sc_message" rows="3" placeholder="写下你的醒目留言…" required></textarea>
+                        <div class="live-sc-actions">
+                            <span class="drawer-subtitle">以你的观众昵称署名</span>
+                            <button type="button" class="gift-send-btn" id="live_sc_send_btn" disabled>发送 SC</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -633,11 +656,32 @@ const PhoneComposer = (() => {
             $('#st_phone_composer_panel .gift-card-item').removeClass('selected');
             $(this).addClass('selected');
 
-            const gift = LIVE_GIFTS.find(g => g.id === giftId);
-            if (gift) {
-                $('#gift_selected_info').html(`已选：<strong>${gift.name}</strong> (${gift.price} · ${gift.desc})`);
-                $('#gift_send_action_btn').prop('disabled', false);
-            }
+            updateLiveGiftSelection();
+        });
+
+        $('#live_gift_quantity').on('input change', updateLiveGiftSelection);
+        $('#live_gift_quantity_minus, #live_gift_quantity_plus').on('click', function (event) {
+            event.stopPropagation();
+            const adjustment = this.id === 'live_gift_quantity_plus' ? 1 : -1;
+            const quantity = getLiveGiftQuantity() || 1;
+            $('#live_gift_quantity').val(Math.max(1, Math.min(9999, quantity + adjustment)));
+            updateLiveGiftSelection();
+        });
+
+        $('#live_support_gift_tab, #live_support_sc_tab').on('click', function (event) {
+            event.stopPropagation();
+            const isSc = this.id === 'live_support_sc_tab';
+            $('#live_support_gift_tab').toggleClass('active', !isSc).attr('aria-pressed', String(!isSc));
+            $('#live_support_sc_tab').toggleClass('active', isSc).attr('aria-pressed', String(isSc));
+            $('#live_gift_panel').toggle(!isSc);
+            $('#live_sc_panel').toggle(isSc);
+            $('#live_support_subtitle').text(isSc ? '让想说的话被看见' : '选择心动礼物赠予主播');
+        });
+
+        $('#live_sc_amount, #live_sc_message').on('input change', updateLiveScSendButton);
+        $('#live_sc_send_btn').on('click', function (event) {
+            event.stopPropagation();
+            handleLiveScSend();
         });
 
         // 确认赠送礼物
@@ -1439,6 +1483,46 @@ const PhoneComposer = (() => {
         insertIntoSendTextarea(`〖弹幕：${userLiveId}：${text}〗`);
     }
 
+    function getLiveGiftQuantity() {
+        const input = $('#live_gift_quantity')[0];
+        const quantity = Number(input?.value);
+        return input?.validity.valid && Number.isInteger(quantity) && quantity >= 1 && quantity <= 9999 ? quantity : null;
+    }
+
+    function updateLiveGiftSelection() {
+        const gift = LIVE_GIFTS.find(item => item.id === selectedLiveGiftId);
+        const quantity = getLiveGiftQuantity();
+        $('#live_gift_quantity').prop('disabled', !gift);
+        $('#live_gift_quantity_minus').prop('disabled', !gift || quantity === 1);
+        $('#live_gift_quantity_plus').prop('disabled', !gift || quantity === 9999);
+        $('#gift_send_action_btn').prop('disabled', !gift || !quantity);
+        $('#gift_selected_info').text(gift ? `已选：${gift.name}` : '请选择上方心动礼物').attr('title', gift?.desc || '');
+        $('#live_gift_total').text(gift ? (quantity ? `合计 ${gift.price * quantity} 钻` : '请输入有效数量') : '合计 0 钻');
+    }
+
+    function getLiveScDraft() {
+        const amountInput = $('#live_sc_amount')[0];
+        const amount = Number(amountInput?.value);
+        const content = String($('#live_sc_message').val() || '').trim();
+        if (!amountInput?.validity.valid || !Number.isFinite(amount) || amount < 0.01 || amount > 999999.99 || !content) return null;
+        return { price: `￥${amount.toFixed(2)}`, content };
+    }
+
+    function updateLiveScSendButton() {
+        $('#live_sc_send_btn').prop('disabled', !getLiveScDraft());
+    }
+
+    function handleLiveScSend() {
+        const draft = getLiveScDraft();
+        if (!draft) return;
+        const userLiveId = getUserLiveId();
+        showLiveSc(userLiveId, draft.content, draft.price);
+        insertIntoSendTextarea(`〖SC：${userLiveId}|${draft.price}|${draft.content}〗`);
+        $('#live_sc_amount, #live_sc_message').val('');
+        updateLiveScSendButton();
+        $('#live_gift_drawer').stop(true, true).fadeOut(180);
+    }
+
     /**
      * 赠送直播间心意礼物 (拒绝实名制)
      */
@@ -1446,6 +1530,8 @@ const PhoneComposer = (() => {
         if (!selectedLiveGiftId) return;
         const gift = LIVE_GIFTS.find(g => g.id === selectedLiveGiftId);
         if (!gift) return;
+        const quantity = getLiveGiftQuantity();
+        if (!quantity) return;
 
         const targetChar = getTargetLiveCharacter() || '主播';
         const streamerLiveId = getCharacterLiveId(targetChar);
@@ -1453,7 +1539,7 @@ const PhoneComposer = (() => {
 
         // 1. 播放全屏礼物飘屏动画
         $('#gift_banner_icon').text(gift.emoji);
-        $('#gift_banner_name').text(`${gift.name} × 1`);
+        $('#gift_banner_name').text(`${gift.name} × ${quantity}`);
         $('.gift-banner-user').text(`${userLiveId} 送出了`);
         const $banner = $('#live_gift_banner');
         $banner.stop(true, true).show();
@@ -1464,7 +1550,7 @@ const PhoneComposer = (() => {
         // 2. 弹幕区追加礼物通知 (纯净无牌子)
         const giftDanmuHtml = `
             <div class="danmu-item danmu-gift">
-                <span class="danmu-text">🎉 <strong>【${escapeHtml(userLiveId)}】</strong> 送出了 <strong>【${escapeHtml(gift.name)}】</strong>！</span>
+                <span class="danmu-text">🎉 <strong>【${escapeHtml(userLiveId)}】</strong> 送出了 <strong>【${escapeHtml(gift.name)} × ${quantity}】</strong>！</span>
             </div>
         `;
         const $stream = $('#live_danmu_stream');
@@ -1475,7 +1561,7 @@ const PhoneComposer = (() => {
         $('#live_gift_drawer').fadeOut(180);
 
         // 4. 自动插入酒馆输入框 〖打赏：主播艺名 礼物名（来自：观众昵称）〗
-        insertIntoSendTextarea(`〖打赏：${streamerLiveId} ${gift.name}（来自：${userLiveId}）〗`);
+        insertIntoSendTextarea(`〖打赏：${streamerLiveId} ${gift.name} × ${quantity}（来自：${userLiveId}）〗`);
     }
 
     /**
