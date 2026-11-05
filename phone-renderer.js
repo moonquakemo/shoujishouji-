@@ -790,7 +790,7 @@ ${noticeHtml}`;
                     <i class="fa-solid fa-paper-plane" style="font-size: 10px; flex-shrink: 0;"></i> 发弹幕/心动礼物...
                 </span>
             </div>
-            <button type="button" class="live-action-circle-btn live-gift-btn" onclick="if(window.PhoneComposer) { PhoneComposer.toggleComposer(true); const $tab = $('#home_app_live'); if ($tab.length) $tab.click(); $('#live_gift_btn').click(); }" title="赠送心动礼物">
+            <button type="button" class="live-action-circle-btn live-gift-btn" onclick="if(window.PhoneComposer) { PhoneComposer.toggleComposer(true); const $tab = $('#home_app_live'); if ($tab.length) $tab.click(); $('#live_gift_btn').click(); }" title="礼物与 SC 留言">
                 <i class="fa-solid fa-gift"></i>
             </button>
         </div>
