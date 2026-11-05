@@ -2638,10 +2638,10 @@
   gap: 6px;
   margin-bottom: 14px;
   padding: 0 10px;
-  border: 1px solid rgba(236, 72, 153, 0.3);
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
   border-radius: 12px;
-  background: rgba(236, 72, 153, 0.08);
-  color: #f9a8d4;
+  background-color: var(--input-bg, #ffffff);
+  color: var(--input-text, #333333);
 }
 
 .live-sc-amount-field input,
@@ -2652,8 +2652,10 @@
   margin: 0;
   padding: 10px 0;
   border: none;
-  background: transparent;
-  color: #fff;
+  background-color: var(--input-bg, #ffffff) !important;
+  color: var(--input-text, #333333) !important;
+  caret-color: var(--input-text, #333333);
+  text-shadow: none;
   font: inherit;
   font-size: 16px;
   user-select: text;
@@ -2664,15 +2666,15 @@
   min-height: 90px;
   max-height: 160px;
   padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--input-border, rgba(0, 0, 0, 0.12));
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
   resize: vertical;
 }
 
 .live-sc-amount-field input::placeholder,
 .live-sc-form textarea::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--input-placeholder, #999999) !important;
+  opacity: 1;
 }
 
 .live-sc-actions {
