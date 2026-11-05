@@ -432,7 +432,7 @@
   --phone-chat-bg: #f5f5f7;
 
   /* Navbar */
-  --navbar-bg: #111111;
+  --navbar-bg: #1a1a2e;
   --navbar-text: #fff;
   --navbar-icon-fill: #fff;
 
