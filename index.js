@@ -20,6 +20,7 @@
                     enabled: true,
                     aggregate: true,
                     inject: true,
+                    show_composer_button: true,
                     char_stickers: {},
                     global_stickers: {},
                     char_avatars: {},
@@ -43,6 +44,7 @@
             if (!settings.custom_themes) settings.custom_themes = {};
             if (typeof settings.global_theme_css !== 'string') settings.global_theme_css = "";
             if (settings.inject === undefined) settings.inject = true;
+            if (settings.show_composer_button === undefined) settings.show_composer_button = true;
 
             const extensionFolderPath = `scripts/extensions/third-party/${FOLDER_NAME}`;
 
@@ -98,7 +100,7 @@
 
             // 初始化输入伴侣
             if (typeof PhoneComposer !== 'undefined') {
-                PhoneComposer.init();
+                PhoneComposer.init(settings.show_composer_button);
             }
 
             renderAllExistingMessages();
@@ -161,6 +163,14 @@
         $inject.prop('checked', settings.inject);
         $inject.on('change', function () {
             settings.inject = !!$(this).prop('checked');
+            SillyTavern.getContext().saveSettingsDebounced();
+        });
+
+        const $showComposerButton = $('#phone_ui_show_composer_button');
+        $showComposerButton.prop('checked', settings.show_composer_button);
+        $showComposerButton.on('change', function () {
+            settings.show_composer_button = !!$(this).prop('checked');
+            PhoneComposer.setTriggerVisible(settings.show_composer_button);
             SillyTavern.getContext().saveSettingsDebounced();
         });
 

@@ -2345,9 +2345,12 @@
   flex: 1 1 0%;
   min-width: 0;
   width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
   color: #ffffff;
   font-size: 12.5px;
   box-sizing: border-box;
