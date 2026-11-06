@@ -76,7 +76,7 @@ const PhoneComposer = (() => {
     /**
      * 初始化挂载
      */
-    function init() {
+    function init(showTrigger = true) {
         $('#st_phone_composer_root').remove();
 
         const html = `
@@ -430,6 +430,11 @@ const PhoneComposer = (() => {
         syncLatestTime();
         updateContact();
         initDraggables();
+        setTriggerVisible(showTrigger);
+    }
+
+    function setTriggerVisible(visible) {
+        $('#st_phone_composer_trigger').toggle(!!visible);
     }
 
     /**
@@ -2778,6 +2783,7 @@ const PhoneComposer = (() => {
 
     return {
         init,
+        setTriggerVisible,
         toggleComposer,
         updateTheme,
         syncLatestTime,
