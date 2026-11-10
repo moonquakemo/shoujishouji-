@@ -1740,6 +1740,17 @@
 /* ========================================================
    视图 3：RLive 沉浸式互动直播间 (Live Stream Room)
    ======================================================== */
+.st-phone.st-phone-live-wrapper {
+  box-sizing: border-box;
+  min-width: 0;
+  background: #0b0d13;
+}
+
+.st-phone-live-wrapper > .st-phone-bottom-safe {
+  flex-shrink: 0;
+  background: rgba(18, 20, 29, 0.85);
+}
+
 .composer-view-live {
   flex: 1;
   min-height: 0;

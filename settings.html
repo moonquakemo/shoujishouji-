@@ -337,11 +337,7 @@
                 </div>
                 <div style="margin-bottom: 8px;">
                     <select id="phone_ui_theme_select" class="text_pole" style="font-size: 12px; width: 100%; height: 32px; padding: 4px 8px;">
-                        <optgroup label="官方预设">
-                            <option value="builtin:wechat">WeChat (微信风格)</option>
-                            <option value="builtin:sakura">Sakura Breeze (樱花粉)</option>
-                            <option value="builtin:kakaotalk">KakaoTalk (经典黄)</option>
-                            <option value="builtin:whatsapp">WhatsApp (绿白风格)</option>
+                        <optgroup id="phone_ui_builtin_themes_group" label="官方预设">
                         </optgroup>
                         <optgroup id="phone_ui_custom_themes_group" label="自定义保存主题">
                         </optgroup>
@@ -355,6 +351,7 @@
                     <div class="menu_button" id="phone_ui_load_to_editor" title="把选中主题的 CSS 载入编辑框修改">载入编辑</div>
                     <div class="menu_button btn-danger" id="phone_ui_delete_theme" title="删除当前选中的自定义主题">删除主题</div>
                 </div>
+                <small id="phone_ui_theme_status" class="pu-text-muted" role="status" aria-live="polite" style="display: none;"></small>
             </div>
 
             <!-- 角色专属主题 -->

@@ -652,18 +652,12 @@ ${noticeHtml}`;
             : '';
         const sessionTime = liveData.time || savedTime || '';
         const timerText = isLive ? (sessionTime || '00:00') : '未开播';
-        if (liveData.time && typeof PhoneComposer !== 'undefined' && PhoneComposer.saveCharacterLiveTime) {
-            PhoneComposer.saveCharacterLiveTime(rawStreamer, liveData.time);
-        }
 
         // 场次持久化人数
         const savedViewers = (typeof PhoneComposer !== 'undefined' && PhoneComposer.getCharacterLiveViewers)
             ? PhoneComposer.getCharacterLiveViewers(rawStreamer)
             : '';
         const viewers = liveData.viewers || savedViewers || (isLive ? '1.2w' : '--');
-        if (liveData.viewers && typeof PhoneComposer !== 'undefined' && PhoneComposer.saveCharacterLiveViewers) {
-            PhoneComposer.saveCharacterLiveViewers(rawStreamer, liveData.viewers);
-        }
 
         const bio = liveData.bio || (typeof PhoneComposer !== 'undefined' ? PhoneComposer.getCharacterLiveBio(rawStreamer) : '');
         const scene = liveData.scene || (isLive ? '主播正在直播中...' : '主播未开播');

@@ -15,9 +15,14 @@ const PhoneAggregator = (() => {
         if (p === '我' || p === 'user' || p === 'me' || p === '{{user}}') return true;
         try {
             const ctx = SillyTavern.getContext();
-            if (ctx && ctx.name1 && ctx.name1.toLowerCase() === p) return true;
+            if (ctx && ctx.name1 && ctx.name1.trim().toLowerCase() === p) return true;
         } catch (e) { }
         return false;
+    }
+
+    function normalizePov(pov) {
+        const normalized = String(pov || '').trim();
+        return isUserPov(normalized) ? '' : normalized;
     }
 
     /**
@@ -30,6 +35,7 @@ const PhoneAggregator = (() => {
      */
     function aggregate(chatArray, upToIndex, targetContact, targetPov = null) {
         const allMessages = [];
+        const normalizedPov = normalizePov(targetPov);
         let contact = targetContact || '';
         let actions = {};
 
@@ -56,14 +62,7 @@ const PhoneAggregator = (() => {
                     // 如果指定了 targetContact，严格只聚合匹配同一联系人的手机块
                     if (targetContact && block.contact !== targetContact) continue;
 
-                    // POV 视角严格隔离：
-                    // a) 如果显式指定了 targetPov，必须精准匹配该 POV
-                    // b) 如果未指定 targetPov (玩家查看自己的手机)，严格排除所有非用户 POV 的 NPC 手机块 (如 pov=小蓝)
-                    if (targetPov) {
-                        if (block.pov !== targetPov) continue;
-                    } else {
-                        if (block.pov && !isUserPov(block.pov)) continue;
-                    }
+                    if (normalizePov(block.pov) !== normalizedPov) continue;
 
                     // 取第一个有效 contact 作为联系人名
                     if (!contact && block.contact && block.contact !== '未知') {
@@ -82,12 +81,12 @@ const PhoneAggregator = (() => {
                         if (!m.time && msg.send_date) {
                             m.sendDate = msg.send_date;
                         }
-                        allMessages.push(m);
+                        allMessages.push({ ...m, pov: normalizedPov });
                     }
                 }
             } else if (isUser) {
                 // 若正在聚合某个特定 NPC 的手机视角 (targetPov 为 NPC)，跳过用户的普通手机短代码
-                if (targetPov && !isUserPov(targetPov)) continue;
+                if (normalizedPov) continue;
 
                 // 2. 仅当是用户消息且没有 [phone] 块时，才提取自然语言短括号 〖...〗
                 // 绝不提取 AI 消息中的 〖...〗，彻底避免与状态栏、好感度、内心独白等括号冲突
@@ -131,6 +130,7 @@ const PhoneAggregator = (() => {
             const blocks = PhoneParser.extractPhoneBlocks(m.mes);
             if (blocks.length > 0) {
                 for (const b of blocks) {
+                    if (normalizePov(b.pov)) continue;
                     if (b.contact && b.contact !== '未知') return b.contact;
                 }
             }
@@ -143,6 +143,7 @@ const PhoneAggregator = (() => {
             const blocks = PhoneParser.extractPhoneBlocks(m.mes);
             if (blocks.length > 0) {
                 for (let b = blocks.length - 1; b >= 0; b--) {
+                    if (normalizePov(blocks[b].pov)) continue;
                     if (blocks[b].contact && blocks[b].contact !== '未知') return blocks[b].contact;
                 }
             }
@@ -169,7 +170,7 @@ const PhoneAggregator = (() => {
         return '手机聊天';
     }
 
-    return { aggregate, getLatestContact };
+    return { aggregate, getLatestContact, normalizePov };
 })();
 
 if (typeof window !== 'undefined') {
