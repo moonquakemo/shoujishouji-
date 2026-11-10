@@ -1,26 +1,21 @@
-/* ============================================
-   Phone UI Theme: KakaoTalk (韩国常用)
-   经典可可黄 + 柔和蓝背景
-   ============================================ */
-
 :root {
   /* ===== 手机外壳 ===== */
   --phone-bg: #000000;
   --phone-border: rgba(255,255,255,0.08);
-  --phone-chat-bg: #b2c7d9;             /* KakaoTalk 经典的柔和蓝背景 */
+  --phone-chat-bg: #b2c7d9;
   --phone-radius: 32px;
 
   /* ===== 状态栏 & 导航栏 ===== */
-  --navbar-bg: #b2c7d9;                 /* 导航栏和背景同色 */
-  --navbar-text: #1a1a1a;               /* 黑色文字 */
-  --navbar-icon-fill: #1a1a1a;          /* 黑色图标 */
+  --navbar-bg: #b2c7d9;
+  --navbar-text: #1a1a1a;
+  --navbar-icon-fill: #1a1a1a;
 
   /* ===== 聊天气泡 ===== */
-  --bubble-other-bg: #ffffff;           /* 对方消息气泡：纯白 */
+  --bubble-other-bg: #ffffff;
   --bubble-other-text: #1a1a1a;
-  --bubble-me-bg: #fee500;              /* 我的消息气泡：经典 Kakao 黄 */
+  --bubble-me-bg: #fee500;
   --bubble-me-text: #1a1a1a;
-  --bubble-radius: 12px;                /* Kakao 的气泡圆角稍微小一点点 */
+  --bubble-radius: 12px;
 
   /* ===== 头像 ===== */
   --avatar-other-bg: linear-gradient(135deg, #a8a8a8, #888888); 
@@ -30,15 +25,15 @@
 
   /* ===== 强调色 ===== */
   --accent-blue: #4a88ce;
-  --accent-green: #fee500;              /* 这里的强调色换成黄色 */
+  --accent-green: #fee500;
   --accent-orange: #f4a100;
   --accent-red: #ff3b30;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #ffffff;               /* 底部输入区纯白 */
+  --inputbar-bg: #ffffff;
   --inputbar-border-top: rgba(0,0,0,0.06); 
-  --input-bg: #f5f5f5;                  /* 输入框浅灰色 */
-  --input-border: transparent;          /* 无边框 */
+  --input-bg: #f5f5f5;
+  --input-border: transparent;
   --input-text: #333;
   --input-placeholder: #aaa;
   --input-icon-fill: #555;
@@ -63,10 +58,10 @@
 
   /* ===== 时间分隔线 ===== */
   --time-sep-bg: rgba(0,0,0,0.12);
-  --time-sep-text: #ffffff;             /* Kakao的时间通常是深色背景+白字 */
+  --time-sep-text: #ffffff;
 
   /* ===== 其他文字颜色 ===== */
-  --msg-time-color: #666;               /* 时间戳较深，因为背景是蓝色的 */
+  --msg-time-color: #666;
   --quote-bg: rgba(0,0,0,0.05);
   --quote-text: #777;
   --recall-text: #888;
@@ -76,8 +71,8 @@
   /* ===== 发送按钮 ===== */
   --send-buffer-bg: #e0e0e0;
   --send-buffer-text: #555;
-  --send-final-bg: #fee500;             /* 发送按钮Kakao黄 */
-  --send-final-text: #1a1a1a;           /* 黑色文字 */
+  --send-final-bg: #fee500;
+  --send-final-text: #1a1a1a;
   --preview-opacity: 0.6;
   --preview-border: rgba(254, 229, 0, 0.6);
   --sent-border: rgba(254, 229, 0, 0.4);

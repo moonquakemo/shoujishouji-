@@ -1,26 +1,21 @@
-/* ============================================
-   Phone UI Theme: WhatsApp (德国主流)
-   经典绿白配色 + 气泡投影 + 隐藏双人头像
-   ============================================ */
-
 :root {
   /* ===== 手机外壳 ===== */
-  --phone-bg: #ece5dd;                  /* WhatsApp默认聊天背景米色 */
+  --phone-bg: #ece5dd;
   --phone-border: rgba(0,0,0,0.1);
-  --phone-chat-bg: #ece5dd;             /* 聊天区背景同色 */
+  --phone-chat-bg: #ece5dd;
   --phone-radius: 32px;
 
   /* ===== 状态栏 & 导航栏 ===== */
-  --navbar-bg: #075e54;                 /* WhatsApp经典深绿 */
-  --navbar-text: #ffffff;               /* 白色文字 */
-  --navbar-icon-fill: #ffffff;          /* 白色图标 */
+  --navbar-bg: #075e54;
+  --navbar-text: #ffffff;
+  --navbar-icon-fill: #ffffff;
 
   /* ===== 聊天气泡 ===== */
-  --bubble-other-bg: #ffffff;           /* 对方消息气泡：纯白 */
+  --bubble-other-bg: #ffffff;
   --bubble-other-text: #303030;
-  --bubble-me-bg: #dcf8c6;              /* 我的消息气泡：WhatsApp浅草绿 */
+  --bubble-me-bg: #dcf8c6;
   --bubble-me-text: #303030;
-  --bubble-radius: 8px;                 /* WhatsApp气泡比较方正 */
+  --bubble-radius: 8px;
 
   /* ===== 头像 ===== */
   --avatar-other-bg: linear-gradient(135deg, #a8a8a8, #888888); 
@@ -29,19 +24,19 @@
   --avatar-size: 36px;
 
   /* ===== 强调色 ===== */
-  --accent-blue: #34b7f1;               /* WhatsApp蓝勾颜色 */
-  --accent-green: #25d366;              /* WhatsApp亮绿 */
+  --accent-blue: #34b7f1;
+  --accent-green: #25d366;
   --accent-orange: #f4a100;
   --accent-red: #ff3b30;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #f0f0f0;               /* 底部输入区浅灰 */
+  --inputbar-bg: #f0f0f0;
   --inputbar-border-top: transparent; 
-  --input-bg: #ffffff;                  /* 输入框纯白 */
+  --input-bg: #ffffff;
   --input-border: transparent;          
   --input-text: #333;
   --input-placeholder: #999;
-  --input-icon-fill: #858e92;           /* 图标灰绿色 */
+  --input-icon-fill: #858e92;
   --input-radius: 24px;
 
   /* ===== 转账卡片 ===== */
@@ -56,7 +51,7 @@
   --location-addr-color: #999;
 
   /* ===== 时间分隔线 ===== */
-  --time-sep-bg: rgba(225, 243, 251, 0.8); /* 浅蓝色半透明 */
+  --time-sep-bg: rgba(225, 243, 251, 0.8);
   --time-sep-text: #556269;
 
   /* ===== 其他文字颜色 ===== */
@@ -70,30 +65,23 @@
   /* ===== 发送按钮 ===== */
   --send-buffer-bg: #e0e0e0;
   --send-buffer-text: #555;
-  --send-final-bg: #128c7e;             /* 发送按钮深绿 */
+  --send-final-bg: #128c7e;
   --send-final-text: #ffffff;           
   --preview-opacity: 0.6;
   --preview-border: rgba(18, 140, 126, 0.6);
   --sent-border: rgba(18, 140, 126, 0.4);
 }
 
-/* ============================================
-   Structural & Visual Overrides
-   ============================================ */
-
-/* Chat background doodle pattern */
 .st-phone-chat {
   background-image: radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px), radial-gradient(rgba(0, 0, 0, 0.04) 2px, transparent 2px);
   background-size: 32px 32px;
   background-position: 0 0, 16px 16px;
 }
 
-/* WhatsApp hides avatars in 1-on-1 chats to save space! */
 .st-phone-avatar {
   display: none !important;
 }
 
-/* Bubble drop shadows and tails */
 .st-phone-bubble {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   padding: 8px 12px;
@@ -101,15 +89,14 @@
 
 .msg-other .st-phone-bubble {
   border-top-left-radius: 0;
-  margin-left: 8px; /* Compensate for hidden avatar */
+  margin-left: 8px;
 }
 
 .msg-me .st-phone-bubble {
   border-top-right-radius: 0;
-  margin-right: 8px; /* Compensate for hidden avatar */
+  margin-right: 8px;
 }
 
-/* WhatsApp puts timestamps very close to bubbles */
 .st-phone-msg-time {
   font-size: 11px;
   color: #999;
@@ -124,23 +111,17 @@
   margin-right: 10px;
 }
 
-/* ============================================
-   The "Fake" Read Ticks Trick
-   ============================================ */
-/* We use a CSS ::after pseudo-element to add the double ticks 
-   without needing any javascript or HTML structure changes! */
 .msg-me .st-phone-msg-time::after {
   content: '✓✓';
-  color: #34b7f1; /* WhatsApp blue read color */
+  color: #34b7f1;
   font-weight: 700;
   font-size: 12px;
   margin-left: 4px;
-  letter-spacing: -3px; /* Pull them close together */
+  letter-spacing: -3px;
   display: inline-block;
   transform: translateY(1px);
 }
 
-/* Customize the input bar slightly */
 .st-phone-inputbar {
   padding: 8px;
 }

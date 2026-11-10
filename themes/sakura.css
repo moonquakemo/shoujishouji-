@@ -1,26 +1,21 @@
-/* ============================================
-   Phone UI Theme: Sakura Breeze (樱花初绽)
-   温柔樱花粉 + 浅紫气泡，清透软萌
-   ============================================ */
-
 :root {
   /* ===== 手机外壳 ===== */
-  --phone-bg: #fff0f5;                  /* 极浅粉背景 */
+  --phone-bg: #fff0f5;
   --phone-border: rgba(255, 183, 197, 0.4);
-  --phone-chat-bg: #fff0f5;             /* 聊天区背景同色 */
+  --phone-chat-bg: #fff0f5;
   --phone-radius: 32px;
 
   /* ===== 状态栏 & 导航栏 ===== */
-  --navbar-bg: #ffcdd2;                 /* 更加清透的浅樱花粉 */
-  --navbar-text: #5a4a4d;               /* 深灰棕色字，比纯黑更柔和 */
-  --navbar-icon-fill: #5a4a4d;          /* 深灰棕色图标 */
+  --navbar-bg: #ffcdd2;
+  --navbar-text: #5a4a4d;
+  --navbar-icon-fill: #5a4a4d;
 
   /* ===== 聊天气泡 ===== */
-  --bubble-other-bg: #f3e8ff;           /* 对方消息气泡：清透浅紫 */
-  --bubble-other-text: #4a3f4e;         /* 紫灰色文字 */
-  --bubble-me-bg: #ffe4e1;              /* 我的消息气泡：雾玫瑰粉 */
+  --bubble-other-bg: #f3e8ff;
+  --bubble-other-text: #4a3f4e;
+  --bubble-me-bg: #ffe4e1;
   --bubble-me-text: #5a4a4d;
-  --bubble-radius: 20px;                /* 圆润气泡 */
+  --bubble-radius: 20px;
 
   /* ===== 头像 ===== */
   --avatar-other-bg: linear-gradient(135deg, #d8b4e2, #a87eb6); 
@@ -35,13 +30,13 @@
   --accent-red: #ff7e82;
 
   /* ===== 输入栏 ===== */
-  --inputbar-bg: #ffcdd2;               /* 底部输入区与顶部导航栏同色，上下呼应 */
+  --inputbar-bg: #ffcdd2;
   --inputbar-border-top: transparent; 
-  --input-bg: #fff0f5;                  /* 极浅粉输入框，保持原本好看的颜色 */
+  --input-bg: #fff0f5;
   --input-border: transparent;          
   --input-text: #5a4a4d;
   --input-placeholder: #bbaeb0;
-  --input-icon-fill: #5a4a4d;           /* 配合深粉背景，图标改回原本柔和的深灰棕色 */
+  --input-icon-fill: #5a4a4d;
   --input-radius: 20px;
 
   /* ===== 转账卡片 ===== */
@@ -70,7 +65,7 @@
   /* ===== 发送按钮 ===== */
   --send-buffer-bg: #fff0f5;
   --send-buffer-text: #ff9eaf;
-  --send-final-bg: #ffb7c5;             /* 发送按钮樱花粉 */
+  --send-final-bg: #ffb7c5;
   --send-final-text: #ffffff;           
   --preview-opacity: 0.7;
   --preview-border: rgba(255, 183, 197, 0.6);
