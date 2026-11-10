@@ -179,11 +179,13 @@
 2. 发送后，UI 会立即展示一个半透明的“预览气泡”。
 3. 在你点击酒馆默认的发送按钮（继续对话）时，这些操作记录会自动被打包注入到 `System Note` 中发给 AI，告诉 AI：“用户刚才在手机上给你发了 520 块钱，并发送了一个【流泪】表情包”。
 
-## 模块维护：手机伴侣与直播间
+## 模块维护：手机伴侣
 
 - `phone-composer.js` 负责手机外壳、桌面切换、聊天输入、联系人和时钟。
+- `phone-composer-layout.js` 负责拖拽、面板展开定位、安全边界和位置保存。`PhoneComposerLayout.init({ triggerSelector, panelSelector, panelHandleSelector, isPanelOpen })` 接收元素选择器和面板状态回调；`destroy()` 清理拖拽、窗口事件及定时器，重复初始化前自动清理。伴侣重建 DOM 前也会主动调用它。
+- 伴侣通过布局模块的 `positionPanelNearTrigger($panel, $trigger)` 定位展开面板，通过 `clampToViewport(selector)` 校正弹窗变化后的边界，通过 `shouldSuppressClick(element)` 识别拖拽后的误触。原有位置存储键 `st_phone_trigger_pos`、`st_phone_panel_pos` 及移动端 `_mobile` 后缀保持不变。
 - `phone-live.js` 负责 RLive 界面、弹幕、礼物、SC、主播资料及场次状态；通过 `PhoneLive.init({ getContact, insertIntoSendTextarea })` 接收联系人查询和输入框写入回调，不直接依赖 `PhoneComposer`。
-- `index.js` 先加载直播模块，再加载伴侣。伴侣通过 `renderView()` 挂载直播界面，通过 `onOpen()` 同步主播信息并滚动弹幕。
+- `index.js` 先加载直播和布局模块，再加载伴侣。伴侣通过直播模块的 `renderView()` 挂载直播界面，通过 `onOpen()` 同步主播信息并滚动弹幕。
 - 原有 `PhoneComposer.updateLiveState()`、直播资料读写和弹幕/SC 等接口保留为转发入口，解析器、楼层渲染及外部调用无需改动。原有 DOM 标识、`style.css` 样式和持久化字段不变，无需迁移数据。
 
 **享受逼真和沉浸的角色扮演文字体验吧！**
