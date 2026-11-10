@@ -56,6 +56,7 @@
                 await $.getScript(`${extensionFolderPath}/phone-aggregator.js`);
                 await $.getScript(`${extensionFolderPath}/phone-interactions.js`);
                 await $.getScript(`${extensionFolderPath}/phone-live.js`);
+                await $.getScript(`${extensionFolderPath}/phone-composer-layout.js`);
                 await $.getScript(`${extensionFolderPath}/phone-composer.js`);
                 await $.getScript(`${extensionFolderPath}/phone-themes.js`);
                 PhoneThemes.configure(extensionFolderPath);

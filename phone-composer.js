@@ -58,6 +58,7 @@ const PhoneComposer = (() => {
      * 初始化挂载
      */
     function init(showTrigger = true) {
+        PhoneComposerLayout.destroy();
         $('#st_phone_composer_root').remove();
 
         const html = `
@@ -270,7 +271,12 @@ const PhoneComposer = (() => {
         updateTheme();
         syncLatestTime();
         updateContact();
-        initDraggables();
+        PhoneComposerLayout.init({
+            triggerSelector: '#st_phone_composer_trigger',
+            panelSelector: '#st_phone_composer_panel',
+            panelHandleSelector: '#st_phone_composer_panel .composer-statusbar, #st_phone_composer_panel .composer-header',
+            isPanelOpen: () => isOpen,
+        });
         setTriggerVisible(showTrigger);
     }
 
@@ -285,8 +291,9 @@ const PhoneComposer = (() => {
         // 1. 悬浮胶囊开合 (支持 touch 与 click，防拖拽误触与双重触发)
         let triggerLastTap = 0;
         $('#st_phone_composer_trigger').on('click touchend', function (e) {
-            if (this._pu_drag_prevent_click) {
-                e.stopImmediatePropagation();
+            if (PhoneComposerLayout.shouldSuppressClick(this)) {
+                e.preventDefault();
+                if (e.type !== 'touchend') e.stopImmediatePropagation();
                 return;
             }
             const now = Date.now();
@@ -470,297 +477,6 @@ const PhoneComposer = (() => {
     }
 
     /**
-     * 计算并获取拖拽安全边界（适配移动端与桌面端，确保绝不被酒馆顶部/底部栏遮挡）
-     */
-    function getSafeBounds(elWidth, elHeight) {
-        const isMobile = window.innerWidth <= 768;
-        const minLeft = 8;
-        const minTop = isMobile ? 50 : 8; // 避开移动端顶部栏
-        const bottomSafe = isMobile ? 35 : 20; // 避开移动端底部打字栏和虚拟键盘/安全区
-        const maxLeft = Math.max(minLeft, window.innerWidth - elWidth - 8);
-        const maxTop = Math.max(minTop, window.innerHeight - elHeight - bottomSafe);
-        return { minLeft, maxLeft, minTop, maxTop };
-    }
-
-    function getStorageKey(baseKey) {
-        return window.innerWidth <= 768 ? `${baseKey}_mobile` : baseKey;
-    }
-
-    /**
-     * 方案 1：伴侣屏幕展开位置随悬浮按钮，向屏幕中心方向展开，并在安全视口内防溢出
-     */
-    function positionPanelNearTrigger($panel, $trigger) {
-        if (!$panel || !$panel.length || !$trigger || !$trigger.length) return;
-
-        const isMobile = window.innerWidth <= 768;
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
-
-        // 获取或预估面板尺寸 (防止 display:none 导致宽高为 0)
-        let pW = $panel.outerWidth();
-        let pH = $panel.outerHeight();
-        if (!pW || pW < 100) {
-            pW = isMobile ? Math.min(360, screenW - 20) : 360;
-        }
-        if (!pH || pH < 100) {
-            pH = isMobile ? Math.min(620, Math.round(screenH * 0.85)) : 600;
-        }
-
-        const tRect = $trigger[0].getBoundingClientRect();
-        const tCenterX = tRect.left + tRect.width / 2;
-        const tCenterY = tRect.top + tRect.height / 2;
-        const sCenterX = screenW / 2;
-        const sCenterY = screenH / 2;
-
-        // 安全视口边界
-        const safeLeft = 10;
-        const safeRight = 10;
-        const safeTop = isMobile ? 50 : 12; // 避开移动端顶部栏
-        const safeBottom = isMobile ? 25 : 15; // 避开移动端底部手势/安全区
-
-        let targetLeft = 0;
-        let targetTop = 0;
-        let originX = 'right';
-        let originY = 'bottom';
-
-        // 1. 水平方向判定 (向屏幕中心展开)
-        if (tCenterX >= sCenterX) {
-            // 悬浮按钮在屏幕右半侧 -> 向左展开 (对齐按钮右边缘)
-            originX = 'right';
-            targetLeft = tRect.right - pW;
-        } else {
-            // 悬浮按钮在屏幕左半侧 -> 向右展开 (对齐按钮左边缘)
-            originX = 'left';
-            targetLeft = tRect.left;
-        }
-
-        // 2. 垂直方向判定 (向屏幕中心展开)
-        if (tCenterY >= sCenterY) {
-            // 悬浮按钮在屏幕下半侧 -> 向上展开 (面板底部停靠在按钮上方)
-            originY = 'bottom';
-            targetTop = tRect.top - pH - 10;
-            // 若上方空间不够，尝试向下展开
-            if (targetTop < safeTop) {
-                if (tRect.bottom + 10 + pH <= screenH - safeBottom) {
-                    targetTop = tRect.bottom + 10;
-                    originY = 'top';
-                } else {
-                    targetTop = safeTop;
-                }
-            }
-        } else {
-            // 悬浮按钮在屏幕上半侧 -> 向下展开 (面板顶部停靠在按钮下方)
-            originY = 'top';
-            targetTop = tRect.bottom + 10;
-            // 若下方空间不够，尝试向上展开
-            if (targetTop + pH > screenH - safeBottom) {
-                if (tRect.top - 10 - pH >= safeTop) {
-                    targetTop = tRect.top - 10 - pH;
-                    originY = 'bottom';
-                } else {
-                    targetTop = Math.max(safeTop, screenH - safeBottom - pH);
-                }
-            }
-        }
-
-        // 3. 安全夹紧保证绝不超屏
-        const maxLeft = Math.max(safeLeft, screenW - pW - safeRight);
-        const maxTop = Math.max(safeTop, screenH - pH - safeBottom);
-        targetLeft = Math.min(Math.max(safeLeft, targetLeft), maxLeft);
-        targetTop = Math.min(Math.max(safeTop, targetTop), maxTop);
-
-        $panel.css({
-            left: `${Math.round(targetLeft)}px`,
-            top: `${Math.round(targetTop)}px`,
-            right: 'auto',
-            bottom: 'auto',
-            margin: '0',
-            transformOrigin: `${originY} ${originX}`
-        });
-    }
-
-    /**
-     * 初始化悬浮按钮和悬浮窗的拖拽功能
-     */
-    function initDraggables() {
-        makeDraggable('#st_phone_composer_trigger', '#st_phone_composer_trigger', 'st_phone_trigger_pos');
-        makeDraggable('#st_phone_composer_panel', '#st_phone_composer_panel .composer-statusbar, #st_phone_composer_panel .composer-header', 'st_phone_panel_pos');
-
-        $(window).on('resize.pu_draggables orientationchange.pu_draggables', function () {
-            clampToViewport('#st_phone_composer_trigger');
-            if (isOpen) {
-                clampToViewport('#st_phone_composer_panel');
-            }
-        });
-
-        // 挂载完成后立即做一次安全视口检查，确保在小屏或旋转屏幕下永远处于安全区
-        setTimeout(() => {
-            clampToViewport('#st_phone_composer_trigger');
-            if (isOpen) {
-                clampToViewport('#st_phone_composer_panel');
-            }
-        }, 200);
-    }
-
-    function clampToViewport(selector) {
-        const $el = $(selector);
-        if (!$el.length || $el.css('display') === 'none') return;
-        const rect = $el[0].getBoundingClientRect();
-        const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(rect.width, rect.height);
-
-        let curLeft = rect.left;
-        let curTop = rect.top;
-        let changed = false;
-
-        if (curLeft > maxLeft) { curLeft = maxLeft; changed = true; }
-        if (curLeft < minLeft) { curLeft = minLeft; changed = true; }
-        if (curTop > maxTop) { curTop = maxTop; changed = true; }
-        if (curTop < minTop) { curTop = minTop; changed = true; }
-
-        if (changed) {
-            $el.css({
-                left: `${Math.round(curLeft)}px`,
-                top: `${Math.round(curTop)}px`,
-                right: 'auto',
-                bottom: 'auto'
-            });
-        }
-    }
-
-    function makeDraggable(elementSelector, handleSelector, storageKey) {
-        const $el = $(elementSelector);
-        if (!$el.length) return;
-        const el = $el[0];
-        const $handle = handleSelector ? $(handleSelector) : $el;
-        if (!$handle.length) return;
-
-        const actualKey = getStorageKey(storageKey);
-
-        try {
-            const saved = localStorage.getItem(actualKey);
-            if (saved) {
-                const pos = JSON.parse(saved);
-                if (typeof pos.left === 'number' && typeof pos.top === 'number') {
-                    const elW = $el.outerWidth() || 48;
-                    const elH = $el.outerHeight() || 48;
-                    const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elW, elH);
-                    const clampLeft = Math.min(Math.max(minLeft, pos.left), maxLeft);
-                    const clampTop = Math.min(Math.max(minTop, pos.top), maxTop);
-                    $el.css({
-                        left: `${Math.round(clampLeft)}px`,
-                        top: `${Math.round(clampTop)}px`,
-                        right: 'auto',
-                        bottom: 'auto'
-                    });
-                }
-            }
-        } catch (e) { }
-
-        let isDragging = false;
-        let hasMoved = false;
-        let isTouchDrag = false;
-        let startX = 0, startY = 0;
-        let initLeft = 0, initTop = 0;
-
-        function getCoords(e) {
-            if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length) {
-                return { x: e.originalEvent.touches[0].clientX, y: e.originalEvent.touches[0].clientY };
-            }
-            if (e.touches && e.touches.length) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-            if (e.originalEvent && e.originalEvent.changedTouches && e.originalEvent.changedTouches.length) {
-                return { x: e.originalEvent.changedTouches[0].clientX, y: e.originalEvent.changedTouches[0].clientY };
-            }
-            if (e.changedTouches && e.changedTouches.length) {
-                return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-            }
-            return { x: e.clientX, y: e.clientY };
-        }
-
-        $handle.on('mousedown touchstart', function (e) {
-            if ($(e.target).closest('button, input, select, textarea, .composer-clock-chip, .composer-contact-chip, .composer-dynamic-island, .composer-power-btn, .nav-back, .home-app-item').length) {
-                return;
-            }
-
-            isTouchDrag = e.type === 'touchstart';
-            const coords = getCoords(e);
-            startX = coords.x;
-            startY = coords.y;
-
-            const rect = el.getBoundingClientRect();
-            initLeft = rect.left;
-            initTop = rect.top;
-
-            isDragging = true;
-            hasMoved = false;
-
-            $(document).on('mousemove.pu_drag touchmove.pu_drag', onMove);
-            $(document).on('mouseup.pu_drag touchend.pu_drag touchcancel.pu_drag', onUp);
-        });
-
-        function onMove(e) {
-            if (!isDragging) return;
-            const coords = getCoords(e);
-            const dx = coords.x - startX;
-            const dy = coords.y - startY;
-            const threshold = isTouchDrag ? 12 : 5;
-
-            if (!hasMoved && Math.hypot(dx, dy) > threshold) {
-                hasMoved = true;
-                $el.addClass('dragging');
-            }
-
-            if (hasMoved) {
-                if (e.cancelable) {
-                    e.preventDefault();
-                }
-                const elWidth = $el.outerWidth() || 48;
-                const elHeight = $el.outerHeight() || 48;
-                const { minLeft, maxLeft, minTop, maxTop } = getSafeBounds(elWidth, elHeight);
-
-                let curLeft = initLeft + dx;
-                let curTop = initTop + dy;
-
-                curLeft = Math.min(Math.max(minLeft, curLeft), maxLeft);
-                curTop = Math.min(Math.max(minTop, curTop), maxTop);
-
-                $el.css({
-                    left: `${Math.round(curLeft)}px`,
-                    top: `${Math.round(curTop)}px`,
-                    right: 'auto',
-                    bottom: 'auto'
-                });
-            }
-        }
-
-        function onUp(e) {
-            if (!isDragging) return;
-            isDragging = false;
-            $(document).off('.pu_drag');
-            $el.removeClass('dragging');
-
-            if (hasMoved) {
-                try {
-                    const rect = el.getBoundingClientRect();
-                    const currentStorageKey = getStorageKey(storageKey);
-                    localStorage.setItem(currentStorageKey, JSON.stringify({
-                        left: Math.round(rect.left),
-                        top: Math.round(rect.top)
-                    }));
-                } catch (err) { }
-
-                el._pu_drag_prevent_click = true;
-                setTimeout(() => {
-                    el._pu_drag_prevent_click = false;
-                }, 300);
-            } else {
-                el._pu_drag_prevent_click = false;
-            }
-        }
-    }
-
-    /**
      * 切换手机伴侣内的 App 视图 ('home' | 'chat' | 'live')
      */
     function switchAppView(viewName) {
@@ -810,7 +526,7 @@ const PhoneComposer = (() => {
             const isMobile = window.innerWidth <= 768;
 
             // 方案 1：伴侣屏幕展开位置随悬浮按钮，向屏幕中心方向展开，并在安全视口内防溢出
-            positionPanelNearTrigger($panel, $trigger);
+            PhoneComposerLayout.positionPanelNearTrigger($panel, $trigger);
 
             if (pendingDrafts.length > 0) {
                 $('#composer_idle_canvas').hide();
@@ -1052,14 +768,14 @@ const PhoneComposer = (() => {
             }
             renderContactPopover();
             $pop.stop(true, true).slideDown(150, function () {
-                clampToViewport('#st_phone_composer_panel');
+                PhoneComposerLayout.clampToViewport('#st_phone_composer_panel');
             });
         } else {
             $pop.stop(true, true).slideUp(120, function () {
                 if (pendingDrafts.length === 0 && !currentDrawer && !$('#composer_clock_popover').is(':visible')) {
                     $('#composer_idle_canvas').fadeIn(120);
                 }
-                clampToViewport('#st_phone_composer_panel');
+                PhoneComposerLayout.clampToViewport('#st_phone_composer_panel');
             });
         }
     }
@@ -1080,14 +796,14 @@ const PhoneComposer = (() => {
                 $('#composer_anchor_input').val(currentVirtualTime);
             }
             $pop.stop(true, true).slideDown(150, function () {
-                clampToViewport('#st_phone_composer_panel');
+                PhoneComposerLayout.clampToViewport('#st_phone_composer_panel');
             });
         } else {
             $pop.stop(true, true).slideUp(120, function () {
                 if (pendingDrafts.length === 0 && !currentDrawer && !$('#composer_contact_popover').is(':visible')) {
                     $('#composer_idle_canvas').fadeIn(120);
                 }
-                clampToViewport('#st_phone_composer_panel');
+                PhoneComposerLayout.clampToViewport('#st_phone_composer_panel');
             });
         }
     }

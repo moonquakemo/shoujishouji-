@@ -2629,7 +2629,11 @@
   margin: 0;
 }
 
-.live-gift-quantity :disabled {
+.live-gift-quantity button:disabled,
+.live-gift-quantity input:disabled {
+  background: transparent !important;
+  color: #fff !important;
+  -webkit-text-fill-color: currentColor;
   opacity: 0.35;
   cursor: not-allowed;
 }
